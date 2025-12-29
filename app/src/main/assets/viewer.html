@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="opensheetmusicdisplay.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        #score-container { width: 100%; height: 100%; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+<div id="score-container"></div>
+
+<script>
+    var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("score-container", {
+        autoResize: true,
+        backend: "svg",
+        drawingParameters: "compacttight", // Optimizes for mobile screens
+        drawTitle: true,
+    });
+
+    // --- Bridge Functions called from Android Java ---
+
+    // 1. Load the XML Data
+    function loadScore(xmlData) {
+        osmd.load(xmlData).then(function() {
+            osmd.render();
+            osmd.cursor.show(); // Show the cursor immediately
+        }, function(err) {
+            console.error(err);
+        });
+    }
+
+    // 2. Interaction: Move Cursor
+    function nextCursor() {
+        osmd.cursor.next();
+    }
+
+    function resetCursor() {
+        osmd.cursor.reset();
+    }
+
+    // 3. Zoom Control
+    function setZoom(scale) {
+        osmd.zoom = scale;
+        osmd.render();
+    }
+</script>
+</body>
+</html>
