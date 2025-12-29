@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311955201278",
+    "project_id": "conducto-885e5",
+    "storage_bucket": "conducto-885e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311955201278:android:8c2cf1bb118e10864399af",
+        "android_client_info": {
+          "package_name": "com.example.conducto2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcTF23IIle_lvMWEm7B9rcJ3WzpMj0LB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

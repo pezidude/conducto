@@ -1,0 +1,83 @@
+[versions]
+# -- Android Configuration --
+# The "Ceiling": Compiling with 35 gives you access to the latest fixes.
+compileSdk = "35"
+# The "Floor": This allows installation on ~99% of all active Android devices.
+minSdk = "26"
+targetSdk = "35"
+
+# -- Build Plugins --
+# Use 8.2.2 for high stability, or 8.5.2+ if you need the absolute latest features.
+agp = "8.6.1"
+kotlin = "1.9.24"
+
+# -- AndroidX Libraries (Stable & Compatible with SDK 35) --
+# Core 1.13+ is stable for SDK 35. (Avoid 1.16.0 as it demands SDK 36)
+coreKtx = "1.13.1"
+
+# Appcompat 1.7.0 is the standard for Android 14/15 compilation.
+appcompat = "1.7.0"
+
+# Material 1.12.0 brings Material 3 support while maintaining old device compat.
+material = "1.12.0"
+
+# Activity 1.9.x is stable. (Avoid 1.12.x as it demands SDK 36)
+activity = "1.9.1"
+
+# ConstraintLayout 2.1.4 is the rock-solid standard. 2.2.0 is also available.
+constraintlayout = "2.1.4"
+
+# Lifecycle 2.8.x integrates well with modern Kotlin.
+lifecycle = "2.8.4"
+
+# Navigation 2.7.x is the standard for Views/Fragments (Nav 2.8+ is KMP focused).
+navigation = "2.7.7"
+
+# -- Testing --
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+navigationFragment = "2.9.6"
+navigationUi = "2.9.6"
+googleGmsGoogleServices = "4.4.4"
+firebaseAuth = "24.0.1"
+credentials = "1.5.0"
+credentialsPlayServicesAuth = "1.5.0"
+googleid = "1.1.1"
+firebaseStorage = "22.0.1"
+firebaseFirestore = "26.0.2"
+
+[libraries]
+# Core
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+
+# Lifecycle (ViewModel & LiveData)
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+
+# Navigation (Fragment & UI)
+androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
+androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
+androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
