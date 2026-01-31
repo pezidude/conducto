@@ -15,7 +15,7 @@
         android:layout_height="match_parent"
         android:layout_below="@id/annotation_toolbar_fragment">
 
-        <com.example.conducto2.ui.player.widget.SheetMusicView
+        <com.example.conducto2.ui.player.widget.ObservableWebView
             android:id="@+id/sheetMusicView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

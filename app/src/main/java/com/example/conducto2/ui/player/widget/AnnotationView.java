@@ -15,25 +15,22 @@ import com.example.conducto2.data.model.TextAnnotation;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A custom view that sits on top of the sheet music and is responsible for
- * drawing and handling user input for annotations.
- */
 public class AnnotationView extends View {
 
-    public enum AnnotationMode {
-        BRUSH,
-        TEXT,
-        SCROLL
-    }
+    public enum AnnotationMode { BRUSH, TEXT, SCROLL }
 
     private Path currentPath;
     private Paint brushPaint;
     private List<Annotation> annotations = new ArrayList<>();
-    private AnnotationMode currentMode = AnnotationMode.SCROLL; // Default to scroll
+    private AnnotationMode currentMode = AnnotationMode.SCROLL;
     private int currentColor = Color.RED;
     private float currentStrokeWidth = 8f;
     private float currentTextSize = 48f;
+
+    // Transformation properties
+    private int scrollX = 0;
+    private int scrollY = 0;
+    private float scale = 1.0f;
 
     public AnnotationView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -51,39 +48,45 @@ public class AnnotationView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (currentMode == AnnotationMode.SCROLL) {
-            // Don't draw anything if in scroll mode
-            return;
-        }
-        // Draw all saved annotations
+        
+        canvas.save();
+        
+        // **Corrected Order of Operations**
+        // 1. Translate the canvas to the current scroll position.
+        canvas.translate(-scrollX, -scrollY);
+        // 2. Scale the canvas around the new (0,0) point.
+        canvas.scale(scale, scale);
+
+        // Always draw annotations regardless of the mode
         for (Annotation annotation : annotations) {
             annotation.draw(canvas);
         }
-        // Draw the current path being drawn by the user
-        if (currentPath != null) {
+        // Only draw the "in-progress" path if in Brush mode
+        if (currentMode == AnnotationMode.BRUSH && currentPath != null) {
             canvas.drawPath(currentPath, brushPaint);
         }
+        
+        canvas.restore();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (currentMode == AnnotationMode.SCROLL) {
-            return false; // Pass the touch event to the view below (SheetMusicView)
+            return false; // Pass touch event to the WebView below
         }
 
-        float x = event.getX();
-        float y = event.getY();
+        // Convert screen coordinates to "world" coordinates by accounting for scale and scroll
+        float x = (event.getX() / scale) + scrollX;
+        float y = (event.getY() / scale) + scrollY;
 
         if (currentMode == AnnotationMode.BRUSH) {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     currentPath = new Path();
                     currentPath.moveTo(x, y);
-                    return true; // Consume the event
+                    return true;
                 case MotionEvent.ACTION_MOVE:
-                    if (currentPath != null) {
-                        currentPath.lineTo(x, y);
-                    }
+                    if (currentPath != null) currentPath.lineTo(x, y);
                     break;
                 case MotionEvent.ACTION_UP:
                     if (currentPath != null) {
@@ -95,10 +98,7 @@ public class AnnotationView extends View {
                     return false;
             }
         }
-        // TEXT mode is handled by the activity, which will show a dialog.
-        // This onTouchEvent is still triggered, so we return true to consume the event.
-
-        // Redraw the view
+        
         invalidate();
         return true;
     }
@@ -106,57 +106,50 @@ public class AnnotationView extends View {
     public void addTextAnnotation(String text, float x, float y) {
         if (text != null && !text.isEmpty()) {
             annotations.add(new TextAnnotation(text, x, y, currentColor, currentTextSize));
-            invalidate(); // Redraw with the new text
+            invalidate();
         }
     }
 
-    // --- Getters and Setters for customization ---
-
-    public void setMode(AnnotationMode mode) {
-        this.currentMode = mode;
-        // If switching to scroll mode, we might want to clear any active drawing path
-        if (mode == AnnotationMode.SCROLL) {
-            currentPath = null;
-        }
-        // We need to redraw to hide/show annotations based on mode.
+    // --- Transformation Setters ---
+    public void setScroll(int scrollX, int scrollY) {
+        this.scrollX = scrollX;
+        this.scrollY = scrollY;
+        invalidate();
+    }
+    
+    public void setScale(float scale) {
+        this.scale = scale;
         invalidate();
     }
 
-    public AnnotationMode getMode() {
-        return this.currentMode;
+    public int getScrollXPosition() { return this.scrollX; }
+    public int getScrollYPosition() { return this.scrollY; }
+    public float getScale() { return this.scale; }
+
+
+    // --- Customization ---
+    public void setMode(AnnotationMode mode) {
+        this.currentMode = mode;
+        if (mode == AnnotationMode.SCROLL) currentPath = null;
+        invalidate();
     }
 
+    public AnnotationMode getMode() { return this.currentMode; }
     public void setCurrentColor(int color) {
         this.currentColor = color;
         brushPaint.setColor(this.currentColor);
     }
-
-    public void setStrokeWidth(float width) {
-        this.currentStrokeWidth = width;
-        brushPaint.setStrokeWidth(this.currentStrokeWidth);
-    }
-
-    public void setTextSize(float size) {
-        this.currentTextSize = size;
-    }
-
-
     public void undo() {
         if (!annotations.isEmpty()) {
             annotations.remove(annotations.size() - 1);
             invalidate();
         }
     }
-
     public void clearAnnotations() {
         annotations.clear();
         invalidate();
     }
-
-    public List<Annotation> getAnnotations() {
-        return new ArrayList<>(annotations); // Return a copy
-    }
-
+    public List<Annotation> getAnnotations() { return new ArrayList<>(annotations); }
     public void setAnnotations(List<Annotation> loadedAnnotations) {
         this.annotations = new ArrayList<>(loadedAnnotations);
         invalidate();
