@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_homework"
+        android:icon="@drawable/ic_music_note"
+        android:title="Homework" />
+    <item
+        android:id="@+id/nav_people"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="People" />
+    <item
+        android:id="@+id/nav_live"
+        android:icon="@android:drawable/presence_online"
+        android:title="Live" />
+    <item
+        android:id="@+id/nav_calendar"
+        android:icon="@android:drawable/ic_menu_today"
+        android:title="Calendar" />
+</menu>
