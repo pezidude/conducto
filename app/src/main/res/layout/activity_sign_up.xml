@@ -115,13 +115,37 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="12dp"/>
 
+    <RadioGroup
+        android:id="@+id/rgUserType"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/etConfirmPassword"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="12dp">
+
+        <RadioButton
+            android:id="@+id/rbTeacher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Teacher"
+            android:checked="true"/>
+
+        <RadioButton
+            android:id="@+id/rbStudent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Student"/>
+    </RadioGroup>
+
     <!-- Sign up button -->
     <Button
         android:id="@+id/btnSignUp"
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:text="Create Account"
-        app:layout_constraintTop_toBottomOf="@id/etConfirmPassword"
+        app:layout_constraintTop_toBottomOf="@id/rgUserType"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="20dp"/>
