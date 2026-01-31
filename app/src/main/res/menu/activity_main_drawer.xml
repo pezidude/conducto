@@ -7,18 +7,15 @@
         <item
             android:id="@+id/nav_dashboard"
             android:icon="@drawable/ic_launcher_foreground"
-            android:title="Dashboard" />
+            android:title="@string/menu_dashboard" />
         <item
             android:id="@+id/nav_homework"
             android:icon="@drawable/ic_launcher_foreground"
-            android:title="Homework" />
+            android:title="@string/menu_homework" />
+        <item
+            android:id="@+id/nav_my_classes"
+            android:icon="@drawable/ic_launcher_foreground"
+            android:title="@string/menu_my_classes" />
     </group>
 
-    <item
-        android:id="@+id/nav_classes_item"
-        android:title="My Classes">
-        <menu>
-             <!-- Dynamic items will be added here -->
-        </menu>
-    </item>
 </menu>
