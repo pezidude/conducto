@@ -1,29 +1,32 @@
 package com.example.conducto2.ui.player;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.webkit.WebSettings;
+import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.ui.player.widget.AnnotationView;
-import com.example.conducto2.ui.player.widget.SheetMusicView;
+import com.example.conducto2.ui.player.widget.ObservableWebView;
 
-public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationToolbarFragment.ToolbarListener {
+public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationToolbarFragment.ToolbarListener, ObservableWebView.OnTransformationChangeListener {
 
     private static final String TAG = "MIDIPlayerActivity";
 
-    private SheetMusicView sheetMusicView;
+    private ObservableWebView sheetMusicView;
     private AnnotationView annotationView;
+    private boolean isEngineReady = false;
+    private String pendingXmlData = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +36,8 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         sheetMusicView = findViewById(R.id.sheetMusicView);
         annotationView = findViewById(R.id.annotationView);
 
+        setupWebView();
+        sheetMusicView.setOnTransformationChangeListener(this);
         setupAnnotationTouchListener();
 
         Intent intent = getIntent();
@@ -43,13 +48,45 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         }
     }
 
+    private void setupWebView() {
+        WebSettings settings = sheetMusicView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+
+        sheetMusicView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(android.webkit.WebView view, String url) {
+                isEngineReady = true;
+                if (pendingXmlData != null) {
+                    loadXmlInWebView(pendingXmlData);
+                    pendingXmlData = null;
+                }
+            }
+        });
+        sheetMusicView.loadUrl("file:///android_asset/viewer.html");
+    }
+
+    @Override
+    public void onScrollChange(int scrollX, int scrollY) {
+        annotationView.setScroll(scrollX, scrollY);
+    }
+
+    @Override
+    public void onScaleChange(float scale) {
+        annotationView.setScale(scale);
+    }
+
     private void setupAnnotationTouchListener() {
         annotationView.setOnTouchListener((v, event) -> {
             if (annotationView.getMode() == AnnotationView.AnnotationMode.TEXT && event.getAction() == MotionEvent.ACTION_DOWN) {
-                showTextInputDialog(event.getX(), event.getY());
-                return true; // Consume the event
+                float adjustedX = (event.getX() / annotationView.getScale()) + annotationView.getScrollXPosition();
+                float adjustedY = (event.getY() / annotationView.getScale()) + annotationView.getScrollYPosition();
+                showTextInputDialog(adjustedX, adjustedY);
+                return true;
             }
-            // Let the AnnotationView handle its own onTouchEvent for drawing/scrolling
             return annotationView.onTouchEvent(event);
         });
     }
@@ -69,6 +106,15 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
     }
+    
+    private void loadXmlInWebView(String xmlData) {
+        if (!isEngineReady) {
+            pendingXmlData = xmlData;
+            return;
+        }
+        String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
+        sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`);", null);
+    }
 
     private void handleFileSelection(Uri uri) {
         FileIO fileOps = new FileIO(this);
@@ -84,10 +130,9 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
                 if (xmlContent == null) {
                     throw new Exception("Empty or invalid file content");
                 }
-
                 runOnUiThread(() -> {
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
-                        sheetMusicView.loadXml(xmlContent);
+                        loadXmlInWebView(xmlContent);
                     } else {
                         Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
                     }
@@ -101,7 +146,6 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         }).start();
     }
 
-    // --- ToolbarListener Implementation ---
     @Override
     public void onToolSelected(AnnotationView.AnnotationMode mode) {
         annotationView.setMode(mode);
