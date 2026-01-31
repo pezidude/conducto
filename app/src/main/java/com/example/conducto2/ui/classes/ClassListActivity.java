@@ -10,7 +10,6 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -19,13 +18,14 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.Class;
+import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.util.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
-public class ClassListActivity extends AppCompatActivity implements FirestoreManager.DBResult {
+public class ClassListActivity extends BaseDrawerActivity implements FirestoreManager.DBResult {
 
     private RecyclerView classesRecyclerView;
     private ClassAdapter classAdapter;
@@ -34,14 +34,14 @@ public class ClassListActivity extends AppCompatActivity implements FirestoreMan
     private FloatingActionButton addClassFab;
     private boolean isFilteredByUser = false;
     private boolean isSortedByName = false;
-    private FirestoreManager firestoreManager;
+    // private FirestoreManager firestoreManager; // Inherited
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_class_list);
 
-        firestoreManager = new FirestoreManager();
+        // firestoreManager = new FirestoreManager(); // Inherited
         firestoreManager.setDbResult(this);
 
         initViews();
@@ -49,8 +49,13 @@ public class ClassListActivity extends AppCompatActivity implements FirestoreMan
         setupListeners();
 
         firestoreManager.getUser(user -> {
-            if (user != null && "teacher".equals(user.getUserType())) {
-                addEditDelete();
+            if (user != null) {
+                if ("teacher".equals(user.getUserType())) {
+                    addClassFab.setOnClickListener(this::showFabMenu);
+                    addEditDelete();
+                } else {
+                    addClassFab.setOnClickListener(v -> showJoinClassDialog());
+                }
             }
         });
     }
@@ -72,7 +77,7 @@ public class ClassListActivity extends AppCompatActivity implements FirestoreMan
         });
 
         filterByUserButton.setOnClickListener(v -> toggleFilterByUser());
-        addClassFab.setOnClickListener(this::showFabMenu);
+        // FAB listener is now set in onCreate after user type is determined
     }
 
     private void showFabMenu(View view) {

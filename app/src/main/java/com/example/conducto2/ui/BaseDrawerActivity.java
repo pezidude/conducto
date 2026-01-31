@@ -21,6 +21,7 @@ import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassEditActivity;
+import com.example.conducto2.ui.classes.ClassListActivity;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.ui.lessons.ClassActivity;
 import com.google.android.material.navigation.NavigationView;
@@ -32,6 +33,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     protected NavigationView navigationView;
     protected FirestoreManager firestoreManager;
     protected User currentUser;
+    private static final int DYNAMIC_CLASSES_GROUP_ID = 12345;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +68,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     @Override
     protected void onResume() {
         super.onResume();
+        // Refresh drawer in case user details or class list changed
         setupDrawerHeader();
         setupDrawerMenu();
     }
@@ -109,19 +112,19 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
 
         firestoreManager.getClassesForUser(email, classes -> {
             if (classes != null) {
-                MenuItem classesItem = navigationView.getMenu().findItem(R.id.nav_classes_item);
-                if (classesItem != null) {
-                    SubMenu subMenu = classesItem.getSubMenu();
-                    subMenu.clear(); 
+                Menu menu = navigationView.getMenu();
+                menu.removeGroup(DYNAMIC_CLASSES_GROUP_ID); // Clear previous dynamic items
+
+                if (!classes.isEmpty()) {
                     for (Class cls : classes) {
-                         subMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, cls.getName())
+                         menu.add(DYNAMIC_CLASSES_GROUP_ID, Menu.NONE, Menu.NONE, cls.getName())
                                 .setOnMenuItemClickListener(menuItem -> {
                                     Intent intent = new Intent(BaseDrawerActivity.this, ClassActivity.class);
                                     intent.putExtra("class_id", cls.getId());
                                     startActivity(intent);
                                     drawerLayout.closeDrawer(GravityCompat.START);
                                     return true;
-                                }).setIcon(R.drawable.ic_launcher_foreground); 
+                                }).setIcon(R.drawable.ic_launcher_foreground);
                     }
                 }
             }
@@ -135,8 +138,10 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             startActivity(new Intent(this, DashboardActivity.class));
         } else if (id == R.id.nav_homework) {
             startActivity(new Intent(this, HomeworkActivity.class));
+        } else if (id == R.id.nav_my_classes) {
+            startActivity(new Intent(this, ClassListActivity.class));
         }
-        
+
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
