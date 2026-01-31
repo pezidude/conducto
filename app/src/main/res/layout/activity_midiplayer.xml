@@ -1,53 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
-    tools:context=".MIDIPlayerActivity">
+    android:orientation="vertical"
+    android:background="#F8F9FA">
 
-    <Button
-        android:id="@+id/btnSelectFile"
-        android:layout_width="wrap_content"
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Select MusicXML"
-        app:icon="@android:drawable/ic_menu_search"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_margin="8dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF">
 
-    <TextView
-        android:id="@+id/txtFileName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="8dp">
 
-        android:background="@drawable/bg_file_info"
-        android:text="No file selected"
-        android:textColor="#333333"
-        android:textSize="16sp"
-        android:gravity="center_vertical"
-        android:drawablePadding="8dp"
+            <ImageButton
+                android:id="@+id/btnPlayPause"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_circle_highlight"
+                android:src="@drawable/ic_play"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                app:tint="#1976D2"
+                android:contentDescription="Play" />
 
-        app:drawableStartCompat="@android:drawable/ic_menu_save"
-        app:layout_constraintTop_toBottomOf="@id/btnSelectFile"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+            <TextView
+                android:id="@+id/tvMeasureInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1"
+                android:textColor="#3C4043"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"/>
 
-    <com.example.conducto2.ui.SheetMusicView
+            <View
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="#E0E0E0"/>
+
+            <TextView
+                android:id="@+id/tvTempoLabel"
+                android:layout_width="34dp"
+                android:layout_height="wrap_content"
+                android:text="1.0x"
+                android:textSize="12sp"
+                android:textColor="#666666"
+                android:gravity="center"
+                android:layout_marginStart="8dp"/>
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/sliderTempo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:stepSize="0.1"
+                android:value="1.0"
+                android:valueFrom="0.5"
+                android:valueTo="2.0"
+                app:haloRadius="0dp"
+                app:thumbRadius="6dp"
+                app:tickVisible="false"
+                app:trackHeight="4dp" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <com.example.conducto2.ui.player.widget.SheetMusicView
         android:id="@+id/sheetMusicView"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_weight="1" />
 
-        app:layout_constraintTop_toBottomOf="@id/txtFileName"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white">
+    android:background="?android:attr/colorBackground">
 
     <ImageView
         android:id="@+id/ivLogo"
@@ -12,7 +12,6 @@
         android:layout_height="140dp"
         android:src="@drawable/ic_launcher_background"
         android:contentDescription="App Logo"
-
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -23,10 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Welcome to Conducto"
-        android:textSize="26sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-
+        style="@style/TextAppearance.App.Title"
         app:layout_constraintTop_toBottomOf="@id/ivLogo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -37,70 +33,69 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Practice • Learn • Perform Together"
-        android:textSize="16sp"
-        android:textColor="#808080"
-
+        style="@style/TextAppearance.App.Body"
         app:layout_constraintTop_toBottomOf="@id/tvWelcome"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="8dp"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSignIn"
+        style="@style/AppButton.Filled"
         android:layout_width="0dp"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
         android:text="Sign In"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-
         app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="60dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSignUp"
+        style="@style/AppButton.Outlined"
         android:layout_width="0dp"
-        android:layout_height="50dp"
+        android:layout_height="wrap_content"
         android:text="Sign Up"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-
         app:layout_constraintTop_toBottomOf="@id/btnSignIn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"/>
 
-    <Button
-        android:id="@+id/btnNotify"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGoToTest"
+        style="@style/AppButton.Outlined"
         android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:text="Notify Headset Status"
-        android:textAllCaps="false"
-        android:textSize="18sp"
-
+        android:layout_height="wrap_content"
+        android:text="Go to Test Activity"
         app:layout_constraintTop_toBottomOf="@id/btnSignUp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"/>
-    <Button
-        android:id="@+id/btnAlarm"
-        android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:text="Alarm in 10 sec"
-        android:textAllCaps="false"
-        android:textSize="18sp"
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnNotify"
+        style="@style/AppButton.Outlined"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Notify Headset Status"
+        app:layout_constraintTop_toBottomOf="@id/btnGoToTest"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAlarm"
+        style="@style/AppButton.Outlined"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Alarm in 10 sec"
         app:layout_constraintTop_toBottomOf="@id/btnNotify"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"/>
 
