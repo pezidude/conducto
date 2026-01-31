@@ -8,7 +8,7 @@ targetSdk = "35"
 
 # -- Build Plugins --
 # Use 8.2.2 for high stability, or 8.5.2+ if you need the absolute latest features.
-agp = "8.6.1"
+agp = "8.13.2"
 kotlin = "1.9.24"
 
 # -- AndroidX Libraries (Stable & Compatible with SDK 35) --
@@ -32,6 +32,9 @@ lifecycle = "2.8.4"
 
 # Navigation 2.7.x is the standard for Views/Fragments (Nav 2.8+ is KMP focused).
 navigation = "2.7.7"
+
+# -- Firebase --
+firebase-ui = "8.0.2"
 
 # -- Testing --
 junit = "4.13.2"
@@ -63,6 +66,9 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 # Navigation (Fragment & UI)
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigation" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigation" }
+
+# Firebase
+firebase-ui-firestore = { group = "com.firebaseui", name = "firebase-ui-firestore", version.ref = "firebase-ui" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
