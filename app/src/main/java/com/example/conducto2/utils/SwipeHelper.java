@@ -1,4 +1,4 @@
-package com.example.conducto2.util;
+package com.example.conducto2.utils;
 
 import android.content.Context;
 import android.graphics.Canvas;

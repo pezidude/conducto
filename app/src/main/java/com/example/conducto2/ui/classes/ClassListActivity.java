@@ -19,7 +19,7 @@ import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.ui.BaseDrawerActivity;
-import com.example.conducto2.util.SwipeHelper;
+import com.example.conducto2.utils.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;

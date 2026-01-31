@@ -13,9 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
-import com.example.conducto2.util.SwipeHelper;
+import com.example.conducto2.utils.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;

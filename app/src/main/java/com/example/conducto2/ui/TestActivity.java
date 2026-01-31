@@ -6,20 +6,22 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.file.FilePickerHelper;
-import com.example.conducto2.ui.lessons.ClassActivity;
+import com.example.conducto2.ui.player.MIDIPlayerActivity;
 
 public class TestActivity extends AppCompatActivity implements FilePickerHelper.OnFilePickedListener {
 
     private View cardSelectFile;
-    private Button btnViewLessons;
+    private Button btnViewSheetMusic;
     private TextView tvFilename;
     private FileIO fileio;
     private FilePickerHelper picker;
+    private Uri selectedFileUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,16 +41,22 @@ public class TestActivity extends AppCompatActivity implements FilePickerHelper.
     private void initViews() {
         cardSelectFile = findViewById(R.id.cardSelectFile);
         tvFilename = findViewById(R.id.tvFilename);
-        btnViewLessons = findViewById(R.id.btnViewLessons);
+        btnViewSheetMusic = findViewById(R.id.btnViewSheetMusic);
     }
 
     private void setupListeners() {
         if (cardSelectFile != null) {
             cardSelectFile.setOnClickListener(v -> selectFile());
         }
-        btnViewLessons.setOnClickListener(v -> {
-            Intent intent = new Intent(TestActivity.this, ClassActivity.class);
-            startActivity(intent);
+
+        btnViewSheetMusic.setOnClickListener(v -> {
+            if (selectedFileUri != null) {
+                Intent intent = new Intent(TestActivity.this, MIDIPlayerActivity.class);
+                intent.putExtra("fileUri", selectedFileUri.toString());
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "Please select a file first", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -59,5 +67,7 @@ public class TestActivity extends AppCompatActivity implements FilePickerHelper.
     @Override
     public void onFilePicked(Uri fileUri, String fileName) {
         tvFilename.setText(fileName);
+        selectedFileUri = fileUri;
+        btnViewSheetMusic.setEnabled(true);
     }
 }
