@@ -56,12 +56,13 @@
                 app:drawableStartCompat="@drawable/ic_music_note" />
 
             <Button
-                android:id="@+id/btnViewLessons"
+                android:id="@+id/btnViewSheetMusic"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="View Lessons"
+                android:text="View Sheet Music"
                 android:layout_marginTop="16dp"
-                app:icon="@drawable/ic_lessons" />
+                android:enabled="false"
+                app:icon="@drawable/ic_play" />
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
