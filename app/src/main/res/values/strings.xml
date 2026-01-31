@@ -5,6 +5,13 @@
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="title_activity_profile">Profile</string>
+    <string name="title_activity_homework">Homework</string>
+    <string name="menu_my_classes">My Classes</string>
+    <string name="menu_dashboard">Dashboard</string>
+    <string name="menu_homework">Homework</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
