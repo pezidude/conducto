@@ -39,6 +39,14 @@
         <activity
             android:name=".ui.dashboard.DashboardActivity"
             android:exported="false" />
+        <activity
+            android:name=".ui.ProfileActivity"
+            android:label="@string/title_activity_profile"
+            android:exported="false" />
+        <activity
+            android:name=".ui.HomeworkActivity"
+            android:label="@string/title_activity_homework"
+            android:exported="false" />
 
         <receiver
             android:name=".receivers.HeadsetReceiver"
