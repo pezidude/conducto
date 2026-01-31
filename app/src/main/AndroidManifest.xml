@@ -19,14 +19,29 @@
         android:theme="@style/Theme.Conducto2"
         tools:targetApi="31">
         <activity
-            android:name=".MIDIPlayerActivity"
+            android:name=".ui.classes.ClassEditActivity"
             android:exported="false" />
         <activity
-            android:name=".DashboardActivity"
+            android:name=".ui.TestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.classes.ClassListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.lessons.LessonEditActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.lessons.ClassActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.player.MIDIPlayerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.dashboard.DashboardActivity"
             android:exported="false" />
 
         <receiver
-            android:name=".HeadsetReceiver"
+            android:name=".receivers.HeadsetReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -34,7 +49,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".BootReceiver"
+            android:name=".receivers.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -43,14 +58,16 @@
         </receiver>
 
         <activity
-            android:name=".SignUpActivity"
+            android:name=".ui.auth.SignUpActivity"
             android:exported="false" />
         <activity
-            android:name=".SignInActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Conducto2" />
+            android:name=".ui.lessons.LessonDetailsActivity"
+            android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.auth.SignInActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.main.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -60,7 +77,7 @@
         </activity>
 
         <receiver
-            android:name=".AlarmReceiver"
+            android:name=".receivers.AlarmReceiver"
             android:enabled="true"
             android:exported="true" />
     </application>
