@@ -1,9 +1,9 @@
-package com.example.conducto2;
+package com.example.conducto2.data.manager;
 
 import android.util.Log;
 
-import com.example.conducto2.Lesson;
-import com.example.conducto2.User;
+import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.data.model.User;
 
 public class DataManager {
     private static User user;

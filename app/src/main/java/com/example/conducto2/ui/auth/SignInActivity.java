@@ -1,7 +1,7 @@
-package com.example.conducto2;
+package com.example.conducto2.ui.auth;
 
-import static com.example.conducto2.FirebaseUtils.FirebaseComm.authUserEmail;
-import static com.example.conducto2.FirebaseUtils.FirebaseComm.isUserSignedIn;
+import static com.example.conducto2.data.firebase.FirebaseComm.authUserEmail;
+import static com.example.conducto2.data.firebase.FirebaseComm.isUserSignedIn;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -12,14 +12,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.credentials.GetPasswordOption;
 
-import com.example.conducto2.FirebaseUtils.FBAuth;
+import com.example.conducto2.ui.dashboard.DashboardActivity;
+import com.example.conducto2.data.firebase.FBAuth;
+import com.example.conducto2.R;
 
 public class SignInActivity extends AppCompatActivity implements View.OnClickListener, FBAuth.SignInResult{
 

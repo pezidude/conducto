@@ -1,7 +1,6 @@
-package com.example.conducto2;
+package com.example.conducto2.receivers;
 
 
-import android.Manifest;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
@@ -12,8 +11,6 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
-
-import androidx.core.app.ActivityCompat;
 
 import java.util.Calendar;
 
