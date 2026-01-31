@@ -56,6 +56,10 @@ public class FirestoreManager extends FirebaseComm {
         void onUserFetched(User user);
     }
 
+    public interface ClassesFetchListener {
+        void onClassesFetched(List<Class> classes);
+    }
+
     public void setDbResult(DBResult dbr) {
         this.dbResult = dbr;
     }
@@ -176,6 +180,27 @@ public class FirestoreManager extends FirebaseComm {
                         }
                     } else {
                         Log.w(TAG, "Error getting documents.", task.getException());
+                    }
+                });
+    }
+
+    public void getClassesForUser(String email, ClassesFetchListener listener) {
+        FIRESTORE.collection("classes")
+                .whereArrayContains("members", email)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Class> classes = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        classes.add(document.toObject(Class.class));
+                    }
+                    if (listener != null) {
+                        listener.onClassesFetched(classes);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching classes", e);
+                    if (listener != null) {
+                        listener.onClassesFetched(new ArrayList<>()); // return empty on failure
                     }
                 });
     }

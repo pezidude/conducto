@@ -9,20 +9,19 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
-import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.User;
+import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.ClassListActivity;
 import com.google.android.material.button.MaterialButton;
 
-public class DashboardActivity extends AppCompatActivity implements FirestoreManager.UserFetchListener {
+public class DashboardActivity extends BaseDrawerActivity implements com.example.conducto2.data.firebase.FirestoreManager.UserFetchListener {
 
     MaterialButton btnLogout;
     TextView tvWelcomeMessage, tvUserTypeStatus;
-    FirestoreManager firestoreManager;
+    // firestoreManager is inherited from BaseDrawerActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +31,7 @@ public class DashboardActivity extends AppCompatActivity implements FirestoreMan
         // Toolbar toolbar = findViewById(R.id.toolbar);
         // setSupportActionBar(toolbar);
 
-        firestoreManager = new FirestoreManager();
+        // firestoreManager is initialized in BaseDrawerActivity.onCreate
 
         initViews();
         setupUserSpecificElements();

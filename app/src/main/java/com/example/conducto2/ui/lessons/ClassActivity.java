@@ -4,35 +4,36 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
-import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
+import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.util.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
-public class ClassActivity extends AppCompatActivity {
+public class ClassActivity extends BaseDrawerActivity {
 
     private RecyclerView lessonsRecyclerView;
     private LessonAdapter lessonAdapter;
     private ImageButton filterByUserButton;
     private ImageButton sortByDateButton;
     private FloatingActionButton addLessonFab;
+    private TextView joinCodeTextView;
     private boolean isFilteredByUser = false;
     private boolean isSortedByDate = false;
     private String classId;
-    private FirestoreManager firestoreManager;
-    private User currentUser;
+    // firestoreManager is inherited
+    // currentUser is inherited
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,13 +44,14 @@ public class ClassActivity extends AppCompatActivity {
             classId = getIntent().getStringExtra("class_id");
         }
 
-        firestoreManager = new FirestoreManager();
+        // firestoreManager = new FirestoreManager(); // Inherited
 
         initViews();
         setupRecyclerView(buildQuery());
         setupListeners();
         updateQuery(); // update query to fit the current user and class
         fetchUserAndSetupUI();
+        fetchClassDetails();
     }
 
     private void initViews() {
@@ -60,6 +62,21 @@ public class ClassActivity extends AppCompatActivity {
         sortByDateButton = findViewById(R.id.sort_by_date_button);
         filterByUserButton = findViewById(R.id.filter_by_user_button);
         addLessonFab = findViewById(R.id.add_lesson_fab);
+        joinCodeTextView = findViewById(R.id.class_join_code);
+    }
+
+    private void fetchClassDetails() {
+        if (classId == null) return;
+        FirebaseFirestore.getInstance().collection("classes").document(classId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        com.example.conducto2.data.model.Class currentClass = documentSnapshot.toObject(com.example.conducto2.data.model.Class.class);
+                        if (currentClass != null) {
+                            joinCodeTextView.setText("Code: " + currentClass.getJoinCode());
+                        }
+                    }
+                });
     }
 
     private void fetchUserAndSetupUI() {

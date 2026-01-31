@@ -2,13 +2,13 @@ package com.example.conducto2.ui.lessons;
 
 import android.os.Bundle;
 import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.ui.BaseDrawerActivity;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-public class LessonDetailsActivity extends AppCompatActivity {
+public class LessonDetailsActivity extends BaseDrawerActivity {
 
     private TextView lessonTitle;
     private TextView lessonDate;

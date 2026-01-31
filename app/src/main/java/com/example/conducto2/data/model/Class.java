@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.UUID;
 
 public class Class implements Parcelable {
@@ -51,7 +52,13 @@ public class Class implements Parcelable {
     };
 
     private String generateNewJoinCode() {
-        return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        StringBuilder sb = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < 6; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     /**
