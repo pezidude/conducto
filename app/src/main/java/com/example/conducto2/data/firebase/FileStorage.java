@@ -1,4 +1,4 @@
-package com.example.conducto2.FirebaseUtils;
+package com.example.conducto2.data.firebase;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -28,7 +28,6 @@ public class FileStorage extends  FirebaseComm{
     public interface StorageResult
     {
         void fileResult(byte[] data);
-
     }
 
     public FileStorage()
@@ -79,14 +78,6 @@ public class FileStorage extends  FirebaseComm{
                 }
             }
         });
-
-
-
-
-
-
-
-
     }
 
     public void getFileFromStorage (String name)

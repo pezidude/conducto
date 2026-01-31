@@ -1,4 +1,4 @@
-package com.example.conducto2.ui;
+package com.example.conducto2.ui.player.widget;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -18,7 +18,7 @@ public class SheetMusicView extends WebView {
 
     private void init() {
         WebSettings settings = getSettings();
-        settings.setJavaScriptEnabled(true);
+        settings.setJavaScriptEnabled(true); // required for opensheetmusicdisplay
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(true);
@@ -40,7 +40,7 @@ public class SheetMusicView extends WebView {
         loadUrl("file:///android_asset/viewer.html");
     }
 
-    // --- Public API for the Activity ---
+    // --- Define this as a public API for the Activity ---
 
     /**
      * Reads a MusicXML file string and sends it to the engine.
@@ -50,7 +50,7 @@ public class SheetMusicView extends WebView {
             pendingXmlData = xmlData;
             return;
         }
-        // Escape the string to be safe for JS injection
+        // Escape the string to be safe from JS injection
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
         // Call the JS function defined in viewer.html
         evaluateJavascript("loadScore(`" + escapedXml + "`);", null);

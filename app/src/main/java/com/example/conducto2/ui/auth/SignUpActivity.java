@@ -1,7 +1,7 @@
-package com.example.conducto2;
+package com.example.conducto2.ui.auth;
 
-import static com.example.conducto2.FirebaseUtils.FirebaseComm.authUserEmail;
-import static com.example.conducto2.FirebaseUtils.FirebaseComm.isUserSignedIn;
+import static com.example.conducto2.data.firebase.FirebaseComm.authUserEmail;
+import static com.example.conducto2.data.firebase.FirebaseComm.isUserSignedIn;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,14 +9,18 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.conducto2.FirebaseUtils.FBAuth;
-import com.example.conducto2.FirebaseUtils.FirebaseComm;
-import com.example.conducto2.FirebaseUtils.FirestoreManager;
+import com.example.conducto2.ui.dashboard.DashboardActivity;
+import com.example.conducto2.data.firebase.FBAuth;
+import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.R;
+import com.example.conducto2.data.model.User;
 
 public class SignUpActivity extends AppCompatActivity implements View.OnClickListener,FBAuth.SignInResult, FirestoreManager.DBResult {
 
@@ -24,6 +28,8 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     TextView tvError, tvGoToSignIn;
     EditText etEmail, etPassword, etConfirmPassword;
     EditText etFname, etLname, etUname;
+    RadioGroup rgUserType;
+
 
     Button btnSignUp;
 
@@ -42,6 +48,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         etFname = findViewById(R.id.etFname);
         etLname = findViewById(R.id.etLname);
         etUname = findViewById(R.id.etUname);
+        rgUserType = findViewById(R.id.rgUserType);
 
         btnSignUp = findViewById(R.id.btnSignUp);
         btnSignUp.setOnClickListener(this);
@@ -108,7 +115,11 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         // 1st step: fbauth result function
         if (result) {
             // here user is authed
-            User user = new User(etUname.getText().toString(),etFname.getText().toString(), etLname.getText().toString());
+            int selectedId = rgUserType.getCheckedRadioButtonId();
+            RadioButton selectedRadioButton = findViewById(selectedId);
+            String userType = selectedRadioButton.getText().toString().toLowerCase();
+
+            User user = new User(etEmail.getText().toString().trim(), etFname.getText().toString().trim(), etLname.getText().toString().trim(), userType);
             insertUserToFB(user);
         } else {
             // here user is NOT authed

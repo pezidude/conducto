@@ -1,4 +1,4 @@
-package com.example.conducto2.FirebaseUtils;
+package com.example.conducto2.data.firebase;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
@@ -28,9 +28,6 @@ public class FirebaseComm {
     public static CollectionReference getCollectionReference(String collection) {
         return getFisrestore().collection(collection);
     }
-
-
-
 
     public static boolean isUserSignedIn() {
 

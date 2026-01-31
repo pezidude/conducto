@@ -1,4 +1,4 @@
-package com.example.conducto2.FirebaseUtils;
+package com.example.conducto2.data.firebase;
 
 import android.util.Log;
 

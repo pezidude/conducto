@@ -1,4 +1,4 @@
-package com.example.conducto2;
+package com.example.conducto2.receivers;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
