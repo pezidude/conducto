@@ -23,13 +23,14 @@ public class AnnotationView extends View {
 
     public enum AnnotationMode {
         BRUSH,
-        TEXT
+        TEXT,
+        SCROLL
     }
 
     private Path currentPath;
     private Paint brushPaint;
     private List<Annotation> annotations = new ArrayList<>();
-    private AnnotationMode currentMode = AnnotationMode.BRUSH;
+    private AnnotationMode currentMode = AnnotationMode.SCROLL; // Default to scroll
     private int currentColor = Color.RED;
     private float currentStrokeWidth = 8f;
     private float currentTextSize = 48f;
@@ -50,6 +51,10 @@ public class AnnotationView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (currentMode == AnnotationMode.SCROLL) {
+            // Don't draw anything if in scroll mode
+            return;
+        }
         // Draw all saved annotations
         for (Annotation annotation : annotations) {
             annotation.draw(canvas);
@@ -62,6 +67,10 @@ public class AnnotationView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (currentMode == AnnotationMode.SCROLL) {
+            return false; // Pass the touch event to the view below (SheetMusicView)
+        }
+
         float x = event.getX();
         float y = event.getY();
 
@@ -70,7 +79,7 @@ public class AnnotationView extends View {
                 case MotionEvent.ACTION_DOWN:
                     currentPath = new Path();
                     currentPath.moveTo(x, y);
-                    return true;
+                    return true; // Consume the event
                 case MotionEvent.ACTION_MOVE:
                     if (currentPath != null) {
                         currentPath.lineTo(x, y);
@@ -86,7 +95,8 @@ public class AnnotationView extends View {
                     return false;
             }
         }
-        // In TEXT mode, we let the Activity handle the touch event to show a dialog.
+        // TEXT mode is handled by the activity, which will show a dialog.
+        // This onTouchEvent is still triggered, so we return true to consume the event.
 
         // Redraw the view
         invalidate();
@@ -99,11 +109,17 @@ public class AnnotationView extends View {
             invalidate(); // Redraw with the new text
         }
     }
-    
+
     // --- Getters and Setters for customization ---
 
     public void setMode(AnnotationMode mode) {
         this.currentMode = mode;
+        // If switching to scroll mode, we might want to clear any active drawing path
+        if (mode == AnnotationMode.SCROLL) {
+            currentPath = null;
+        }
+        // We need to redraw to hide/show annotations based on mode.
+        invalidate();
     }
 
     public AnnotationMode getMode() {
@@ -123,6 +139,7 @@ public class AnnotationView extends View {
     public void setTextSize(float size) {
         this.currentTextSize = size;
     }
+
 
     public void undo() {
         if (!annotations.isEmpty()) {
