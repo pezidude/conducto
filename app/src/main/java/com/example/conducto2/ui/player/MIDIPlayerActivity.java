@@ -7,43 +7,23 @@ import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.R;
+import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.ui.player.widget.AnnotationView;
 import com.example.conducto2.ui.player.widget.SheetMusicView;
 
-public class MIDIPlayerActivity extends AppCompatActivity {
+public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationToolbarFragment.ToolbarListener {
 
     private static final String TAG = "MIDIPlayerActivity";
 
-    // UI Components
-    private Button btnSelectFile, btnBrush, btnText, btnUndo, btnClear;
-    private TextView tvFilename;
     private SheetMusicView sheetMusicView;
     private AnnotationView annotationView;
-
-    private final ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                    Uri uri = result.getData().getData();
-                    if (uri != null) {
-                        handleFileSelection(uri);
-                    }
-                }
-            }
-    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,14 +33,8 @@ public class MIDIPlayerActivity extends AppCompatActivity {
         sheetMusicView = findViewById(R.id.sheetMusicView);
         annotationView = findViewById(R.id.annotationView);
 
-        btnBrush = findViewById(R.id.btn_brush);
-        btnText = findViewById(R.id.btn_text);
-        btnUndo = findViewById(R.id.btn_undo);
-        btnClear = findViewById(R.id.btn_clear);
+        setupAnnotationTouchListener();
 
-        setupAnnotationControls();
-
-        // Check if a file URI was passed from TestActivity
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("fileUri")) {
             String uriString = intent.getStringExtra("fileUri");
@@ -69,18 +43,13 @@ public class MIDIPlayerActivity extends AppCompatActivity {
         }
     }
 
-    private void setupAnnotationControls() {
-        btnBrush.setOnClickListener(v -> annotationView.setMode(AnnotationView.AnnotationMode.BRUSH));
-        btnText.setOnClickListener(v -> annotationView.setMode(AnnotationView.AnnotationMode.TEXT));
-        btnUndo.setOnClickListener(v -> annotationView.undo());
-        btnClear.setOnClickListener(v -> annotationView.clearAnnotations());
-
+    private void setupAnnotationTouchListener() {
         annotationView.setOnTouchListener((v, event) -> {
             if (annotationView.getMode() == AnnotationView.AnnotationMode.TEXT && event.getAction() == MotionEvent.ACTION_DOWN) {
                 showTextInputDialog(event.getX(), event.getY());
                 return true; // Consume the event
             }
-            // Let the AnnotationView handle its own touch events for drawing
+            // Let the AnnotationView handle its own onTouchEvent for drawing/scrolling
             return annotationView.onTouchEvent(event);
         });
     }
@@ -98,26 +67,19 @@ public class MIDIPlayerActivity extends AppCompatActivity {
             annotationView.addTextAnnotation(text, x, y);
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
         builder.show();
     }
-
-
 
     private void handleFileSelection(Uri uri) {
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
-        // tvFilename is not in the layout, so we can't set it. A toast is a good alternative.
         Toast.makeText(this, "Loading: " + fileName, Toast.LENGTH_SHORT).show();
 
         new Thread(() -> {
             try {
-                String xmlContent;
-                if (fileName.toLowerCase().endsWith(".mxl")) {
-                    xmlContent = fileOps.readZippedXMLFromUri(uri);
-                } else {
-                    xmlContent = fileOps.readTextFromUri(uri);
-                }
+                String xmlContent = fileName.toLowerCase().endsWith(".mxl")
+                        ? fileOps.readZippedXMLFromUri(uri)
+                        : fileOps.readTextFromUri(uri);
 
                 if (xmlContent == null) {
                     throw new Exception("Empty or invalid file content");
@@ -130,7 +92,6 @@ public class MIDIPlayerActivity extends AppCompatActivity {
                         Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
                     }
                 });
-
             } catch (Exception e) {
                 Log.e(TAG, "Error reading file", e);
                 runOnUiThread(() ->
@@ -138,5 +99,26 @@ public class MIDIPlayerActivity extends AppCompatActivity {
                 );
             }
         }).start();
+    }
+
+    // --- ToolbarListener Implementation ---
+    @Override
+    public void onToolSelected(AnnotationView.AnnotationMode mode) {
+        annotationView.setMode(mode);
+    }
+
+    @Override
+    public void onColorSelected(int color) {
+        annotationView.setCurrentColor(color);
+    }
+
+    @Override
+    public void onUndo() {
+        annotationView.undo();
+    }
+
+    @Override
+    public void onClear() {
+        annotationView.clearAnnotations();
     }
 }

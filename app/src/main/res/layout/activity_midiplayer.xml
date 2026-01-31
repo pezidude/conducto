@@ -3,49 +3,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <LinearLayout
-        android:id="@+id/controls_container"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/annotation_toolbar_fragment"
+        android:name="com.example.conducto2.ui.player.AnnotationToolbarFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical"
-        android:layout_alignParentTop="true">
-
-        <Button
-            android:id="@+id/btn_brush"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Brush" />
-
-        <Button
-            android:id="@+id/btn_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Text" />
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <Button
-            android:id="@+id/btn_undo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Undo" />
-
-        <Button
-            android:id="@+id/btn_clear"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Clear" />
-    </LinearLayout>
+        android:layout_alignParentTop="true" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/controls_container">
+        android:layout_below="@id/annotation_toolbar_fragment">
 
         <com.example.conducto2.ui.player.widget.SheetMusicView
             android:id="@+id/sheetMusicView"
