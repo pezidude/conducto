@@ -27,7 +27,6 @@ public class AnnotationView extends View {
     private float currentStrokeWidth = 8f;
     private float currentTextSize = 48f;
 
-    // Transformation properties
     private int scrollX = 0;
     private int scrollY = 0;
     private float scale = 1.0f;
@@ -50,12 +49,12 @@ public class AnnotationView extends View {
         super.onDraw(canvas);
         
         canvas.save();
-        
-        // **Corrected Order of Operations**
-        // 1. Translate the canvas to the current scroll position.
-        canvas.translate(-scrollX, -scrollY);
-        // 2. Scale the canvas around the new (0,0) point.
-        canvas.scale(scale, scale);
+        // The scroll values from the WebView are pre-scaled. To correctly transform
+        // the canvas, we need to apply the inverse scaling to the scroll values before translating.
+        if (scale > 0) {
+            canvas.scale(scale, scale);
+            canvas.translate(-scrollX / scale, -scrollY / scale);
+        }
 
         // Always draw annotations regardless of the mode
         for (Annotation annotation : annotations) {
@@ -71,13 +70,15 @@ public class AnnotationView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (currentMode == AnnotationMode.SCROLL) {
-            return false; // Pass touch event to the WebView below
+        if (currentMode == AnnotationMode.SCROLL || scale <= 0) {
+            return false; // Pass touch event to the WebView below or ignore if scale is invalid
         }
 
-        // Convert screen coordinates to "world" coordinates by accounting for scale and scroll
-        float x = (event.getX() / scale) + scrollX;
-        float y = (event.getY() / scale) + scrollY;
+        // Convert touch coordinates from view space to world space.
+        // The scroll values are pre-scaled, so we add them to the touch coordinates
+        // before dividing by the scale.
+        float x = (event.getX() + scrollX) / scale;
+        float y = (event.getY() + scrollY) / scale;
 
         if (currentMode == AnnotationMode.BRUSH) {
             switch (event.getAction()) {
@@ -110,13 +111,12 @@ public class AnnotationView extends View {
         }
     }
 
-    // --- Transformation Setters ---
     public void setScroll(int scrollX, int scrollY) {
         this.scrollX = scrollX;
         this.scrollY = scrollY;
         invalidate();
     }
-    
+
     public void setScale(float scale) {
         this.scale = scale;
         invalidate();
@@ -126,8 +126,6 @@ public class AnnotationView extends View {
     public int getScrollYPosition() { return this.scrollY; }
     public float getScale() { return this.scale; }
 
-
-    // --- Customization ---
     public void setMode(AnnotationMode mode) {
         this.currentMode = mode;
         if (mode == AnnotationMode.SCROLL) currentPath = null;

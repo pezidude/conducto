@@ -66,6 +66,8 @@ dependencies {
     implementation libs.googleid
     implementation libs.firebase.storage
     implementation libs.firebase.firestore
+    implementation libs.google.ai.generativeai
+    implementation libs.google.guava
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

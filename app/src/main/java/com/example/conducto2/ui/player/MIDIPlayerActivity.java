@@ -34,6 +34,7 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         setContentView(R.layout.activity_midiplayer);
 
         sheetMusicView = findViewById(R.id.sheetMusicView);
+        // this is an overlay above the sheetmusicview that handles annotations
         annotationView = findViewById(R.id.annotationView);
 
         setupWebView();
@@ -81,9 +82,11 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
 
     private void setupAnnotationTouchListener() {
         annotationView.setOnTouchListener((v, event) -> {
-            if (annotationView.getMode() == AnnotationView.AnnotationMode.TEXT && event.getAction() == MotionEvent.ACTION_DOWN) {
-                float adjustedX = (event.getX() / annotationView.getScale()) + annotationView.getScrollXPosition();
-                float adjustedY = (event.getY() / annotationView.getScale()) + annotationView.getScrollYPosition();
+            float scale = annotationView.getScale();
+            if (annotationView.getMode() == AnnotationView.AnnotationMode.TEXT && event.getAction() == MotionEvent.ACTION_DOWN && scale > 0) {
+                // Apply the same transformation logic as in AnnotationView's onTouchEvent
+                float adjustedX = (event.getX() + annotationView.getScrollXPosition()) / scale;
+                float adjustedY = (event.getY() + annotationView.getScrollYPosition()) / scale;
                 showTextInputDialog(adjustedX, adjustedY);
                 return true;
             }

@@ -30,6 +30,7 @@ public class ObservableWebView extends WebView {
     @SuppressWarnings("deprecation")
     @Override
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
+        // TODO: reimplement with a method that's not deprecated.
         super.onScrollChanged(l, t, oldl, oldt);
         if (onTransformationChangeListener != null) {
             onTransformationChangeListener.onScrollChange(l, t);
@@ -37,9 +38,9 @@ public class ObservableWebView extends WebView {
             // Zooming often triggers a scroll event, so this is a reliable place to check for scale changes.
             float currentScale = getScale();
             if (Math.abs(currentScale - lastScale) > 0.01) { // Use a threshold to avoid minor fluctuations
-                onTransformationChangeListener.onScaleChange(currentScale);
-                lastScale = currentScale;
             }
+            onTransformationChangeListener.onScaleChange(currentScale);
+            lastScale = currentScale;
         }
     }
 }

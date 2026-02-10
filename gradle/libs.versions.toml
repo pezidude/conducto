@@ -49,6 +49,8 @@ credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 firebaseStorage = "22.0.1"
 firebaseFirestore = "26.0.2"
+generativeai = "0.9.0"
+guava = "31.1-android"
 
 [libraries]
 # Core
@@ -82,6 +84,9 @@ androidx-credentials-play-services-auth = { group = "androidx.credentials", name
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+google-ai-generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "generativeai" }
+google-guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
