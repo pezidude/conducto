@@ -16,22 +16,22 @@
         android:contentDescription="Scroll" />
 
     <ImageButton
-        android:id="@+id/btn_brush"
+        android:id="@+id/btn_highlight"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_brush"
+        android:src="@drawable/ic_edit"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:layout_marginStart="16dp"
-        android:contentDescription="Brush" />
+        android:contentDescription="Highlight" />
 
     <ImageButton
-        android:id="@+id/btn_text"
+        android:id="@+id/btn_dynamic"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_text"
+        android:src="@drawable/ic_music_note"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:layout_marginStart="16dp"
-        android:contentDescription="Text" />
+        android:contentDescription="Dynamic" />
 
     <ImageButton
         android:id="@+id/btn_color_picker"
