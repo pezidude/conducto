@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class Lesson implements Parcelable {
     private String title;
@@ -13,9 +14,9 @@ public class Lesson implements Parcelable {
     private String ownerEmail;
     private ArrayList<String> attendees;
     private String classId;
+    private List<MusicFile> musicXMLFiles; // List of MusicFile objects
 
     private String id;
-
 
     public Lesson(Lesson event) {
         this.title = event.title;
@@ -24,11 +25,13 @@ public class Lesson implements Parcelable {
         this.ownerEmail = event.ownerEmail;
         this.id = event.id;
         this.classId = event.classId;
-        attendees = new ArrayList<>();
+        this.attendees = new ArrayList<>();
         if (event.attendees != null) {
-            for (int i=0; i<event.attendees.size(); i++){
-                attendees.add(event.attendees.get(i));
-            }
+            this.attendees.addAll(event.attendees);
+        }
+        this.musicXMLFiles = new ArrayList<>();
+        if (event.musicXMLFiles != null) {
+            this.musicXMLFiles.addAll(event.musicXMLFiles);
         }
     }
 
@@ -39,6 +42,7 @@ public class Lesson implements Parcelable {
                 ", info='" + info + '\'' +
                 ", date='" + date + '\'' +
                 ", attendees=" + attendees.toString() +
+                ", musicXMLFiles=" + musicXMLFiles.toString() +
                 '}';
     }
 
@@ -90,6 +94,14 @@ public class Lesson implements Parcelable {
         return attendees;
     }
 
+    public List<MusicFile> getMusicXMLFiles() {
+        return musicXMLFiles;
+    }
+
+    public void setMusicXMLFiles(List<MusicFile> musicXMLFiles) {
+        this.musicXMLFiles = musicXMLFiles;
+    }
+
     public Lesson(String title, String info, Date date, String ownerEmail, String classId) {
         this.title = title;
         this.info = info;
@@ -97,6 +109,7 @@ public class Lesson implements Parcelable {
         this.attendees = new ArrayList<>();
         this.ownerEmail = ownerEmail;
         this.classId = classId;
+        this.musicXMLFiles = new ArrayList<>();
     }
     public Lesson() {
         this("", "", new Date(), "", "");
@@ -111,6 +124,7 @@ public class Lesson implements Parcelable {
         attendees = in.createStringArrayList();
         id = in.readString();
         classId = in.readString();
+        musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
     }
 
     public static final Creator<Lesson> CREATOR = new Creator<Lesson>() {
@@ -148,5 +162,6 @@ public class Lesson implements Parcelable {
         dest.writeStringList(attendees);
         dest.writeString(id);
         dest.writeString(classId);
+        dest.writeTypedList(musicXMLFiles);
     }
 }
