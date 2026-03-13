@@ -19,6 +19,5 @@ public class DataManager {
     public static  Lesson getCurLessonInstance(){return curLesson;}
     public static void setCurLesson(Lesson lesson){
         curLesson = new Lesson(lesson);
-        Log.d("Odi", lesson.toString());
     }
 }

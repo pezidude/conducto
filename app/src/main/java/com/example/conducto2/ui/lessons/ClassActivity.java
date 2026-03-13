@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.SwipeHelper;
@@ -48,7 +49,6 @@ public class ClassActivity extends BaseDrawerActivity {
         initViews();
         setupRecyclerView(buildQuery());
         setupListeners();
-        updateQuery(); // update query to fit the current user and class
         fetchUserAndSetupUI();
         fetchClassDetails();
     }
@@ -80,9 +80,9 @@ public class ClassActivity extends BaseDrawerActivity {
 
     private void fetchUserAndSetupUI() {
         firestoreManager.getUser(user -> {
-            currentUser = user;
-            if (currentUser != null) {
-                if ("teacher".equals(currentUser.getUserType())) {
+
+            if (user != null) {
+                if ("teacher".equals(user.getUserType())) {
                     addLessonFab.setVisibility(View.VISIBLE);
                     setupTeacherSwipe();
                 } else {
@@ -115,7 +115,7 @@ public class ClassActivity extends BaseDrawerActivity {
             Lesson lesson = snapshot.toObject(Lesson.class);
             if (lesson != null) {
                 Intent intent;
-                if ("teacher".equals(currentUser.getUserType())) {
+                if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
                     intent = new Intent(ClassActivity.this, LessonEditActivity.class);
                 } else {
                     intent = new Intent(ClassActivity.this, LessonDetailsActivity.class);

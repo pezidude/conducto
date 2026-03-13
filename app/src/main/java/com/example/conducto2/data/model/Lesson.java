@@ -5,7 +5,9 @@ import android.os.Parcelable;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Lesson implements Parcelable {
     private String title;
@@ -15,6 +17,7 @@ public class Lesson implements Parcelable {
     private ArrayList<String> attendees;
     private String classId;
     private List<MusicFile> musicXMLFiles; // List of MusicFile objects
+    private Map<String, List<String>> fileMapping; // Map of file URL to list of student emails
 
     private String id;
 
@@ -33,6 +36,10 @@ public class Lesson implements Parcelable {
         if (event.musicXMLFiles != null) {
             this.musicXMLFiles.addAll(event.musicXMLFiles);
         }
+        this.fileMapping = new HashMap<>();
+        if (event.fileMapping != null) {
+            this.fileMapping.putAll(event.fileMapping);
+        }
     }
 
     @Override
@@ -43,6 +50,7 @@ public class Lesson implements Parcelable {
                 ", date='" + date + '\'' +
                 ", attendees=" + attendees.toString() +
                 ", musicXMLFiles=" + musicXMLFiles.toString() +
+                ", fileMapping=" + fileMapping.toString() +
                 '}';
     }
 
@@ -102,6 +110,14 @@ public class Lesson implements Parcelable {
         this.musicXMLFiles = musicXMLFiles;
     }
 
+    public Map<String, List<String>> getFileMapping() {
+        return fileMapping;
+    }
+
+    public void setFileMapping(Map<String, List<String>> fileMapping) {
+        this.fileMapping = fileMapping;
+    }
+
     public Lesson(String title, String info, Date date, String ownerEmail, String classId) {
         this.title = title;
         this.info = info;
@@ -110,6 +126,7 @@ public class Lesson implements Parcelable {
         this.ownerEmail = ownerEmail;
         this.classId = classId;
         this.musicXMLFiles = new ArrayList<>();
+        this.fileMapping = new HashMap<>();
     }
     public Lesson() {
         this("", "", new Date(), "", "");
@@ -125,6 +142,8 @@ public class Lesson implements Parcelable {
         id = in.readString();
         classId = in.readString();
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
+        fileMapping = new HashMap<>();
+        in.readMap(fileMapping, List.class.getClassLoader());
     }
 
     public static final Creator<Lesson> CREATOR = new Creator<Lesson>() {
@@ -163,5 +182,6 @@ public class Lesson implements Parcelable {
         dest.writeString(id);
         dest.writeString(classId);
         dest.writeTypedList(musicXMLFiles);
+        dest.writeMap(fileMapping);
     }
 }

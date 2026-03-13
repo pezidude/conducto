@@ -3,31 +3,42 @@ package com.example.conducto2.ui.player;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.InputType;
 import android.util.Log;
-import android.view.MotionEvent;
+import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
-import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.ui.player.widget.AnnotationView;
 import com.example.conducto2.ui.player.widget.ObservableWebView;
 
-public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationToolbarFragment.ToolbarListener, ObservableWebView.OnTransformationChangeListener {
+/**
+ * This activity is responsible for displaying sheet music and handling annotations.
+ * It uses a WebView to render the sheet music and an {@link AnnotationView} overlay for drawing.
+ */
+public class MIDIPlayerActivity extends AppCompatActivity implements ObservableWebView.OnTransformationChangeListener {
 
+    /** Log tag for the activity. */
     private static final String TAG = "MIDIPlayerActivity";
 
+    /** The WebView that displays the sheet music. */
     private ObservableWebView sheetMusicView;
+    /** The view that handles drawing annotations over the sheet music. */
     private AnnotationView annotationView;
+    /** A flag to indicate if the WebView's rendering engine is ready. */
     private boolean isEngineReady = false;
+    /** Stores the XML data of the sheet music if it's available before the WebView is ready. */
     private String pendingXmlData = null;
 
-
+    /**
+     * Initializes the activity, views, and WebView. It also handles the intent to load the sheet music file.
+     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState(Bundle).
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,16 +50,27 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
 
         setupWebView();
         sheetMusicView.setOnTransformationChangeListener(this);
-        setupAnnotationTouchListener();
 
         Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("fileUri")) {
-            String uriString = intent.getStringExtra("fileUri");
-            Uri fileUri = Uri.parse(uriString);
-            handleFileSelection(fileUri);
+        if (intent != null) {
+            if (intent.getBooleanExtra("readOnly", false)) {
+                Fragment toolbarFragment = getSupportFragmentManager().findFragmentById(R.id.annotation_toolbar_fragment);
+                if (toolbarFragment != null) {
+                    getSupportFragmentManager().beginTransaction().hide(toolbarFragment).commit();
+                }
+            }
+
+            if (intent.hasExtra("fileUri")) {
+                String uriString = intent.getStringExtra("fileUri");
+                Uri fileUri = Uri.parse(uriString);
+                handleFileSelection(fileUri);
+            }
         }
     }
 
+    /**
+     * Configures the WebView settings and sets up a client to know when the page is loaded.
+     */
     private void setupWebView() {
         WebSettings settings = sheetMusicView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -70,46 +92,32 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         sheetMusicView.loadUrl("file:///android_asset/viewer.html");
     }
 
+    /**
+     * A callback that is invoked when the WebView is scrolled.
+     * It updates the scroll position of the annotation view.
+     * @param scrollX The new horizontal scroll position.
+     * @param scrollY The new vertical scroll position.
+     */
     @Override
     public void onScrollChange(int scrollX, int scrollY) {
         annotationView.setScroll(scrollX, scrollY);
     }
 
+    /**
+     * A callback that is invoked when the WebView is scaled.
+     * It updates the scale of the annotation view.
+     * @param scale The new scale factor.
+     */
     @Override
     public void onScaleChange(float scale) {
         annotationView.setScale(scale);
     }
 
-    private void setupAnnotationTouchListener() {
-        annotationView.setOnTouchListener((v, event) -> {
-            float scale = annotationView.getScale();
-            if (annotationView.getMode() == AnnotationView.AnnotationMode.TEXT && event.getAction() == MotionEvent.ACTION_DOWN && scale > 0) {
-                // Apply the same transformation logic as in AnnotationView's onTouchEvent
-                float adjustedX = (event.getX() + annotationView.getScrollXPosition()) / scale;
-                float adjustedY = (event.getY() + annotationView.getScrollYPosition()) / scale;
-                showTextInputDialog(adjustedX, adjustedY);
-                return true;
-            }
-            return annotationView.onTouchEvent(event);
-        });
-    }
-
-    private void showTextInputDialog(final float x, final float y) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Enter Text");
-
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            String text = input.getText().toString();
-            annotationView.addTextAnnotation(text, x, y);
-        });
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        builder.show();
-    }
-    
+    /**
+     * Loads the given MusicXML data into the WebView.
+     * If the WebView is not ready, it stores the data in {@link #pendingXmlData}.
+     * @param xmlData The MusicXML data to load.
+     */
     private void loadXmlInWebView(String xmlData) {
         if (!isEngineReady) {
             pendingXmlData = xmlData;
@@ -119,6 +127,11 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`);", null);
     }
 
+    /**
+     * Handles the selection of a sheet music file.
+     * It reads the file content in a background thread and then loads it into the WebView.
+     * @param uri The URI of the selected file.
+     */
     private void handleFileSelection(Uri uri) {
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
@@ -149,21 +162,35 @@ public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationT
         }).start();
     }
 
+    /**
+     * Sets the annotation tool mode in the {@link AnnotationView}.
+     * @param mode The annotation mode to set.
+     */
     @Override
     public void onToolSelected(AnnotationView.AnnotationMode mode) {
         annotationView.setMode(mode);
     }
 
+    /**
+     * Sets the annotation color in the {@link AnnotationView}.
+     * @param color The color to set.
+     */
     @Override
     public void onColorSelected(int color) {
         annotationView.setCurrentColor(color);
     }
 
+    /**
+     * Undoes the last annotation action.
+     */
     @Override
     public void onUndo() {
         annotationView.undo();
     }
 
+    /**
+     * Clears all annotations.
+     */
     @Override
     public void onClear() {
         annotationView.clearAnnotations();
