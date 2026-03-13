@@ -21,7 +21,7 @@ import com.example.conducto2.ui.player.widget.ObservableWebView;
  * This activity is responsible for displaying sheet music and handling annotations.
  * It uses a WebView to render the sheet music and an {@link AnnotationView} overlay for drawing.
  */
-public class MIDIPlayerActivity extends AppCompatActivity implements ObservableWebView.OnTransformationChangeListener {
+public class MIDIPlayerActivity extends AppCompatActivity implements AnnotationToolbarFragment.ToolbarListener, ObservableWebView.OnTransformationChangeListener {
 
     /** Log tag for the activity. */
     private static final String TAG = "MIDIPlayerActivity";
