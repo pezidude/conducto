@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.data.firebase.FBAuth;
 import com.example.conducto2.data.firebase.FirestoreManager;
@@ -121,6 +122,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
 
             User user = new User(etEmail.getText().toString().trim(), etFname.getText().toString().trim(), etLname.getText().toString().trim(), userType);
             insertUserToFB(user);
+            DataManager.setUser(user);
         } else {
             // here user is NOT authed
             tvError.setVisibility(View.VISIBLE);

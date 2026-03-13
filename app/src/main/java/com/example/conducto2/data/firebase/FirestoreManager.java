@@ -11,7 +11,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.example.conducto2.data.manager.DataManager;
+import com.example.conducto2.data.model.Annotation;
 import com.example.conducto2.data.model.Class;
+import com.example.conducto2.data.model.DynamicAnnotation;
+import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
 
@@ -34,7 +37,9 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 public class FirestoreManager extends FirebaseComm {
@@ -59,6 +64,10 @@ public class FirestoreManager extends FirebaseComm {
     public interface ClassesFetchListener {
         void onClassesFetched(List<Class> classes);
     }
+    
+    public interface AnnotationFetchListener {
+        void onAnnotationsFetched(List<Annotation> annotations);
+    }
 
     public void setDbResult(DBResult dbr) {
         this.dbResult = dbr;
@@ -78,16 +87,7 @@ public class FirestoreManager extends FirebaseComm {
         FIRESTORE = getFisrestore();
 
     }
-/*
-    // this method simulates an update of a specific field for a user
-    public void updatePhoneNumber(String phone) {
-        DocumentReference documentReference = firebaseFirestore.collection("users").document(firebaseUser.getUid());
-        documentReference.update("phone", phone);
 
-    }
-
-
- */
 
     public void insertUser(User user) {
         firebaseUser = getAuth().getCurrentUser();
@@ -211,57 +211,47 @@ public class FirestoreManager extends FirebaseComm {
         lesson.setId(ref.getId());
         lesson.setClassId(classId);
 
-        // update the storage reference in the post entry
-        //Post post = new Post(title, body, path, firebaseUser.getEmail());
-        // upload to storage and then to firestore
         ref.set(lesson)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Log.d(TAG, "onSuccess: lesson loaded successfully ");
-                        if (dbResult != null) {
-                            dbResult.displayMessage("lesson uploaded successfuly");
-                            dbResult.uploadResult(true);
-                        }
-
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "onSuccess: lesson loaded successfully ");
+                    if (dbResult != null) {
+                        dbResult.displayMessage("lesson uploaded successfully");
+                        dbResult.uploadResult(true);
                     }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null)
-                            dbResult.displayMessage("lesson upload failed " + e.getMessage());
-
-                    }
+                }).addOnFailureListener(e -> {
+                    if (dbResult != null)
+                        dbResult.displayMessage("lesson upload failed " + e.getMessage());
                 });
     }
 
     public void updateLesson(String classId, Lesson lesson) {
-        firebaseUser = getAuth().getCurrentUser();
-        // add the photo to the firebase storage
-        // hold the reference for the storage
-        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document();
+        if (lesson.getId() == null || lesson.getId().isEmpty()) {
+            if (dbResult != null) {
+                dbResult.displayMessage("Lesson ID is missing, cannot update.");
+            }
+            return;
+        }
 
-        // update the storage reference in the post entry
-        //Post post = new Post(title, body, path, firebaseUser.getEmail());
-        // upload to storage and then to firestore
-        ref.set(lesson)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Log.d(TAG, "onSuccess: lesson loaded successfully ");
-                        if (dbResult != null) {
-                            dbResult.displayMessage("lesson uploaded successfuly");
-                            dbResult.uploadResult(true);
-                        }
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lesson.getId());
 
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("title", lesson.getTitle());
+        updates.put("info", lesson.getInfo());
+        updates.put("date", lesson.getDate());
+        updates.put("attendees", lesson.getAttendees());
+        updates.put("musicXMLFiles", lesson.getMusicXMLFiles());
+        updates.put("fileMapping", lesson.getFileMapping());
+
+        ref.update(updates)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "onSuccess: lesson updated successfully ");
+                    if (dbResult != null) {
+                        dbResult.displayMessage("lesson updated successfully");
+                        dbResult.uploadResult(true);
                     }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null)
-                            dbResult.displayMessage("lesson upload failed " + e.getMessage());
-
-                    }
+                }).addOnFailureListener(e -> {
+                    if (dbResult != null)
+                        dbResult.displayMessage("lesson update failed " + e.getMessage());
                 });
     }
 
@@ -355,105 +345,38 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-/*
-    public void setPostQueryResult(QueryResult pqr) {
-        postQueryResult = pqr;
+    public void getAnnotationsForLesson(String classId, String lessonId, AnnotationFetchListener listener) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("annotations")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Annotation> annotations = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        String type = document.getString("type");
+                        Annotation annotation = null;
+                        if ("highlight".equals(type)) {
+                            annotation = document.toObject(HighlightAnnotation.class);
+                        } else if ("ghost_dynamic".equals(type)) {
+                            annotation = document.toObject(DynamicAnnotation.class);
+                        }
 
-    }
-
-
-    public void getDataFromListener(Task<QuerySnapshot> task) {
-        ArrayList<Map<String,Object>> arr = new ArrayList<>();
-        if (task.isSuccessful()) {
-            for (QueryDocumentSnapshot doc : task.getResult()) {
-                arr.add(doc.getData());
-            }
-            if (postQueryResult != null)
-                postQueryResult.postsReturned(arr);
-        } else {
-            Log.d(TAG, "onComplete: failed");
-        }
-
-    }
-
-
-    public void getPostsOrderByWithLimit(String field, int limit) {
-
-        FIRESTORE.collection("posts").orderBy(field).limit(limit).get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        getDataFromListener(task);
-                    }
-                });
-    }
-
-    public void getAllDocumentsInColletction( String collectionName) {
-
-        FIRESTORE.collection(collectionName).get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        getDataFromListener(task);
-                    }
-
-                });
-
-    }
-
- */
-    /*
-    public void listenForChanges(String path)
-    {
-
-        FIRESTORE.collection(path).addSnapshotListener(new LessonListener<QuerySnapshot>() {
-            @Override
-            public void onLesson(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
-                if(error!=null)
-                {
-                    Log.d(TAG, "onLesson: FAILED UPDATE");
-                }
-                for (DocumentChange change:value.getDocumentChanges()) {
-                    if(change.getType() == DocumentChange.Type.MODIFIED)
-                    {
-
-                        if (postQueryResult != null)
-                            postQueryResult.postsChanged(change.getDocument().getData(),change.getOldIndex(),change.getNewIndex());
-
-                    }
-                    else if(change.getType() == DocumentChange.Type.REMOVED)
-                    {
-                        //  Post p = change.getDocument().toObject(Post.class);
-
-                        Log.d(TAG, "onLesson:  removed" + change.getOldIndex());
-                        if (postQueryResult != null)
-                            postQueryResult.postRemoved(change.getOldIndex());
-                    }
-
-                    else if(change.getType() == DocumentChange.Type.ADDED)
-                    {
-                        if(change.getOldIndex() != change.getNewIndex()) {
-                            //    T t=null;
-                            //  Post p = change.getDocument().toObject(t.getClass().getSimpleName());
-                            //   Log.d(TAG, "onLesson:  added" + p.getTitle());
-                            if (postQueryResult != null)
-                                // Map<String,Object>
-                                postQueryResult.postAdded(change.getDocument().getData(), change.getNewIndex());
+                        if (annotation != null) {
+                            annotation.setAnnotationId(document.getId());
+                            annotations.add(annotation);
                         }
                     }
-
-                }
-
-            }
-        });
+                    if (listener != null) {
+                        listener.onAnnotationsFetched(annotations);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching annotations", e);
+                    if (listener != null) {
+                        listener.onAnnotationsFetched(new ArrayList<>());
+                    }
+                });
     }
-
-    public void removeListenForPostChanges()
-    {
-        //firebaseFirestore.collection("posts").
-
-    }
-    */
 
     public static class FileStorage extends FirebaseComm {
 
@@ -478,21 +401,12 @@ public class FirestoreManager extends FirebaseComm {
 
         public void saveImageToStorage(Bitmap bitmap, String entryName)
         {
-            // set the reference as follows:
-            // "folder
-            // " named entryname which is the id of the post
-            // unique image name in case we have more than one image in the post...future
             StorageReference storageRef = firebaseStorage.getReference();
-            // at the moment add random name
             StorageReference imageRef = storageRef.child(entryName);
-            // bitmap to byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
             byte[] data = baos.toByteArray();
             UploadTask uploadTask = imageRef.putBytes(data);
-            // This is required only if we want to get the image url
-            // in https:...  type -> direct url to the image
-            // not via Firebase references
             Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
                 public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
@@ -521,15 +435,12 @@ public class FirestoreManager extends FirebaseComm {
         public void getFileFromStorage(String name)
         {
             StorageReference storageRef = firebaseStorage.getReference();
-            // at the moment add random name
             StorageReference fileRef = storageRef.child(name);
             fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
                 @Override
                 public void onSuccess(byte[] bytes) {
-                    // Use the bytes to display the image
                     if(storageResult!=null)
                         storageResult.fileResult(bytes);
-
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
@@ -542,12 +453,10 @@ public class FirestoreManager extends FirebaseComm {
         public void getImageFromStorage(ImageView ivPostPhoto, String name)
         {
             StorageReference storageRef = firebaseStorage.getReference();
-            // at the moment add random name
             StorageReference imageRef = storageRef.child(name);
             imageRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
                 @Override
                 public void onSuccess(byte[] bytes) {
-                    // Use the bytes to display the image
                     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
                     ivPostPhoto.setImageBitmap(bitmap);
                 }
@@ -557,10 +466,6 @@ public class FirestoreManager extends FirebaseComm {
                     // Handle any errors
                 }
             });
-
         }
-
-
-
     }
 }

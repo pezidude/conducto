@@ -18,6 +18,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassEditActivity;
@@ -27,12 +28,18 @@ import com.example.conducto2.ui.lessons.ClassActivity;
 import com.google.android.material.navigation.NavigationView;
 import java.util.List;
 
+/**
+ * Base activity for screens that include a navigation drawer.
+ * It handles the drawer setup, header, and dynamic menu items for classes.
+ */
 public class BaseDrawerActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    /** The main layout that holds the navigation drawer. */
     protected DrawerLayout drawerLayout;
+    /** The view that displays the navigation items. */
     protected NavigationView navigationView;
     protected FirestoreManager firestoreManager;
-    protected User currentUser;
+    /** A unique ID for the dynamically created class menu items. */
     private static final int DYNAMIC_CLASSES_GROUP_ID = 12345;
 
     @Override
@@ -41,6 +48,11 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         firestoreManager = new FirestoreManager();
     }
 
+    /**
+     * Sets up the content view for the activity, inflating the base drawer layout and embedding the specific activity's layout within it.
+     * It also initializes the toolbar and drawer toggle.
+     * @param layoutResID Resource ID to be inflated.
+     */
     @Override
     public void setContentView(int layoutResID) {
         DrawerLayout fullView = (DrawerLayout) getLayoutInflater().inflate(R.layout.activity_base_drawer, null);
@@ -65,6 +77,9 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         setupDrawerMenu();
     }
 
+    /**
+     * Refreshes the drawer header and menu when the activity resumes to ensure data is up to date.
+     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -73,39 +88,55 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         setupDrawerMenu();
     }
 
+    /**
+     * Sets up the navigation drawer header with the current user's information, including name, email, and status.
+     * It also adjusts the "Homework" menu item text based on the user type (teacher or student).
+     */
     private void setupDrawerHeader() {
         if (!FirebaseComm.isUserSignedIn()) return;
 
-        firestoreManager.getUser(user -> {
-            currentUser = user;
-            if (user != null) {
-                View headerView = navigationView.getHeaderView(0);
-                TextView status = headerView.findViewById(R.id.nav_user_status);
-                TextView name = headerView.findViewById(R.id.nav_user_name);
-                TextView email = headerView.findViewById(R.id.nav_user_email);
-                ImageView image = headerView.findViewById(R.id.nav_user_image);
-
-                if (status != null) status.setText(user.getUserType() != null ? user.getUserType() : "Student");
-                if (name != null) name.setText(user.getFname() + " " + user.getLname());
-                if (email != null) email.setText(user.getEmail());
-
-                headerView.setOnClickListener(v -> {
-                    startActivity(new Intent(BaseDrawerActivity.this, ProfileActivity.class));
-                    drawerLayout.closeDrawer(GravityCompat.START);
-                });
-
-                MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_homework);
-                if (homeworkItem != null) {
-                    if ("teacher".equals(user.getUserType())) {
-                        homeworkItem.setTitle("Homework Review");
-                    } else {
-                        homeworkItem.setTitle("Homework");
-                    }
+        User user = DataManager.getUserInstance();
+        if (user == null) {
+            // User data not loaded yet, try to fetch it
+            firestoreManager.getUser(fetchedUser -> {
+                if (fetchedUser != null) {
+                    DataManager.setUser(fetchedUser);
+                    // Now that we have the user, setup the header again
+                    setupDrawerHeader();
                 }
-            }
+            });
+            return;
+        }
+
+        View headerView = navigationView.getHeaderView(0);
+        TextView status = headerView.findViewById(R.id.nav_user_status);
+        TextView name = headerView.findViewById(R.id.nav_user_name);
+        TextView email = headerView.findViewById(R.id.nav_user_email);
+        ImageView image = headerView.findViewById(R.id.nav_user_image);
+
+        if (status != null) status.setText(user.getUserType() != null ? user.getUserType() : "Student");
+        if (name != null) name.setText(user.getFname() + " " + user.getLname());
+        if (email != null) email.setText(user.getEmail());
+
+        headerView.setOnClickListener(v -> {
+            startActivity(new Intent(BaseDrawerActivity.this, ProfileActivity.class));
+            drawerLayout.closeDrawer(GravityCompat.START);
         });
+
+        MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_homework);
+        if (homeworkItem != null) {
+            if ("teacher".equals(user.getUserType())) {
+                homeworkItem.setTitle("Homework Review");
+            } else {
+                homeworkItem.setTitle("Homework");
+            }
+        }
     }
 
+    /**
+     * Populates the navigation drawer with a list of the user's classes, fetched from Firestore.
+     * Each class is a clickable menu item that navigates to the {@link ClassActivity}.
+     */
     private void setupDrawerMenu() {
         if (!FirebaseComm.isUserSignedIn()) return;
         String email = FirebaseComm.authUserEmail();
@@ -131,6 +162,11 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         });
     }
 
+    /**
+     * Handles clicks on navigation drawer items, navigating to the corresponding activities.
+     * @param item The selected item.
+     * @return True if the event was handled, false otherwise.
+     */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();

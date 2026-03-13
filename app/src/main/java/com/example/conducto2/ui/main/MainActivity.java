@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.receivers.AlarmScheduler;
 import com.example.conducto2.receivers.BootReceiver;
 import com.example.conducto2.receivers.HeadsetReceiver;
@@ -57,6 +58,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void checkIfUserSignedIn() {
         if (FirestoreManager.isUserSignedIn()) {
+            firestoreManager.getUser(user -> {
+                DataManager.setUser(user);
+            });
             btnSignIn.setText("Dashboard");
             btnSignIn.setOnClickListener(v -> {
                 Intent go = new Intent(MainActivity.this, DashboardActivity.class);

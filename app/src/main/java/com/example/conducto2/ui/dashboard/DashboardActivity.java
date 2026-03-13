@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.ClassListActivity;
@@ -34,7 +35,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         // firestoreManager is initialized in BaseDrawerActivity.onCreate
 
         initViews();
-        setupUserSpecificElements();
+        firestoreManager.getUser(this); // pass the job to onUserFetched
     }
 
     private void initViews() {
@@ -43,10 +44,6 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         tvUserTypeStatus = findViewById(R.id.tvUserTypeStatus);
 
         btnLogout.setOnClickListener(v -> logout());
-    }
-
-    private void setupUserSpecificElements() {
-        firestoreManager.getUser(this);
     }
 
     @Override
@@ -74,7 +71,9 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
 
     @Override
     public void onUserFetched(User user) {
+        //setupUserSpecificElements
         if (user != null) {
+            DataManager.setUser(user);
             String welcomeMsg = "Welcome, " + user.getFname() + " " + user.getLname();
             tvWelcomeMessage.setText(welcomeMsg);
             tvUserTypeStatus.setText("User Type: " + user.getUserType());

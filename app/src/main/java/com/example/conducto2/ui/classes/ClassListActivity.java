@@ -17,7 +17,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
+import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
@@ -48,16 +50,15 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         setupRecyclerView(buildQuery());
         setupListeners();
 
-        firestoreManager.getUser(user -> {
-            if (user != null) {
-                if ("teacher".equals(user.getUserType())) {
-                    addClassFab.setOnClickListener(this::showFabMenu);
-                    addEditDelete();
-                } else {
-                    addClassFab.setOnClickListener(v -> showJoinClassDialog());
-                }
+        User user = DataManager.getUserInstance();
+        if (user != null) {
+            if ("teacher".equals(user.getUserType())) {
+                addClassFab.setOnClickListener(this::showFabMenu);
+                addEditDelete();
+            } else {
+                addClassFab.setOnClickListener(v -> showJoinClassDialog());
             }
-        });
+        }
     }
 
     private void initViews() {

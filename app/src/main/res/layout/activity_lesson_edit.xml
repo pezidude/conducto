@@ -87,22 +87,12 @@
             app:layout_constraintEnd_toEndOf="parent" />
 
         <Button
-            android:id="@+id/select_attendees_button"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Select Attendees"
-            app:layout_constraintTop_toBottomOf="@id/music_xml_recycler_view"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
-
-        <Button
             android:id="@+id/save_lesson_button"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Save Lesson"
-            app:layout_constraintTop_toBottomOf="@id/select_attendees_button"
+            app:layout_constraintTop_toBottomOf="@id/music_xml_recycler_view"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
