@@ -34,7 +34,7 @@
             android:name=".ui.lessons.ClassActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.player.MIDIPlayerActivity"
+            android:name=".ui.player.SMPlayerActivity"
             android:exported="false" />
         <activity
             android:name=".ui.dashboard.DashboardActivity"
