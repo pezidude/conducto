@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 /**
  * A custom WebView that provides callbacks for scroll and scale changes.
  */
-public class ObservableWebView extends WebView {
+public class InteractiveWebView extends WebView {
 
     /**
      * An interface to listen for transformation changes (scroll and scale).
@@ -32,11 +32,11 @@ public class ObservableWebView extends WebView {
     /** The last recorded scale of the WebView, used to detect changes. */
     private float lastScale = 1.0f;
 
-    public ObservableWebView(@NonNull Context context) {
+    public InteractiveWebView(@NonNull Context context) {
         super(context);
     }
 
-    public ObservableWebView(@NonNull Context context, AttributeSet attrs) {
+    public InteractiveWebView(@NonNull Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 

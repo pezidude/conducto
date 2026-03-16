@@ -12,11 +12,11 @@ import androidx.appcompat.widget.Toolbar;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.file.FilePickerHelper;
-import com.example.conducto2.ui.player.MIDIPlayerActivity;
+import com.example.conducto2.ui.player.SMPlayerActivity;
 
 /**
  * This activity is for testing purposes, specifically for selecting and viewing sheet music from a file.
- * It allows the user to pick a file, and then view it in the {@link MIDIPlayerActivity}.
+ * It allows the user to pick a file, and then view it in the {@link SMPlayerActivity}.
  */
 public class TestActivity extends AppCompatActivity implements FilePickerHelper.OnFilePickedListener {
 
@@ -71,7 +71,7 @@ public class TestActivity extends AppCompatActivity implements FilePickerHelper.
 
         btnViewSheetMusic.setOnClickListener(v -> {
             if (selectedFileUri != null) {
-                Intent intent = new Intent(TestActivity.this, MIDIPlayerActivity.class);
+                Intent intent = new Intent(TestActivity.this, SMPlayerActivity.class);
                 intent.putExtra("fileUri", selectedFileUri.toString());
                 startActivity(intent);
             } else {

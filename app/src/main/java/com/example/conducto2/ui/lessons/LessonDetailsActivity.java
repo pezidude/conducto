@@ -10,7 +10,7 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.ui.BaseDrawerActivity;
-import com.example.conducto2.ui.player.MIDIPlayerActivity;
+import com.example.conducto2.ui.player.SMPlayerActivity;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -54,7 +54,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity {
 
                 musicXmlFilesList.setOnItemClickListener((parent, view, position, id) -> {
                     MusicFile selectedFile = lesson.getMusicXMLFiles().get(position);
-                    Intent intent = new Intent(this, MIDIPlayerActivity.class);
+                    Intent intent = new Intent(this, SMPlayerActivity.class);
                     intent.putExtra("readOnly", true);
                     intent.putExtra("fileUri", selectedFile.getUri());
                     startActivity(intent);
