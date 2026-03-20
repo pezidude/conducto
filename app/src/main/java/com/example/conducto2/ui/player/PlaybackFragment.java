@@ -8,11 +8,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.example.conducto2.R;
+import com.google.android.material.slider.Slider;
+
+import java.util.Locale;
 
 /**
- * A fragment that displays playback controls, such as a play/pause button.
+ * A fragment that displays playback controls, such as a play/pause button and speed control.
  * This fragment communicates with its host activity through the {@link PlaybackControlsListener}
  * interface to control playback.
  */
@@ -26,10 +30,13 @@ public class PlaybackFragment extends Fragment {
      */
     public interface PlaybackControlsListener {
         void onPlayPauseClicked();
+        void onResetClicked();
+        void onSpeedChanged(int speedPercentage);
     }
 
     private PlaybackControlsListener mListener;
     private ImageButton playPauseButton;
+    private TextView speedText;
     private boolean isPlaying = false;
 
     public PlaybackFragment() {
@@ -51,18 +58,30 @@ public class PlaybackFragment extends Fragment {
             }
         });
 
+        ImageButton resetButton = view.findViewById(R.id.reset_button);
+        resetButton.setOnClickListener(v -> {
+            if (mListener != null) {
+                mListener.onResetClicked();
+            }
+        });
+
+        speedText = view.findViewById(R.id.speed_text);
+        Slider speedSlider = view.findViewById(R.id.speed_slider);
+        speedSlider.addOnChangeListener((slider, value, fromUser) -> {
+            int speedPercentage = (int) value;
+            speedText.setText(String.format(Locale.getDefault(), "%d%%", speedPercentage));
+            if (mListener != null) {
+                mListener.onSpeedChanged(speedPercentage);
+            }
+        });
+
         return view;
     }
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        if (context instanceof PlaybackControlsListener) {
-            mListener = (PlaybackControlsListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement PlaybackControlsListener");
-        }
+        mListener = (PlaybackControlsListener) context;
     }
 
     @Override

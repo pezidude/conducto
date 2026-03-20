@@ -13,6 +13,8 @@
     <string name="menu_dashboard">Dashboard</string>
     <string name="menu_homework">Homework</string>
     <string name="play_pause">Play/Pause</string>
+    <string name="reset_playback">Reset playback</string>
+    <string name="playback_speed_default">100%%</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
