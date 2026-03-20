@@ -27,6 +27,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isEngineReady = false; // flag
     private String pendingXmlData = null;
     private boolean isPlaying = false;
+    private int currentSpeedPercentage = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,7 +98,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         String fileName = fileOps.getFileName(uri);
         Toast.makeText(this, "Loading: " + fileName, Toast.LENGTH_SHORT).show();
 
-        new Thread(() -> {
+        new Thread(() -> { // run in background so UI execution is not blocked
             try {
                 String xmlContent = fileName.toLowerCase().endsWith(".mxl")
                         ? fileOps.readZippedXMLFromUri(uri)
@@ -107,6 +108,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                     throw new Exception("Empty or invalid file content");
                 }
                 runOnUiThread(() -> {
+                    // basic file format check
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
                         loadXmlInWebView(xmlContent);
                     } else {
@@ -136,11 +138,29 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      */
     private void handlePlayback() {
         if (isPlaying) {
+            int bpm = 120; // default bpm
+            int interval = (int) ((1000.0 / (bpm/60.0))/ (currentSpeedPercentage / 100.0));
             sheetMusicView.evaluateJavascript("osmd.cursor.show();", null);
-            sheetMusicView.evaluateJavascript("window.playbackIntervalId = setInterval(function(){ osmd.cursor.next(); }, 1000);", null);
+            sheetMusicView.evaluateJavascript("if(window.playbackIntervalId) clearInterval(window.playbackIntervalId);", null);
+            sheetMusicView.evaluateJavascript("window.playbackIntervalId = setInterval(function(){ osmd.cursor.next(); }, " + interval + ");", null);
         } else {
             sheetMusicView.evaluateJavascript("clearInterval(window.playbackIntervalId);", null);
-            // sheetMusicView.evaluateJavascript("osmd.cursor.hide();", null);
+            sheetMusicView.evaluateJavascript("window.playbackIntervalId = null;", null);
+        }
+    }
+
+    @Override
+    public void onResetClicked() {
+        sheetMusicView.evaluateJavascript("osmd.cursor.reset();", null);
+    }
+
+    @Override
+    public void onSpeedChanged(int speedPercentage) {
+        currentSpeedPercentage = speedPercentage;
+        if (isPlaying) {
+            // this.onPlayPauseClicked();
+            // sheetMusicView.evaluateJavascript("clearInterval(window.playbackIntervalId);", null);
+            handlePlayback(); // restart interval with new speed
         }
     }
 }

@@ -1,16 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp"
     tools:context=".ui.player.PlaybackFragment">
 
-    <ImageButton
-        android:id="@+id/play_pause_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:src="@drawable/ic_play_arrow"
-        android:contentDescription="@string/play_pause" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-</FrameLayout>
+        <ImageButton
+            android:id="@+id/reset_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_previous"
+            android:contentDescription="@string/reset_playback" />
+
+        <ImageButton
+            android:id="@+id/play_pause_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play_arrow"
+            android:contentDescription="@string/play_pause" />
+
+        <TextView
+            android:id="@+id/speed_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/playback_speed_default"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/speed_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="50.0"
+        android:valueTo="200.0"
+        android:stepSize="10.0"
+        android:value="100.0" />
+
+</LinearLayout>

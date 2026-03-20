@@ -22,28 +22,6 @@
     function loadScore(xmlData) {
         osmd.load(xmlData).then(() => osmd.render(), (err) => console.error(err));
     }
-    function nextCursor() { osmd.cursor.next(); }
-    function resetCursor() { osmd.cursor.reset(); }
-
-    const viewport = window.visualViewport;
-
-    function reportViewportChanges() {
-        if (window.Android) {
-            const scrollX = viewport.offsetLeft;
-            const scrollY = viewport.offsetTop;
-            const scale = viewport.scale;
-
-            if (typeof window.Android.notifyScrollChanged === 'function') {
-                window.Android.notifyScrollChanged(Math.round(scrollX), Math.round(scrollY));
-            }
-            if (typeof window.Android.notifyScaleChanged === 'function') {
-                window.Android.notifyScaleChanged(scale);
-            }
-        }
-    }
-
-    viewport.addEventListener('scroll', reportViewportChanges);
-    viewport.addEventListener('resize', reportViewportChanges);
 </script>
 </body>
 </html>
