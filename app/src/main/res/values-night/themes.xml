@@ -1,7 +1,82 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Conducto2" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto Design System — Dark Theme
+         ═══════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.Conducto2" parent="Theme.Material3.Dark.NoActionBar">
+
+        <!-- ── Material3 Color Roles ── -->
+        <item name="colorPrimary">@color/navy_200</item>
+        <item name="colorOnPrimary">@color/navy_900</item>
+        <item name="colorPrimaryContainer">@color/navy_700</item>
+        <item name="colorOnPrimaryContainer">@color/navy_100</item>
+
+        <item name="colorSecondary">@color/gold_400</item>
+        <item name="colorOnSecondary">@color/gold_900</item>
+        <item name="colorSecondaryContainer">@color/gold_800</item>
+        <item name="colorOnSecondaryContainer">@color/gold_100</item>
+
+        <item name="colorTertiary">@color/green_50</item>
+        <item name="colorOnTertiary">@color/green_700</item>
+
+        <item name="colorError">@color/red_50</item>
+        <item name="colorOnError">@color/red_700</item>
+        <item name="colorErrorContainer">@color/red_700</item>
+        <item name="colorOnErrorContainer">@color/red_50</item>
+
+        <!-- ── Surface & Background ── -->
+        <item name="colorSurface">#FF151F2E</item>
+        <item name="colorOnSurface">#FFF0F5FA</item>
+        <item name="colorSurfaceVariant">#FF1C2A3C</item>
+        <item name="colorOnSurfaceVariant">#FFA0B4C8</item>
+        <item name="colorSurfaceContainer">#FF1C2A3C</item>
+        <item name="colorSurfaceContainerHigh">#FF233144</item>
+        <item name="colorSurfaceContainerLow">#FF111923</item>
+
+        <item name="android:colorBackground">#FF0D1520</item>
+        <item name="android:windowBackground">#FF0D1520</item>
+
+        <!-- ── Outline ── -->
+        <item name="colorOutline">#FF2A3C52</item>
+        <item name="colorOutlineVariant">#FF1E2E40</item>
+
+        <!-- ── Typography ── -->
+        <item name="android:textColorPrimary">#FFF0F5FA</item>
+        <item name="android:textColorSecondary">#FFA0B4C8</item>
+        <item name="android:textColorHint">#FF4E6070</item>
+        <item name="android:textColorLink">@color/gold_400</item>
+
+        <!-- ── Window ── -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#FF0D1520</item>
+        <item name="android:navigationBarColor">#FF151F2E</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- ── Ripple ── -->
+        <item name="colorControlHighlight">@color/ripple_on_dark</item>
+
+        <!-- ── Components ── -->
+        <item name="materialButtonStyle">@style/Widget.Conducto.Button.Primary</item>
+        <item name="materialCardViewStyle">@style/Widget.Conducto.Card</item>
+        <item name="bottomNavigationStyle">@style/Widget.Conducto.BottomNav</item>
+        <item name="toolbarStyle">@style/Widget.Conducto.Toolbar</item>
+        <item name="floatingActionButtonStyle">@style/Widget.Conducto.FAB</item>
+        <item name="textInputStyle">@style/Widget.Conducto.TextInput</item>
+        <item name="chipStyle">@style/Widget.Conducto.Chip</item>
+
+        <!-- ── Shape system ── -->
+        <item name="shapeAppearanceSmallComponent">@style/Shape.Conducto.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.Conducto.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/Shape.Conducto.Large</item>
+
     </style>
+
+    <!-- Dark Player Theme -->
+    <style name="Theme.Conducto.Player" parent="Theme.Conducto2">
+        <item name="android:statusBarColor">#FF0A1220</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
 </resources>

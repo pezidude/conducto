@@ -1,39 +1,433 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.Conducto2">
-        <!-- Customize your theme here. -->
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto Design System — Component Styles
+         All styles follow the naming convention:
+           Widget.Conducto.<Component>[.<Variant>]
+         ═══════════════════════════════════════════════════════════ -->
+
+
+    <!-- ───────────────────────────────────────────
+         Typography
+         ─────────────────────────────────────────── -->
+
+    <!-- Display / Hero headings (used in auth screens, player) -->
+    <style name="TextAppearance.Conducto.Display" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:letterSpacing">-0.02</item>
     </style>
 
-    <style name="TextAppearance.App.Title" parent="TextAppearance.Material3.HeadlineMedium">
+    <!-- Screen / section titles -->
+    <style name="TextAppearance.Conducto.Headline" parent="TextAppearance.Material3.HeadlineMedium">
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/text_primary</item>
         <item name="android:textSize">24sp</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 
-    <style name="TextAppearance.App.Body" parent="TextAppearance.Material3.BodyMedium">
+    <!-- Card titles, list item titles -->
+    <style name="TextAppearance.Conducto.Title" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="TextAppearance.Conducto.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Body copy -->
+    <style name="TextAppearance.Conducto.Body" parent="TextAppearance.Material3.BodyMedium">
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingMultiplier">1.5</item>
     </style>
 
-    <style name="TextAppearance.App.Caption" parent="TextAppearance.Material3.LabelMedium">
+    <style name="TextAppearance.Conducto.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
-    <style name="AppButton.Filled" parent="Widget.Material3.Button">
-        <item name="backgroundTint">@color/primary</item>
-        <item name="cornerRadius">100dp</item>
+    <!-- Overline / section label (all-caps, spaced) -->
+    <style name="TextAppearance.Conducto.Overline" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.1</item>
     </style>
 
-    <style name="AppButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="strokeColor">@color/divider</item>
-        <item name="android:textColor">@color/primary</item>
-        <item name="cornerRadius">100dp</item>
+    <!-- Caption / timestamps / metadata -->
+    <style name="TextAppearance.Conducto.Caption" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/text_tertiary</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
-    <style name="AppCard" parent="Widget.Material3.CardView.Elevated">
+    <!-- Stat number (dashboard) -->
+    <style name="TextAppearance.Conducto.Stat" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:letterSpacing">-0.02</item>
+    </style>
+
+    <!-- On-primary text (white, used inside colored surfaces) -->
+    <style name="TextAppearance.Conducto.OnPrimary" parent="TextAppearance.Conducto.Body">
+        <item name="android:textColor">@color/text_on_primary</item>
+    </style>
+
+    <style name="TextAppearance.Conducto.HeadlineOnPrimary" parent="TextAppearance.Conducto.Headline">
+        <item name="android:textColor">@color/text_on_primary</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Buttons
+         ─────────────────────────────────────────── -->
+
+    <!-- Primary: navy fill, white text -->
+    <style name="Widget.Conducto.Button.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/btn_primary_bg</item>
+        <item name="android:textColor">@color/btn_primary_text</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.01</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="rippleColor">@color/ripple_on_dark</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <!-- Accent: gold fill, white text -->
+    <style name="Widget.Conducto.Button.Accent" parent="Widget.Conducto.Button.Primary">
+        <item name="backgroundTint">@color/btn_accent_bg</item>
+        <item name="android:textColor">@color/btn_accent_text</item>
+    </style>
+
+    <!-- Outlined: navy border, navy text -->
+    <style name="Widget.Conducto.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/border_default</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="rippleColor">@color/ripple_on_light</item>
+    </style>
+
+    <!-- Text button: link-style, gold text -->
+    <style name="Widget.Conducto.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/text_link</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="rippleColor">@color/ripple_accent</item>
+    </style>
+
+    <!-- Icon button (square, borderless) -->
+    <style name="Widget.Conducto.Button.Icon" parent="Widget.Material3.Button.IconButton">
+        <item name="android:backgroundTint">@color/background_app</item>
+        <item name="android:tint">@color/text_primary</item>
+        <item name="strokeColor">@color/border_default</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:minWidth">36dp</item>
+        <item name="android:minHeight">36dp</item>
+        <item name="rippleColor">@color/ripple_on_light</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         FAB
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/fab_background</item>
+        <item name="tint">@color/fab_icon</item>
+        <item name="elevation">4dp</item>
+        <item name="shapeAppearance">@style/Shape.Conducto.Pill</item>
+        <item name="rippleColor">@color/ripple_on_dark</item>
+    </style>
+
+    <style name="Widget.Conducto.FAB.Extended" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
+        <item name="backgroundTint">@color/fab_background</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="tint">@color/white</item>
+        <item name="elevation">4dp</item>
+        <item name="rippleColor">@color/ripple_on_dark</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Cards
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/background_surface</item>
+        <item name="cardCornerRadius">14dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/border_default</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:layout_marginHorizontal">0dp</item>
+        <item name="android:layout_marginVertical">0dp</item>
+    </style>
+
+    <!-- Card used in lists (slightly more spacious) -->
+    <style name="Widget.Conducto.Card.List" parent="Widget.Conducto.Card">
         <item name="cardCornerRadius">12dp</item>
-        <item name="cardElevation">2dp</item>
-        <item name="android:layout_margin">8dp</item>
     </style>
+
+    <!-- Flat card (no elevation, no border) for nested contexts -->
+    <style name="Widget.Conducto.Card.Flat" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/background_app</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">0dp</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Text Inputs
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/input_background</item>
+        <item name="boxStrokeColor">@color/input_border</item>
+        <item name="boxStrokeWidth">1.5dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="boxCornerRadiusTopStart">10dp</item>
+        <item name="boxCornerRadiusTopEnd">10dp</item>
+        <item name="boxCornerRadiusBottomStart">10dp</item>
+        <item name="boxCornerRadiusBottomEnd">10dp</item>
+        <item name="hintTextColor">@color/input_hint</item>
+        <item name="android:textColorHint">@color/input_hint</item>
+        <item name="counterTextAppearance">@style/TextAppearance.Conducto.Caption</item>
+        <item name="errorTextAppearance">@style/TextAppearance.Conducto.Caption</item>
+    </style>
+
+    <!-- Dense input (shorter, for compact forms) -->
+    <style name="Widget.Conducto.TextInput.Dense" parent="Widget.Conducto.TextInput">
+        <item name="boxCornerRadiusTopStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Chips
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Chip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textAppearance">@style/TextAppearance.Conducto.BodySmall</item>
+        <item name="chipCornerRadius">20dp</item>
+        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipStrokeColor">@color/border_default</item>
+        <item name="chipBackgroundColor">@color/background_surface</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="rippleColor">@color/ripple_on_light</item>
+    </style>
+
+    <!-- Gold accent chip (for status badges) -->
+    <style name="Widget.Conducto.Chip.Accent" parent="Widget.Conducto.Chip">
+        <item name="chipBackgroundColor">@color/badge_gold_bg</item>
+        <item name="android:textColor">@color/badge_gold_text</item>
+        <item name="chipStrokeColor">@color/gold_100</item>
+    </style>
+
+    <style name="Widget.Conducto.Chip.Success" parent="Widget.Conducto.Chip">
+        <item name="chipBackgroundColor">@color/badge_green_bg</item>
+        <item name="android:textColor">@color/badge_green_text</item>
+        <item name="chipStrokeColor">@color/green_100</item>
+    </style>
+
+    <style name="Widget.Conducto.Chip.Speed" parent="Widget.Conducto.Chip">
+        <item name="chipBackgroundColor">@color/background_app</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="chipMinHeight">32dp</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Toolbar / AppBar
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/toolbar_background</item>
+        <item name="titleTextColor">@color/toolbar_title</item>
+        <item name="subtitleTextColor">@color/toolbar_subtitle</item>
+        <item name="titleTextAppearance">@style/TextAppearance.Conducto.Title</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
+    <!-- Light toolbar (for screens with white headers) -->
+    <style name="Widget.Conducto.Toolbar.Light" parent="Widget.Conducto.Toolbar">
+        <item name="android:background">@color/background_surface</item>
+        <item name="titleTextColor">@color/text_primary</item>
+        <item name="subtitleTextColor">@color/text_secondary</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Bottom Navigation
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.BottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="android:background">@color/nav_background</item>
+        <item name="itemIconTint">@color/nav_icon_selector</item>
+        <item name="itemTextColor">@color/nav_label_selector</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Conducto.BottomNav.Indicator</item>
+        <item name="android:elevation">8dp</item>
+        <item name="labelVisibilityMode">labeled</item>
+    </style>
+
+    <style name="Widget.Conducto.BottomNav.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/nav_indicator</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">28dp</item>
+        <item name="shapeAppearance">@style/Shape.Conducto.Pill</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Radio buttons (role selection)
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.RadioButton" parent="Widget.Material3.CompoundButton.RadioButton">
+        <item name="android:textAppearance">@style/TextAppearance.Conducto.Body</item>
+        <item name="buttonTint">@color/brand_accent</item>
+    </style>
+
+    <!-- Segmented role toggle (Teacher / Student) -->
+    <style name="Widget.Conducto.RoleToggle" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:textSize">13sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Progress & Seekbar
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.ProgressBar.Linear" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="trackColor">@color/player_progress_track</item>
+        <item name="indicatorColor">@color/player_progress_fill</item>
+        <item name="trackThickness">4dp</item>
+        <item name="trackCornerRadius">2dp</item>
+    </style>
+
+    <!-- Compact progress bar (for cards) -->
+    <style name="Widget.Conducto.ProgressBar.Compact" parent="Widget.Conducto.ProgressBar.Linear">
+        <item name="trackThickness">3dp</item>
+    </style>
+
+    <style name="Widget.Conducto.Seekbar" parent="Widget.Material3.Slider">
+        <item name="thumbColor">@color/brand_accent</item>
+        <item name="trackColorActive">@color/brand_accent</item>
+        <item name="trackColorInactive">@color/border_default</item>
+        <item name="trackHeight">4dp</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Divider
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Divider" parent="">
+        <item name="android:background">@color/divider</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_width">match_parent</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Avatar / initials circle
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Avatar" parent="">
+        <item name="android:background">@drawable/bg_circle_highlight</item>
+        <item name="android:textAppearance">@style/TextAppearance.Conducto.TitleSmall</item>
+        <item name="android:textColor">@color/avatar_text</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Navigation Drawer (side nav)
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.NavigationView" parent="Widget.Material3.NavigationView">
+        <item name="android:background">@color/background_surface</item>
+        <item name="itemIconTint">@color/nav_icon_selector</item>
+        <item name="itemTextColor">@color/nav_label_selector</item>
+        <item name="itemShapeAppearance">@style/Shape.Conducto.Medium</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Dialogs
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceMediumComponent">@style/Shape.Conducto.Large</item>
+        <item name="android:backgroundTint">@color/background_surface</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Conducto.Button.Text</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Conducto.Button.Text</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Snackbar
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Snackbar" parent="Widget.Material3.Snackbar">
+        <item name="android:background">@color/navy_800</item>
+        <item name="snackbarButtonStyle">@style/Widget.Conducto.Button.Text</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Switch (settings toggles)
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.Switch" parent="Widget.Material3.CompoundButton.Switch">
+        <item name="thumbTint">@color/white</item>
+        <item name="trackTint">@color/switch_track_tint</item>
+    </style>
+
+
+    <!-- ───────────────────────────────────────────
+         Empty state
+         ─────────────────────────────────────────── -->
+
+    <style name="Widget.Conducto.EmptyState" parent="">
+        <item name="android:gravity">center</item>
+        <item name="android:padding">32dp</item>
+    </style>
+
+    <!-- ───────────────────────────────────────────
+         Compatibility Aliases (Old -> New)
+         ─────────────────────────────────────────── -->
+
+    <style name="TextAppearance.App.Title" parent="TextAppearance.Conducto.Title" />
+    <style name="TextAppearance.App.Body" parent="TextAppearance.Conducto.Body" />
+    <style name="TextAppearance.App.Caption" parent="TextAppearance.Conducto.Caption" />
+    <style name="AppButton.Filled" parent="Widget.Conducto.Button.Primary" />
+    <style name="AppButton.Outlined" parent="Widget.Conducto.Button.Outlined" />
+    <style name="AppCard" parent="Widget.Conducto.Card" />
+
 </resources>

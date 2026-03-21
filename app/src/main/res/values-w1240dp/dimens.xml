@@ -1,3 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="fab_margin">200dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto — Large Screen Dimensions (1240dp+)
+         For landscape tablets, foldables, and Chromebooks
+         ═══════════════════════════════════════════════════════════ -->
+
+    <dimen name="screen_padding_horizontal">40dp</dimen>
+    <dimen name="content_padding_horizontal">40dp</dimen>
+
+    <dimen name="auth_form_padding">48dp</dimen>
+    <dimen name="auth_brand_mark_size">72dp</dimen>
+
+    <dimen name="player_track_art_size">200dp</dimen>
+    <dimen name="player_control_primary_size">72dp</dimen>
+    <dimen name="player_control_secondary_size">56dp</dimen>
+
+    <dimen name="card_padding">20dp</dimen>
+    <dimen name="card_margin_vertical">10dp</dimen>
+
+    <dimen name="text_display">48sp</dimen>
+    <dimen name="text_headline">32sp</dimen>
+    <dimen name="text_title">20sp</dimen>
+    <dimen name="text_body">16sp</dimen>
+
+    <dimen name="list_item_min_height">80dp</dimen>
+    <dimen name="list_item_icon_size">60dp</dimen>
+
 </resources>

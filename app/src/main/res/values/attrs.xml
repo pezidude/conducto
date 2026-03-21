@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ═══════════════════════════════════════════
+         CONDUCTO — Custom View Attributes
+         Declare custom attrs for custom views &
+         style references used across the design system
+    ════════════════════════════════════════════ -->
+
+    <!-- ── Badge / Status chip ── -->
+    <declare-styleable name="StatusBadge">
+        <attr name="badgeType" format="enum">
+            <enum name="today"     value="0"/>
+            <enum name="upcoming"  value="1"/>
+            <enum name="overdue"   value="2"/>
+            <enum name="completed" value="3"/>
+            <enum name="custom"    value="4"/>
+        </attr>
+        <attr name="badgeText"  format="string"/>
+        <attr name="badgeColor" format="color"/>
+    </declare-styleable>
+
+    <!-- ── Avatar / Initials view ── -->
+    <declare-styleable name="AvatarView">
+        <attr name="avatarSize" format="enum">
+            <enum name="sm" value="0"/>
+            <enum name="md" value="1"/>
+            <enum name="lg" value="2"/>
+            <enum name="xl" value="3"/>
+        </attr>
+        <attr name="avatarInitials"    format="string"/>
+        <attr name="avatarImageUrl"    format="string"/>
+        <attr name="avatarBgColor"     format="color"/>
+        <attr name="avatarTextColor"   format="color"/>
+    </declare-styleable>
+
+    <!-- ── Progress / Playback bar ── -->
+    <declare-styleable name="PlaybackBar">
+        <attr name="trackColor"    format="color"/>
+        <attr name="fillColor"     format="color"/>
+        <attr name="thumbColor"    format="color"/>
+        <attr name="thumbVisible"  format="boolean"/>
+        <attr name="trackHeight"   format="dimension"/>
+    </declare-styleable>
+
+    <!-- ── Class / Lesson icon tile ── -->
+    <declare-styleable name="IconTile">
+        <attr name="tileIcon"      format="reference"/>
+        <attr name="tileIconTint"  format="color"/>
+        <attr name="tileBgColor"   format="color"/>
+        <attr name="tileSize" format="enum">
+            <enum name="sm" value="0"/>
+            <enum name="md" value="1"/>
+            <enum name="lg" value="2"/>
+        </attr>
+    </declare-styleable>
+
+    <!-- ── Section header ── -->
+    <declare-styleable name="SectionHeader">
+        <attr name="headerTitle"      format="string"/>
+        <attr name="headerActionText" format="string"/>
+        <attr name="showAction"       format="boolean"/>
+    </declare-styleable>
+
+    <!-- ── Role toggle (Teacher / Student) ── -->
+    <declare-styleable name="RoleToggle">
+        <attr name="roleOption1" format="string"/>
+        <attr name="roleOption2" format="string"/>
+        <attr name="selectedRole" format="integer"/>
+    </declare-styleable>
+
+</resources>

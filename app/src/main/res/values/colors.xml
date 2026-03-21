@@ -1,16 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto Design System — Color Tokens
+         Palette: Deep Navy + Warm Gold + Neutral Grays
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Base -->
     <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
 
-    <!-- Modern Minimalist Palette -->
-    <color name="background_app">#F8F9FA</color>
-    <color name="surface_card">#FFFFFF</color>
-    <color name="primary">#1976D2</color>
-    <color name="primary_variant">#E8F0FE</color>
-    <color name="text_primary">#202124</color>
-    <color name="text_secondary">#5F6368</color>
-    <color name="divider">#E0E0E0</color>
+    <!-- Navy Scale (Primary Brand) -->
+    <color name="navy_950">#FF0A1220</color>
+    <color name="navy_900">#FF0E1B2E</color>
+    <color name="navy_800">#FF1A2B42</color>
+    <color name="navy_700">#FF243A56</color>
+    <color name="navy_600">#FF2E4A6A</color>
+    <color name="navy_500">#FF3D5068</color>
+    <color name="navy_400">#FF5B7290</color>
+    <color name="navy_300">#FF6B8099</color>
+    <color name="navy_200">#FFA8BDD0</color>
+    <color name="navy_100">#FFD9E8F4</color>
+    <color name="navy_50">#FFF2F7FB</color>
 
-    <color name="blue">#1976D2</color>
+    <!-- Gold Scale (Accent) -->
+    <color name="gold_900">#FF7A5518</color>
+    <color name="gold_800">#FFA07020</color>
+    <color name="gold_700">#FFB5822A</color>
+    <color name="gold_600">#FFC8973A</color>
+    <color name="gold_500">#FFD4A84E</color>
+    <color name="gold_400">#FFDFB876</color>
+    <color name="gold_300">#FFE8CF9E</color>
+    <color name="gold_100">#FFF5E6C8</color>
+    <color name="gold_50">#FFFBF5E8</color>
+
+    <!-- Green Scale (Success) -->
+    <color name="green_700">#FF1B5E38</color>
+    <color name="green_600">#FF2E7D52</color>
+    <color name="green_100">#FFD1EAD9</color>
+    <color name="green_50">#FFE6F4EE</color>
+
+    <!-- Red Scale (Error) -->
+    <color name="red_700">#FF8B2222</color>
+    <color name="red_600">#FFC23B3B</color>
+    <color name="red_50">#FFFDEAEA</color>
+
+    <!-- Blue Scale (Info) -->
+    <color name="blue_600">#FF1A5CB5</color>
+    <color name="blue_50">#FFE8F1FB</color>
+
+    <!-- Amber Scale (Warning) -->
+    <color name="amber_600">#FFA86010</color>
+    <color name="amber_50">#FFFDF3DC</color>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Semantic Aliases — use these in layouts and styles
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Backgrounds -->
+    <color name="background_app">@color/navy_50</color>
+    <color name="background_surface">@color/white</color>
+    <color name="background_elevated">@color/white</color>
+    <color name="background_overlay">#CC0E1B2E</color>
+
+    <!-- Brand -->
+    <color name="brand_primary">@color/navy_900</color>
+    <color name="brand_primary_dark">@color/navy_950</color>
+    <color name="brand_primary_variant">@color/navy_800</color>
+    <color name="brand_accent">@color/gold_600</color>
+    <color name="brand_accent_light">@color/gold_100</color>
+    <color name="brand_accent_pale">@color/gold_50</color>
+
+    <!-- Text -->
+    <color name="text_primary">@color/navy_900</color>
+    <color name="text_secondary">@color/navy_300</color>
+    <color name="text_tertiary">@color/navy_200</color>
+    <color name="text_hint">@color/navy_200</color>
+    <color name="text_on_primary">@color/white</color>
+    <color name="text_on_accent">@color/white</color>
+    <color name="text_accent">@color/gold_600</color>
+    <color name="text_link">@color/gold_600</color>
+    <color name="text_error">@color/red_600</color>
+    <color name="text_success">@color/green_600</color>
+
+    <!-- Borders and Dividers -->
+    <color name="border_default">@color/navy_100</color>
+    <color name="border_strong">@color/navy_200</color>
+    <color name="border_focused">@color/gold_600</color>
+    <color name="divider">@color/navy_100</color>
+
+    <!-- Inputs -->
+    <color name="input_background">@color/navy_50</color>
+    <color name="input_border">@color/navy_100</color>
+    <color name="input_border_focused">@color/gold_600</color>
+    <color name="input_hint">@color/navy_200</color>
+
+    <!-- Semantic states -->
+    <color name="success">@color/green_600</color>
+    <color name="success_container">@color/green_50</color>
+    <color name="error">@color/red_600</color>
+    <color name="error_container">@color/red_50</color>
+    <color name="warning">@color/amber_600</color>
+    <color name="warning_container">@color/amber_50</color>
+    <color name="info">@color/blue_600</color>
+    <color name="info_container">@color/blue_50</color>
+
+    <!-- FAB / Buttons -->
+    <color name="fab_background">@color/gold_600</color>
+    <color name="fab_icon">@color/white</color>
+    <color name="btn_primary_bg">@color/navy_900</color>
+    <color name="btn_primary_text">@color/white</color>
+    <color name="btn_accent_bg">@color/gold_600</color>
+    <color name="btn_accent_text">@color/white</color>
+
+    <!-- Ripple -->
+    <color name="ripple_on_dark">#33FFFFFF</color>
+    <color name="ripple_on_light">#1A0E1B2E</color>
+    <color name="ripple_accent">#1AC8973A</color>
+
+    <!-- Avatar / Initials circle -->
+    <color name="avatar_background">@color/gold_600</color>
+    <color name="avatar_text">@color/white</color>
+
+    <!-- Badge chips -->
+    <color name="badge_gold_bg">@color/gold_50</color>
+    <color name="badge_gold_text">@color/gold_700</color>
+    <color name="badge_green_bg">@color/green_50</color>
+    <color name="badge_green_text">@color/green_700</color>
+    <color name="badge_navy_bg">@color/navy_100</color>
+    <color name="badge_navy_text">@color/navy_800</color>
+
+    <!-- Player / Media -->
+    <color name="player_background">@color/navy_900</color>
+    <color name="player_surface">#FF1A3050</color>
+    <color name="player_progress_track">@color/navy_100</color>
+    <color name="player_progress_fill">@color/gold_600</color>
+    <color name="player_text_primary">@color/white</color>
+    <color name="player_text_secondary">@color/navy_200</color>
+
+    <!-- Bottom Navigation -->
+    <color name="nav_icon_default">@color/navy_200</color>
+    <color name="nav_icon_selected">@color/gold_600</color>
+    <color name="nav_label_default">@color/navy_200</color>
+    <color name="nav_label_selected">@color/gold_600</color>
+    <color name="nav_background">@color/white</color>
+    <color name="nav_indicator">@color/gold_50</color>
+
+    <!-- Toolbar / AppBar -->
+    <color name="toolbar_background">@color/navy_900</color>
+    <color name="toolbar_title">@color/white</color>
+    <color name="toolbar_icon">@color/white</color>
+    <color name="toolbar_subtitle">@color/navy_200</color>
+
+    <!-- Status / Lesson indicators -->
+    <color name="status_upcoming">@color/gold_600</color>
+    <color name="status_upcoming_bg">@color/gold_50</color>
+    <color name="status_completed">@color/green_600</color>
+    <color name="status_completed_bg">@color/green_50</color>
+    <color name="status_overdue">@color/red_600</color>
+    <color name="status_overdue_bg">@color/red_50</color>
+
+    <!-- Compatibility Aliases (Old -> New) -->
+    <color name="primary">@color/brand_primary</color>
+
+    <!-- Other -->
+    <color name="switch_track_tint">#FFAAAAAA</color>
+
 </resources>

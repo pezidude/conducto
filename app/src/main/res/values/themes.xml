@@ -1,15 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto Design System — Light Theme
+         Base: Material3 · NoActionBar
+         ═══════════════════════════════════════════════════════════ -->
+
     <style name="Theme.Conducto2" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorPrimaryContainer">@color/primary_variant</item>
-        <item name="colorOnPrimaryContainer">@color/primary</item>
-        <item name="colorSecondary">@color/text_secondary</item>
-        <item name="colorOnSecondary">#FFFFFF</item>
-        <item name="android:windowBackground">@color/background_app</item>
-        <item name="android:colorBackground">@color/background_app</item>
-        <item name="colorSurface">@color/surface_card</item>
+
+        <!-- ── Material3 Color Roles ── -->
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/navy_100</item>
+        <item name="colorOnPrimaryContainer">@color/navy_900</item>
+
+        <item name="colorSecondary">@color/brand_accent</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/gold_50</item>
+        <item name="colorOnSecondaryContainer">@color/gold_900</item>
+
+        <item name="colorTertiary">@color/green_600</item>
+        <item name="colorOnTertiary">@color/white</item>
+        <item name="colorTertiaryContainer">@color/green_50</item>
+        <item name="colorOnTertiaryContainer">@color/green_700</item>
+
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorErrorContainer">@color/error_container</item>
+        <item name="colorOnErrorContainer">@color/red_700</item>
+
+        <!-- ── Surface & Background ── -->
+        <item name="colorSurface">@color/background_surface</item>
         <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceVariant">@color/background_app</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorSurfaceContainer">@color/navy_50</item>
+        <item name="colorSurfaceContainerHigh">@color/navy_100</item>
+        <item name="colorSurfaceContainerLow">@color/white</item>
+
+        <item name="android:colorBackground">@color/background_app</item>
+        <item name="android:windowBackground">@color/background_app</item>
+
+        <!-- ── Outline ── -->
+        <item name="colorOutline">@color/border_default</item>
+        <item name="colorOutlineVariant">@color/navy_100</item>
+
+        <!-- ── Typography ── -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+        <item name="android:textColorLink">@color/text_link</item>
+
+        <!-- ── Window ── -->
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/background_surface</item>
+        <item name="android:navigationBarColor">@color/background_surface</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- ── Ripple ── -->
+        <item name="colorControlHighlight">@color/ripple_on_light</item>
+
+        <!-- ── Component defaults ── -->
+        <item name="materialButtonStyle">@style/Widget.Conducto.Button.Primary</item>
+        <item name="materialCardViewStyle">@style/Widget.Conducto.Card</item>
+        <item name="bottomNavigationStyle">@style/Widget.Conducto.BottomNav</item>
+        <item name="toolbarStyle">@style/Widget.Conducto.Toolbar</item>
+        <item name="floatingActionButtonStyle">@style/Widget.Conducto.FAB</item>
+        <item name="textInputStyle">@style/Widget.Conducto.TextInput</item>
+        <item name="chipStyle">@style/Widget.Conducto.Chip</item>
+
+        <!-- ── Shape system ── -->
+        <item name="shapeAppearanceSmallComponent">@style/Shape.Conducto.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.Conducto.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/Shape.Conducto.Large</item>
+
     </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Splash Screen Theme
+         ═══════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.Conducto.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Conducto2</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Dialog Theme
+         ═══════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.Conducto.Dialog" parent="Theme.Material3.Light.Dialog">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorSecondary">@color/brand_accent</item>
+        <item name="colorSurface">@color/background_surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowBackground">@color/background_surface</item>
+        <item name="shapeAppearanceMediumComponent">@style/Shape.Conducto.Large</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Shape System
+         ═══════════════════════════════════════════════════════════ -->
+
+    <style name="Shape.Conducto.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="Shape.Conducto.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="Shape.Conducto.Large" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="Shape.Conducto.ExtraLarge" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <style name="Shape.Conducto.Pill" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Player / Immersive Screen Theme
+         ═══════════════════════════════════════════════════════════ -->
+
+    <style name="Theme.Conducto.Player" parent="Theme.Conducto2">
+        <item name="android:statusBarColor">@color/player_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
 </resources>
