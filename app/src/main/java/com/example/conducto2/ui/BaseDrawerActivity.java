@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -21,12 +20,10 @@ import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
-import com.example.conducto2.ui.classes.ClassEditActivity;
 import com.example.conducto2.ui.classes.ClassListActivity;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
-import com.example.conducto2.ui.lessons.ClassActivity;
+import com.example.conducto2.ui.classes.ClassActivity;
 import com.google.android.material.navigation.NavigationView;
-import java.util.List;
 
 /**
  * Base activity for screens that include a navigation drawer.

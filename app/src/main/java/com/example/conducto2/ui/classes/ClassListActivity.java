@@ -50,14 +50,11 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         setupRecyclerView(buildQuery());
         setupListeners();
 
-        User user = DataManager.getUserInstance();
-        if (user != null) {
-            if ("teacher".equals(user.getUserType())) {
-                addClassFab.setOnClickListener(this::showFabMenu);
-                addEditDelete();
-            } else {
-                addClassFab.setOnClickListener(v -> showJoinClassDialog());
-            }
+        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
+            addClassFab.setOnClickListener(this::showFabMenu);
+            addEditDelete();
+        } else {
+            addClassFab.setOnClickListener(v -> showJoinClassDialog());
         }
     }
 
@@ -77,7 +74,10 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
             updateQuery();
         });
 
-        filterByUserButton.setOnClickListener(v -> toggleFilterByUser());
+        filterByUserButton.setOnClickListener(v -> {
+            isFilteredByUser = !isFilteredByUser;
+            updateQuery();
+        });
         // FAB listener is now set in onCreate after user type is determined
     }
 
@@ -163,6 +163,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
 
     private Query buildQuery() {
         Query query = FirebaseFirestore.getInstance().collection("classes");
+        /* base query */
         query = query.whereArrayContains("members", FirebaseComm.authUserEmail());
         if (isFilteredByUser) {
             // TODO: filter by something else
@@ -173,11 +174,6 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         }
 
         return query;
-    }
-
-    private void toggleFilterByUser() {
-        isFilteredByUser = !isFilteredByUser;
-        updateQuery();
     }
 
     private void updateQuery() {

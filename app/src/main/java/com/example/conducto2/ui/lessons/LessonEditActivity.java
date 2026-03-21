@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.utils.FileHelper;
 import com.example.conducto2.data.firebase.FirebaseComm;
@@ -82,8 +83,8 @@ public class LessonEditActivity extends AppCompatActivity implements FirestoreMa
 
         setupUI();
 
-        if (getIntent().hasExtra("lesson")) {
-            currentLesson = getIntent().getParcelableExtra("lesson");
+        if (DataManager.getCurLessonInstance() != null) {
+            currentLesson = DataManager.getCurLessonInstance();
             isEditMode = true;
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
@@ -100,8 +101,8 @@ public class LessonEditActivity extends AppCompatActivity implements FirestoreMa
             uploadMusicXmlButton.setEnabled(false);
         }
 
-        if (getIntent().hasExtra("classId")) {
-            classId = getIntent().getStringExtra("classId");
+        if (DataManager.getCurClassID() != null) {
+            classId = DataManager.getCurClassID();
             fetchClassAttendees();
         }
 

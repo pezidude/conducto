@@ -8,6 +8,7 @@ import com.example.conducto2.data.model.User;
 public class DataManager {
     private static User user;
     private static Lesson curLesson;
+    private static String curClassID;
 
     public static User getUserInstance(){
         return user;
@@ -19,5 +20,11 @@ public class DataManager {
     public static  Lesson getCurLessonInstance(){return curLesson;}
     public static void setCurLesson(Lesson lesson){
         curLesson = new Lesson(lesson);
+    }
+    public static String getCurClassID(){
+        return curClassID;
+    }
+    public static void setCurClassID(String classID){
+        curClassID = classID;
     }
 }
