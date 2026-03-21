@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/bg_button_primary.xml
+     Navy pill background for primary CTA buttons -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/primary"/>
-    <corners android:radius="100dp"/>
+
+    <solid android:color="@color/btn_primary_bg" />
+
+    <corners android:radius="@dimen/radius_input" />
+
 </shape>

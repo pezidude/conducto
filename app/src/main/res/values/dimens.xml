@@ -1,3 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto Design System — Dimensions
+         Phone baseline (< 600dp). Overridden in values-w600dp/
+         and values-w1240dp/ for tablets and large screens.
+         ═══════════════════════════════════════════════════════════ -->
+
+
+    <!-- ── Spacing scale ── -->
+    <dimen name="spacing_2">2dp</dimen>
+    <dimen name="spacing_4">4dp</dimen>
+    <dimen name="spacing_6">6dp</dimen>
+    <dimen name="spacing_8">8dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
+    <dimen name="spacing_12">12dp</dimen>
+    <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
+    <dimen name="spacing_24">24dp</dimen>
+    <dimen name="spacing_32">32dp</dimen>
+    <dimen name="spacing_40">40dp</dimen>
+    <dimen name="spacing_48">48dp</dimen>
+    <dimen name="spacing_64">64dp</dimen>
+
+    <!-- ── Screen padding ── -->
+    <dimen name="screen_padding_horizontal">16dp</dimen>
+    <dimen name="screen_padding_vertical">16dp</dimen>
+    <dimen name="content_padding_horizontal">16dp</dimen>
+
+    <!-- ── Corner radii ── -->
+    <dimen name="radius_small">8dp</dimen>
+    <dimen name="radius_medium">12dp</dimen>
+    <dimen name="radius_large">16dp</dimen>
+    <dimen name="radius_xl">24dp</dimen>
+    <dimen name="radius_pill">100dp</dimen>
+    <dimen name="radius_card">14dp</dimen>
+    <dimen name="radius_input">10dp</dimen>
+    <dimen name="radius_chip">20dp</dimen>
+    <dimen name="radius_avatar">50dp</dimen>
+
+    <!-- ── Elevation ── -->
+    <dimen name="elevation_none">0dp</dimen>
+    <dimen name="elevation_card">0dp</dimen>
+    <dimen name="elevation_dialog">8dp</dimen>
+    <dimen name="elevation_fab">4dp</dimen>
+    <dimen name="elevation_bottom_nav">8dp</dimen>
+    <dimen name="elevation_toolbar">0dp</dimen>
+
+    <!-- ── Typography ── -->
+    <dimen name="text_display">34sp</dimen>
+    <dimen name="text_headline">24sp</dimen>
+    <dimen name="text_title">16sp</dimen>
+    <dimen name="text_title_small">14sp</dimen>
+    <dimen name="text_body">14sp</dimen>
+    <dimen name="text_body_small">12sp</dimen>
+    <dimen name="text_caption">12sp</dimen>
+    <dimen name="text_overline">10sp</dimen>
+    <dimen name="text_stat">32sp</dimen>
+
+    <!-- ── Component heights ── -->
+    <dimen name="btn_height">48dp</dimen>
+    <dimen name="btn_height_small">36dp</dimen>
+    <dimen name="input_height">52dp</dimen>
+    <dimen name="chip_height">32dp</dimen>
+    <dimen name="toolbar_height">56dp</dimen>
+    <dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="tab_height">48dp</dimen>
+
+    <!-- ── Avatar sizes ── -->
+    <dimen name="avatar_large">52dp</dimen>
+    <dimen name="avatar_medium">40dp</dimen>
+    <dimen name="avatar_small">32dp</dimen>
+
+    <!-- ── FAB ── -->
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_size">56dp</dimen>
+
+    <!-- ── Icons ── -->
+    <dimen name="icon_size_large">28dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_small">20dp</dimen>
+    <dimen name="icon_size_xs">16dp</dimen>
+
+    <!-- ── Cards ── -->
+    <dimen name="card_padding">14dp</dimen>
+    <dimen name="card_margin_vertical">6dp</dimen>
+    <dimen name="card_margin_horizontal">0dp</dimen>
+    <dimen name="card_stroke_width">1dp</dimen>
+
+    <!-- ── Lists ── -->
+    <dimen name="list_item_min_height">64dp</dimen>
+    <dimen name="list_item_padding_vertical">14dp</dimen>
+    <dimen name="list_item_padding_horizontal">16dp</dimen>
+    <dimen name="list_item_icon_size">44dp</dimen>
+    <dimen name="list_item_icon_radius">12dp</dimen>
+
+    <!-- ── Auth screens ── -->
+    <dimen name="auth_hero_padding_top">28dp</dimen>
+    <dimen name="auth_hero_padding_bottom">32dp</dimen>
+    <dimen name="auth_form_padding">24dp</dimen>
+    <dimen name="auth_brand_mark_size">52dp</dimen>
+    <dimen name="auth_brand_mark_radius">14dp</dimen>
+    <dimen name="auth_field_spacing">12dp</dimen>
+    <dimen name="auth_button_margin_top">16dp</dimen>
+
+    <!-- ── Dashboard ── -->
+    <dimen name="dashboard_header_padding">16dp</dimen>
+    <dimen name="dashboard_stat_card_padding">14dp</dimen>
+    <dimen name="dashboard_stats_gap">8dp</dimen>
+    <dimen name="section_label_margin_bottom">10dp</dimen>
+    <dimen name="section_spacing">16dp</dimen>
+
+    <!-- ── Player ── -->
+    <dimen name="player_track_art_size">120dp</dimen>
+    <dimen name="player_track_art_radius">20dp</dimen>
+    <dimen name="player_progress_height">4dp</dimen>
+    <dimen name="player_progress_thumb_size">14dp</dimen>
+    <dimen name="player_control_primary_size">56dp</dimen>
+    <dimen name="player_control_secondary_size">44dp</dimen>
+    <dimen name="player_control_spacing">24dp</dimen>
+
+    <!-- ── Progress bars (in cards) ── -->
+    <dimen name="progress_height_compact">3dp</dimen>
+    <dimen name="progress_height_normal">4dp</dimen>
+
+    <!-- ── Badge chips ── -->
+    <dimen name="badge_padding_horizontal">8dp</dimen>
+    <dimen name="badge_padding_vertical">3dp</dimen>
+    <dimen name="badge_text_size">10sp</dimen>
+
+    <!-- ── Dividers ── -->
+    <dimen name="divider_thickness">1dp</dimen>
+    <dimen name="divider_indent">16dp</dimen>
+
+    <!-- ── Search bar ── -->
+    <dimen name="search_bar_height">40dp</dimen>
+    <dimen name="search_bar_margin">10dp</dimen>
+
+    <!-- ── Bottom sheet ── -->
+    <dimen name="bottom_sheet_corner_radius">24dp</dimen>
+    <dimen name="bottom_sheet_handle_width">32dp</dimen>
+    <dimen name="bottom_sheet_handle_height">4dp</dimen>
+
+    <!-- ── Annotation toolbar ── -->
+    <dimen name="annotation_toolbar_height">48dp</dimen>
+    <dimen name="annotation_tool_size">40dp</dimen>
+
 </resources>

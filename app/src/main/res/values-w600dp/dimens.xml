@@ -1,3 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="fab_margin">48dp</dimen>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Conducto — Tablet Dimensions (600dp+)
+         Overrides phone defaults for medium screens / portrait tablets
+         ═══════════════════════════════════════════════════════════ -->
+
+    <dimen name="screen_padding_horizontal">24dp</dimen>
+    <dimen name="content_padding_horizontal">24dp</dimen>
+
+    <dimen name="auth_form_padding">32dp</dimen>
+    <dimen name="auth_brand_mark_size">64dp</dimen>
+
+    <dimen name="player_track_art_size">160dp</dimen>
+    <dimen name="player_control_primary_size">64dp</dimen>
+    <dimen name="player_control_secondary_size">52dp</dimen>
+
+    <dimen name="list_item_min_height">72dp</dimen>
+    <dimen name="list_item_icon_size">52dp</dimen>
+
+    <dimen name="card_padding">18dp</dimen>
+    <dimen name="card_margin_vertical">8dp</dimen>
+
+    <dimen name="text_display">40sp</dimen>
+    <dimen name="text_headline">28sp</dimen>
+    <dimen name="text_title">18sp</dimen>
+    <dimen name="text_body">15sp</dimen>
+
 </resources>
