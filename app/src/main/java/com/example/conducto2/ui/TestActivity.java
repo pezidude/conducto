@@ -66,7 +66,7 @@ public class TestActivity extends AppCompatActivity implements FilePickerHelper.
      */
     private void setupListeners() {
         if (cardSelectFile != null) {
-            cardSelectFile.setOnClickListener(v -> selectFile());
+            cardSelectFile.setOnClickListener(v -> {picker.openFilePicker();});
         }
 
         btnViewSheetMusic.setOnClickListener(v -> {
@@ -80,12 +80,6 @@ public class TestActivity extends AppCompatActivity implements FilePickerHelper.
         });
     }
 
-    /**
-     * Opens the file picker to allow the user to select a file.
-     */
-    private void selectFile() {
-        picker.openFilePicker();
-    }
 
     /**
      * A callback method that is invoked when a file has been successfully picked.

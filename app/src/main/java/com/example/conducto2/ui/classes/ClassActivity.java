@@ -1,4 +1,4 @@
-package com.example.conducto2.ui.lessons;
+package com.example.conducto2.ui.classes;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -15,6 +15,9 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.ui.BaseDrawerActivity;
+import com.example.conducto2.ui.lessons.LessonAdapter;
+import com.example.conducto2.ui.lessons.LessonDetailsActivity;
+import com.example.conducto2.ui.lessons.LessonEditActivity;
 import com.example.conducto2.utils.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -31,7 +34,7 @@ public class ClassActivity extends BaseDrawerActivity {
     private TextView joinCodeTextView;
     private boolean isFilteredByUser = false;
     private boolean isSortedByDate = false;
-    private String classId;
+    private Intent lessonIntent;
     // firestoreManager is inherited
     // currentUser is inherited
 
@@ -41,7 +44,8 @@ public class ClassActivity extends BaseDrawerActivity {
         setContentView(R.layout.activity_class);
 
         if (getIntent().hasExtra("class_id")) {
-            classId = getIntent().getStringExtra("class_id");
+            String classId = getIntent().getStringExtra("class_id");
+            DataManager.setCurClassID(classId);
         }
 
         // firestoreManager = new FirestoreManager(); // Inherited
@@ -49,8 +53,10 @@ public class ClassActivity extends BaseDrawerActivity {
         initViews();
         setupRecyclerView(buildQuery());
         setupListeners();
-        fetchUserAndSetupUI();
+        setupUI();
         fetchClassDetails();
+        setupItemClickListener();
+        setupIntent();
     }
 
     private void initViews() {
@@ -65,6 +71,7 @@ public class ClassActivity extends BaseDrawerActivity {
     }
 
     private void fetchClassDetails() {
+        String classId = DataManager.getCurClassID();
         if (classId == null) return;
         FirebaseFirestore.getInstance().collection("classes").document(classId)
                 .get()
@@ -78,19 +85,22 @@ public class ClassActivity extends BaseDrawerActivity {
                 });
     }
 
-    private void fetchUserAndSetupUI() {
-        firestoreManager.getUser(user -> {
+    private void setupUI() {
+        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
+            addLessonFab.setVisibility(View.VISIBLE);
+            setupTeacherSwipe();
+        } else {
+            addLessonFab.setVisibility(View.GONE);
+        }
 
-            if (user != null) {
-                if ("teacher".equals(user.getUserType())) {
-                    addLessonFab.setVisibility(View.VISIBLE);
-                    setupTeacherSwipe();
-                } else {
-                    addLessonFab.setVisibility(View.GONE);
-                }
-                setupItemClickListener();
-            }
-        });
+    }
+
+    private void setupIntent() {
+        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
+            lessonIntent = new Intent(ClassActivity.this, LessonEditActivity.class);
+        } else {
+            lessonIntent = new Intent(ClassActivity.this, LessonDetailsActivity.class);
+        }
     }
 
     private void setupListeners() {
@@ -104,25 +114,19 @@ public class ClassActivity extends BaseDrawerActivity {
         });
 
         addLessonFab.setOnClickListener(v -> {
-            Intent intent = new Intent(ClassActivity.this, LessonEditActivity.class);
-            intent.putExtra("classId", classId);
-            startActivity(intent);
+            startActivity(lessonIntent);
         });
     }
 
     private void setupItemClickListener() {
         lessonAdapter.setOnItemClickListener(snapshot -> {
             Lesson lesson = snapshot.toObject(Lesson.class);
+            DataManager.setCurClassID(DataManager.getCurClassID());
+            DataManager.setCurLesson(lesson);
+
             if (lesson != null) {
-                Intent intent;
-                if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
-                    intent = new Intent(ClassActivity.this, LessonEditActivity.class);
-                } else {
-                    intent = new Intent(ClassActivity.this, LessonDetailsActivity.class);
-                }
-                intent.putExtra("lesson", lesson);
-                intent.putExtra("classId", classId);
-                startActivity(intent);
+                lessonIntent.putExtra("classId", DataManager.getCurClassID());
+                startActivity(lessonIntent);
             }
         });
     }
@@ -142,8 +146,7 @@ public class ClassActivity extends BaseDrawerActivity {
             public void onSwipeLeft(int position) {
                 // Edit
                 Intent intent = new Intent(ClassActivity.this, LessonEditActivity.class);
-                intent.putExtra("lesson", lessonAdapter.getItem(position));
-                intent.putExtra("classId", classId);
+                DataManager.setCurLesson(lessonAdapter.getItem(position));
                 startActivity(intent);
                 lessonAdapter.notifyItemChanged(position);
             }
@@ -165,7 +168,7 @@ public class ClassActivity extends BaseDrawerActivity {
 
     private Query buildQuery() {
         Query query = FirebaseFirestore.getInstance().collection("classes")
-                .document(classId).collection("lessons");
+                .document(DataManager.getCurClassID()).collection("lessons");
         if (isFilteredByUser) {
             // TODO: add filter query
         }
@@ -184,16 +187,18 @@ public class ClassActivity extends BaseDrawerActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onResume() {
+        super.onResume();
+        setupIntent();
+        lessonIntent = new Intent();
         if (lessonAdapter != null) {
             lessonAdapter.startListening();
         }
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onPause() {
+        super.onPause();
         if (lessonAdapter != null) {
             lessonAdapter.stopListening();
         }
