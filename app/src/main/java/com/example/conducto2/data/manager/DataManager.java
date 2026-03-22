@@ -6,6 +6,9 @@ import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
 
 public class DataManager {
+
+    // this class provide a global reference to data used by activities
+
     private static User user;
     private static Lesson curLesson;
     private static String curClassID;
