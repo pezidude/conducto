@@ -1,174 +1,305 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="24dp">
+    android:background="@color/background_app"
+    android:fillViewport="true">
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/tvSignUpTitle"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Create Account"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        android:orientation="vertical">
 
-    <!-- Email -->
-    <EditText
-        android:id="@+id/etEmail"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Email"
-        android:inputType="textEmailAddress"
-        app:layout_constraintTop_toBottomOf="@id/tvSignUpTitle"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="32dp"/>
-
-    <!-- Send verification code -->
-    <Button
-        android:id="@+id/btnSendCode"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:visibility="gone"
-
-        android:text="Send Verification Code (WIP)"
-        app:layout_constraintTop_toBottomOf="@id/etEmail"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-    <!-- Code input -->
-    <EditText
-        android:id="@+id/etVerificationCode"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Verification Code (WIP)"
-        android:inputType="number"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/btnSendCode"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-
-    <EditText
-        android:id="@+id/etUname"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Enter Username"
-        android:visibility="visible"
-        app:layout_constraintTop_toBottomOf="@id/etVerificationCode"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-    <EditText
-        android:id="@+id/etFname"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Enter First Name"
-        android:visibility="visible"
-        app:layout_constraintTop_toBottomOf="@id/etUname"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-    <EditText
-        android:id="@+id/etLname"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Enter Last Name"
-        android:visibility="visible"
-        app:layout_constraintTop_toBottomOf="@id/etFname"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-
-
-    <!-- Password -->
-    <EditText
-        android:id="@+id/etPassword"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Password"
-        android:inputType="textPassword"
-        app:layout_constraintTop_toBottomOf="@id/etLname"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-    <!-- Confirm Password -->
-    <EditText
-        android:id="@+id/etConfirmPassword"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Confirm Password"
-        android:inputType="textPassword"
-        app:layout_constraintTop_toBottomOf="@id/etPassword"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp"/>
-
-    <RadioGroup
-        android:id="@+id/rgUserType"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/etConfirmPassword"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp">
-
-        <RadioButton
-            android:id="@+id/rbTeacher"
-            android:layout_width="wrap_content"
+        <!-- Hero header -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Teacher"
-            android:checked="true"/>
+            android:orientation="vertical"
+            android:background="@color/primary"
+            android:paddingStart="@dimen/screen_horizontal_margin"
+            android:paddingEnd="@dimen/screen_horizontal_margin"
+            android:paddingTop="48dp"
+            android:paddingBottom="28dp"
+            android:gravity="center_horizontal">
 
-        <RadioButton
-            android:id="@+id/rbStudent"
-            android:layout_width="wrap_content"
+            <FrameLayout
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_icon_tile">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_music_note"
+                    android:contentDescription="@null"
+                    android:tint="@color/accent"/>
+
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sign_up_title"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_headline"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="-0.015"
+                android:layout_marginTop="@dimen/spacing_base"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sign_up_subtitle"
+                android:textColor="@color/navy_200"
+                android:textSize="@dimen/text_body_sm"
+                android:layout_marginTop="@dimen/spacing_xs"/>
+
+        </LinearLayout>
+
+        <!-- Form body -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Student"/>
-    </RadioGroup>
+            android:orientation="vertical"
+            android:paddingStart="@dimen/screen_horizontal_margin"
+            android:paddingEnd="@dimen/screen_horizontal_margin"
+            android:paddingTop="@dimen/spacing_xl"
+            android:paddingBottom="@dimen/spacing_2xl">
 
-    <!-- Sign up button -->
-    <Button
-        android:id="@+id/btnSignUp"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:text="Create Account"
-        app:layout_constraintTop_toBottomOf="@id/rgUserType"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="20dp"/>
+            <!-- Role toggle (Teacher / Student) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_role"
+                style="@style/TextAppearance.Conducto.Label"
+                android:layout_marginBottom="@dimen/spacing_sm"/>
 
-    <TextView
-        android:id="@+id/tvError"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ERROR"
-        android:textColor="#CC0000"
-        app:layout_constraintTop_toBottomOf="@id/btnSignUp"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"/>
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/rgUserType"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height_sm"
+                app:singleSelection="true"
+                app:selectionRequired="true">
 
-    <!-- Go to sign in -->
-    <TextView
-        android:id="@+id/tvGoToSignIn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Already have an account? Sign In"
-        android:textColor="@android:color/holo_blue_dark"
-        app:layout_constraintTop_toBottomOf="@id/tvError"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rbTeacher"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/role_teacher"
+                    android:textSize="@dimen/text_body_sm"
+                    app:strokeColor="@color/border_default"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/rbStudent"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="@string/role_student"
+                    android:textSize="@dimen/text_body_sm"
+                    app:strokeColor="@color/border_default"/>
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <!-- First + Last name row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="@dimen/spacing_base"
+                android:weightSum="2">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="@dimen/spacing_xs"
+                    style="@style/Widget.Conducto.TextInput"
+                    android:hint="@string/hint_first_name">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etFname"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/input_height"
+                        android:inputType="textCapWords"
+                        android:textSize="@dimen/text_body"
+                        android:textColor="@color/text_primary"/>
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    style="@style/Widget.Conducto.TextInput"
+                    android:hint="@string/hint_last_name">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLname"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/input_height"
+                        android:inputType="textCapWords"
+                        android:textSize="@dimen/text_body"
+                        android:textColor="@color/text_primary"/>
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <!-- Username -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                style="@style/Widget.Conducto.TextInput"
+                android:hint="@string/hint_username">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etUname"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/input_height"
+                    android:inputType="textNoSuggestions"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/text_primary"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Email -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                style="@style/Widget.Conducto.TextInput"
+                android:hint="@string/hint_email">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/input_height"
+                    android:inputType="textEmailAddress"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/text_primary"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Password -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                style="@style/Widget.Conducto.TextInput"
+                android:hint="@string/hint_password"
+                app:endIconMode="password_toggle"
+                app:endIconTint="@color/text_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/input_height"
+                    android:inputType="textPassword"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/text_primary"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Confirm Password -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_md"
+                style="@style/Widget.Conducto.TextInput"
+                android:hint="@string/hint_confirm_password"
+                app:endIconMode="password_toggle"
+                app:endIconTint="@color/text_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/input_height"
+                    android:inputType="textPassword"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/text_primary"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- WIP: Verification (hidden) -->
+            <Button
+                android:id="@+id/btnSendCode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Send Verification Code"
+                android:visibility="gone"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                style="@style/Widget.Conducto.TextInput"
+                android:hint="Verification Code">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etVerificationCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/input_height"
+                    android:inputType="number"/>
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Error message -->
+            <TextView
+                android:id="@+id/tvError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="@color/error"
+                android:textSize="@dimen/text_body_sm"
+                android:background="@color/error_container"
+                android:padding="@dimen/spacing_md"
+                android:visibility="gone"
+                android:layout_marginTop="@dimen/spacing_base"/>
+
+            <!-- Create Account button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSignUp"
+                style="@style/Widget.Conducto.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:text="@string/btn_create_account"
+                android:layout_marginTop="@dimen/spacing_lg"/>
+
+            <!-- Sign in link -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginTop="@dimen/spacing_base">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sign_up_have_account"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_body_sm"/>
+
+                <TextView
+                    android:id="@+id/tvGoToSignIn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sign_up_go_sign_in"
+                    android:textColor="@color/text_accent"
+                    android:textSize="@dimen/text_body_sm"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingStart="@dimen/spacing_xs"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

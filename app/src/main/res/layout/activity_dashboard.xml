@@ -1,79 +1,205 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/background_app"
+    tools:context=".ui.dashboard.DashboardActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- Hero header -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/primary"
+        android:paddingStart="@dimen/screen_horizontal_margin"
+        android:paddingEnd="@dimen/screen_horizontal_margin"
+        android:paddingTop="@dimen/spacing_lg"
+        android:paddingBottom="@dimen/hero_header_padding_bottom"
+        android:gravity="center_vertical">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <!-- Greeting text -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvWelcomeMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dashboard_greeting_morning"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_headline"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="-0.015"
+                tools:text="Good morning, Sarah"/>
+
+            <TextView
+                android:id="@+id/tvUserTypeStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/dashboard_no_lessons"
+                android:textColor="@color/navy_200"
+                android:textSize="@dimen/text_body_sm"
+                android:layout_marginTop="@dimen/spacing_xs"
+                tools:text="You have 3 lessons today"/>
+
+        </LinearLayout>
+
+        <!-- Avatar -->
+        <FrameLayout
+            android:id="@+id/flAvatar"
+            android:layout_width="@dimen/avatar_size_md"
+            android:layout_height="@dimen/avatar_size_md"
+            android:background="@drawable/bg_avatar_circle"
+            android:layout_marginStart="@dimen/spacing_md">
+
+            <TextView
+                android:id="@+id/tvAvatarInitials"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="SC"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium"/>
+
+        </FrameLayout>
+
+    </LinearLayout>
+
+    <!-- Scrollable content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="@dimen/spacing_2xl">
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.AppCompat.Light" />
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/main"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background_app"
-        android:padding="24dp"
-        tools:context=".ui.dashboard.DashboardActivity">
-
-        <TextView
-            android:id="@+id/tvAppTitle"
-            style="@style/TextAppearance.App.Title"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="48dp"
-            android:text="Conducto"
-            android:textSize="34sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:orientation="vertical"
+            android:paddingStart="@dimen/screen_horizontal_margin"
+            android:paddingEnd="@dimen/screen_horizontal_margin"
+            android:paddingTop="@dimen/spacing_lg">
 
-        <TextView
-            android:id="@+id/tvWelcomeMessage"
-            style="@style/TextAppearance.App.Title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:alpha="0.8"
-            android:text="Welcome"
-            android:textSize="20sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvAppTitle" />
+            <!-- ── Stats row ── -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/section_overview"
+                style="@style/TextAppearance.Conducto.Label"
+                android:layout_marginBottom="@dimen/spacing_sm"/>
 
-        <TextView
-            android:id="@+id/tvUserTypeStatus"
-            style="@style/TextAppearance.App.Body"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="User Type"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvWelcomeMessage" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="@dimen/spacing_lg">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:text="Logout"
-            android:textColor="@color/text_secondary"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+                <!-- Classes stat -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/stat_card_height"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="@dimen/spacing_xs"
+                    style="@style/Widget.Conducto.Card.Flat">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="@dimen/card_padding_sm"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/tvClassesCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/text_primary"
+                            android:textSize="28sp"
+                            android:fontFamily="sans-serif-medium"
+                            tools:text="12"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/stat_classes"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="@dimen/text_caption"
+                            android:layout_marginTop="@dimen/spacing_xxs"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Students stat -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/stat_card_height"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    style="@style/Widget.Conducto.Card.Flat">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="@dimen/card_padding_sm"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/tvStudentsCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="@color/text_primary"
+                            android:textSize="28sp"
+                            android:fontFamily="sans-serif-medium"
+                            tools:text="48"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/stat_students"
+                            android:textColor="@color/text_tertiary"
+                            android:textSize="@dimen/text_caption"
+                            android:layout_marginTop="@dimen/spacing_xxs"/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- ── App title (hidden — kept for backward compat) ── -->
+            <TextView
+                android:id="@+id/tvAppTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
+
+            <!-- ── Logout button ── -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLogout"
+                style="@style/Widget.Conducto.Button.Text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="@string/btn_logout"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="@dimen/spacing_2xl"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
 </LinearLayout>

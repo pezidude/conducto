@@ -426,8 +426,12 @@
     <style name="TextAppearance.App.Title" parent="TextAppearance.Conducto.Title" />
     <style name="TextAppearance.App.Body" parent="TextAppearance.Conducto.Body" />
     <style name="TextAppearance.App.Caption" parent="TextAppearance.Conducto.Caption" />
+    <style name="TextAppearance.Conducto.ToolbarTitle" parent="TextAppearance.Conducto.Title" />
+    <style name="TextAppearance.Conducto.Label" parent="TextAppearance.Conducto.Overline" />
     <style name="AppButton.Filled" parent="Widget.Conducto.Button.Primary" />
     <style name="AppButton.Outlined" parent="Widget.Conducto.Button.Outlined" />
     <style name="AppCard" parent="Widget.Conducto.Card" />
+    <style name="Widget.Conducto.ProgressBar" parent="Widget.Conducto.ProgressBar.Linear" />
+    <style name="Widget.Conducto.SeekBar" parent="Widget.Conducto.Seekbar" />
 
 </resources>

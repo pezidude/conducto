@@ -1,15 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="@dimen/spacing_xl">
 
-    <EditText
-        android:id="@+id/join_code_edit_text"
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/title_join_class"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_title"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="@dimen/spacing_base"/>
+
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter Join Code"
-        android:inputType="text" />
+        style="@style/Widget.Conducto.TextInput"
+        android:hint="@string/hint_class_code"
+        app:startIconDrawable="@drawable/ic_lessons"
+        app:startIconTint="@color/text_hint">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/join_code_edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/input_height"
+            android:inputType="textCapCharacters|textNoSuggestions"
+            android:textSize="@dimen/text_body"
+            android:textColor="@color/text_primary"
+            android:letterSpacing="0.1"/>
+
+    </com.google.android.material.textfield.TextInputLayout>
 
 </LinearLayout>
