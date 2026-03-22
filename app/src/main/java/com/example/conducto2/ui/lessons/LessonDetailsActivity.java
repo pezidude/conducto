@@ -7,6 +7,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import com.example.conducto2.R;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.ui.BaseDrawerActivity;
@@ -35,7 +36,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity {
         lessonInfo = findViewById(R.id.lesson_details_info);
         musicXmlFilesList = findViewById(R.id.music_xml_files_list);
 
-        lesson = getIntent().getParcelableExtra("lesson");
+        lesson = DataManager.getCurLessonInstance();
 
         if (lesson != null) {
             lessonTitle.setText(lesson.getTitle());
