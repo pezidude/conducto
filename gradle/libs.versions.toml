@@ -33,6 +33,9 @@ lifecycle = "2.8.4"
 # Navigation 2.7.x is the standard for Views/Fragments (Nav 2.8+ is KMP focused).
 navigation = "2.7.7"
 
+# Splashscreen API
+core-splashscreen = "1.2.0"
+
 # -- Firebase --
 firebase-ui = "8.0.2"
 
@@ -52,6 +55,7 @@ firebaseFirestore = "26.0.2"
 generativeai = "0.9.0"
 guava = "31.1-android"
 
+
 [libraries]
 # Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -59,6 +63,7 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core-splashscreen" }
 
 # Lifecycle (ViewModel & LiveData)
 androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }

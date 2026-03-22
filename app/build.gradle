@@ -52,6 +52,7 @@ android {
 
 dependencies {
     // 3. DECLARE DEPENDENCIES USING TOML ALIASES
+
     implementation libs.androidx.core.ktx
     implementation libs.androidx.appcompat
     implementation libs.material
@@ -59,6 +60,7 @@ dependencies {
     implementation libs.androidx.constraintlayout
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui
+    implementation libs.androidx.core.splashscreen
     implementation libs.firebase.auth
     implementation libs.firebase.ui.firestore
     implementation libs.androidx.credentials
