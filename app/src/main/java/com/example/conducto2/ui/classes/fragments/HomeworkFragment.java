@@ -1,4 +1,4 @@
-package com.example.conducto2.ui.classes;
+package com.example.conducto2.ui.classes.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;

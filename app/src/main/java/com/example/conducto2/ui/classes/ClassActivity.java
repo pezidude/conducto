@@ -12,6 +12,10 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.conducto2.R;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.ui.BaseDrawerActivity;
+import com.example.conducto2.ui.classes.fragments.HomeworkFragment;
+import com.example.conducto2.ui.classes.fragments.LiveFragment;
+import com.example.conducto2.ui.classes.fragments.PeopleFragment;
+import com.example.conducto2.ui.classes.fragments.ScheduledFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
