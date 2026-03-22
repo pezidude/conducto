@@ -1,42 +1,30 @@
 package com.example.conducto2.ui.classes;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageButton;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.ui.BaseDrawerActivity;
-import com.example.conducto2.ui.lessons.LessonAdapter;
-import com.example.conducto2.ui.lessons.LessonDetailsActivity;
-import com.example.conducto2.ui.lessons.LessonEditActivity;
-import com.example.conducto2.utils.SwipeHelper;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 
+/**
+ * Activity that displays class details with swipeable tabs for Homework, People, Live, and Scheduled.
+ * Uses ViewPager2 and BottomNavigationView for navigation.
+ */
 public class ClassActivity extends BaseDrawerActivity {
 
-    private RecyclerView lessonsRecyclerView;
-    private LessonAdapter lessonAdapter;
-    private ImageButton filterByUserButton;
-    private ImageButton sortByDateButton;
-    private FloatingActionButton addLessonFab;
+    // ViewPager2 is a modern alt. to ViewPager
+    private ViewPager2 viewPager;
+    private BottomNavigationView bottomNavigationView;
     private TextView joinCodeTextView;
-    private boolean isFilteredByUser = false;
-    private boolean isSortedByDate = false;
-    private Intent lessonIntent;
-    // firestoreManager is inherited
-    // currentUser is inherited
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,26 +36,60 @@ public class ClassActivity extends BaseDrawerActivity {
             DataManager.setCurClassID(classId);
         }
 
-        // firestoreManager = new FirestoreManager(); // Inherited
-
         initViews();
-        setupRecyclerView(buildQuery());
-        setupListeners();
-        setupUI();
+        setupViewPager();
+        setupBottomNavigation();
         fetchClassDetails();
-        setupItemClickListener();
-        setupIntent();
     }
 
     private void initViews() {
-        lessonsRecyclerView = findViewById(R.id.lessons_recycler_view);
-        lessonsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        lessonsRecyclerView.setItemAnimator(null); // fix bug in recycle view
-
-        sortByDateButton = findViewById(R.id.sort_by_date_button);
-        filterByUserButton = findViewById(R.id.filter_by_user_button);
-        addLessonFab = findViewById(R.id.add_lesson_fab);
+        viewPager = findViewById(R.id.view_pager);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
         joinCodeTextView = findViewById(R.id.class_join_code);
+    }
+
+    private void setupViewPager() {
+        SectionsPagerAdapter pagerAdapter = new SectionsPagerAdapter(this);
+        viewPager.setAdapter(pagerAdapter);
+
+        // Synchronize ViewPager swipe with BottomNavigationView selection
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                int itemId;
+                switch (position) {
+                    case 0: itemId = R.id.nav_homework; break;
+                    case 1: itemId = R.id.nav_people; break;
+                    case 2: itemId = R.id.nav_live; break;
+                    case 3: itemId = R.id.nav_scheduled; break;
+                    default: itemId = R.id.nav_homework; break;
+                }
+                if (bottomNavigationView.getSelectedItemId() != itemId) {
+                    bottomNavigationView.setSelectedItemId(itemId);
+                }
+            }
+        });
+    }
+
+    private void setupBottomNavigation() {
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_homework) {
+                if (viewPager.getCurrentItem() != 0) viewPager.setCurrentItem(0);
+                return true;
+            } else if (itemId == R.id.nav_people) {
+                if (viewPager.getCurrentItem() != 1) viewPager.setCurrentItem(1);
+                return true;
+            } else if (itemId == R.id.nav_live) {
+                if (viewPager.getCurrentItem() != 2) viewPager.setCurrentItem(2);
+                return true;
+            } else if (itemId == R.id.nav_scheduled) {
+                if (viewPager.getCurrentItem() != 3) viewPager.setCurrentItem(3);
+                return true;
+            }
+            return false;
+        });
     }
 
     private void fetchClassDetails() {
@@ -80,127 +102,37 @@ public class ClassActivity extends BaseDrawerActivity {
                         com.example.conducto2.data.model.Class currentClass = documentSnapshot.toObject(com.example.conducto2.data.model.Class.class);
                         if (currentClass != null) {
                             joinCodeTextView.setText("Code: " + currentClass.getJoinCode());
+                            if (getSupportActionBar() != null) {
+                                getSupportActionBar().setTitle(currentClass.getName());
+                            }
                         }
                     }
                 });
     }
 
-    private void setupUI() {
-        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
-            addLessonFab.setVisibility(View.VISIBLE);
-            setupTeacherSwipe();
-        } else {
-            addLessonFab.setVisibility(View.GONE);
+    /**
+     * Adapter for the ViewPager2 to handle the 4 fragments.
+     */
+    private static class SectionsPagerAdapter extends FragmentStateAdapter {
+        public SectionsPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
+            super(fragmentActivity);
         }
 
-    }
-
-    private void setupIntent() {
-        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
-            lessonIntent = new Intent(ClassActivity.this, LessonEditActivity.class);
-        } else {
-            lessonIntent = new Intent(ClassActivity.this, LessonDetailsActivity.class);
-        }
-    }
-
-    private void setupListeners() {
-        sortByDateButton.setOnClickListener(v -> {
-            isSortedByDate = !isSortedByDate;
-            updateQuery();
-        });
-        filterByUserButton.setOnClickListener(v -> {
-            isFilteredByUser = !isFilteredByUser;
-            updateQuery();
-        });
-
-        addLessonFab.setOnClickListener(v -> {
-            startActivity(lessonIntent);
-        });
-    }
-
-    private void setupItemClickListener() {
-        lessonAdapter.setOnItemClickListener(snapshot -> {
-            Lesson lesson = snapshot.toObject(Lesson.class);
-            DataManager.setCurClassID(DataManager.getCurClassID());
-            DataManager.setCurLesson(lesson);
-
-            if (lesson != null) {
-                lessonIntent.putExtra("classId", DataManager.getCurClassID());
-                startActivity(lessonIntent);
+        @NonNull
+        @Override
+        public Fragment createFragment(int position) {
+            switch (position) {
+                case 0: return new HomeworkFragment();
+                case 1: return new PeopleFragment();
+                case 2: return new LiveFragment();
+                case 3: return new ScheduledFragment();
+                default: return new HomeworkFragment();
             }
-        });
-    }
-
-    private void setupRecyclerView(Query query) {
-        FirestoreRecyclerOptions<Lesson> options = new FirestoreRecyclerOptions.Builder<Lesson>()
-                .setQuery(query, Lesson.class)
-                .build();
-
-        lessonAdapter = new LessonAdapter(options);
-        lessonsRecyclerView.setAdapter(lessonAdapter);
-    }
-
-    private void setupTeacherSwipe() {
-        SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
-            @Override
-            public void onSwipeLeft(int position) {
-                // Edit
-                Intent intent = new Intent(ClassActivity.this, LessonEditActivity.class);
-                DataManager.setCurLesson(lessonAdapter.getItem(position));
-                startActivity(intent);
-                lessonAdapter.notifyItemChanged(position);
-            }
-
-            @Override
-            public void onSwipeRight(int position) {
-                // Delete
-                new AlertDialog.Builder(ClassActivity.this)
-                        .setMessage("Are you sure you want to delete this lesson?")
-                        .setPositiveButton("Yes", (dialog, which) -> lessonAdapter.getSnapshots().getSnapshot(position).getReference().delete())
-                        .setNegativeButton("No", (dialog, which) -> lessonAdapter.notifyItemChanged(position))
-                        .setOnCancelListener(dialog -> lessonAdapter.notifyItemChanged(position))
-                        .create()
-                        .show();
-            }
-        });
-        new ItemTouchHelper(swipeHelper).attachToRecyclerView(lessonsRecyclerView);
-    }
-
-    private Query buildQuery() {
-        Query query = FirebaseFirestore.getInstance().collection("classes")
-                .document(DataManager.getCurClassID()).collection("lessons");
-        if (isFilteredByUser) {
-            // TODO: add filter query
         }
-        if (isSortedByDate) {
-            query = query.orderBy("date", Query.Direction.DESCENDING);
-        }
-        return query;
-    }
 
-    private void updateQuery() {
-        Query query = buildQuery();
-        FirestoreRecyclerOptions<Lesson> options = new FirestoreRecyclerOptions.Builder<Lesson>()
-                .setQuery(query, Lesson.class)
-                .build();
-        lessonAdapter.updateOptions(options);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        setupIntent();
-        lessonIntent = new Intent();
-        if (lessonAdapter != null) {
-            lessonAdapter.startListening();
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (lessonAdapter != null) {
-            lessonAdapter.stopListening();
+        @Override
+        public int getItemCount() {
+            return 4;
         }
     }
 }

@@ -19,10 +19,6 @@
         android:paddingBottom="@dimen/spacing_base"
         android:gravity="center_vertical">
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
 
         <ImageButton
             android:id="@+id/sort_by_date_button"
@@ -31,7 +27,7 @@
             android:layout_marginStart="@dimen/spacing_sm"
             android:background="@drawable/bg_circle_highlight"
             android:src="@drawable/ic_sort_arrows"
-            android:tint="@color/white"
+            app:tint="@color/black"
             android:contentDescription="Sort by Date"
             android:padding="@dimen/spacing_sm"/>
 
@@ -42,7 +38,7 @@
             android:layout_marginStart="@dimen/spacing_xs"
             android:background="@drawable/bg_circle_highlight"
             android:src="@drawable/ic_filter_list"
-            android:tint="@color/white"
+            app:tint="@color/black"
             android:contentDescription="Filter Lessons"
             android:padding="@dimen/spacing_sm"/>
 
@@ -72,7 +68,7 @@
             android:layout_marginEnd="@dimen/fab_margin"
             android:src="@android:drawable/ic_input_add"
             android:contentDescription="Add Lesson"
-            android:visibility="gone"/>
+            android:visibility="visible"/>
 
     </FrameLayout>
 

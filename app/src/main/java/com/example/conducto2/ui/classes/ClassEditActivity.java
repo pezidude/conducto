@@ -42,8 +42,8 @@ public class ClassEditActivity extends AppCompatActivity implements FirestoreMan
         joinCodeTextView = findViewById(R.id.join_code_text_view);
         saveClassButton = findViewById(R.id.save_class_button);
 
-        if (getIntent().hasExtra("class")) {
-            currentClass = getIntent().getParcelableExtra("class");
+        if (getIntent().hasExtra("class_obj")) {
+            currentClass = getIntent().getParcelableExtra("class_obj");
             isEditMode = true;
             populateClassData();
             saveClassButton.setText("Save Changes");

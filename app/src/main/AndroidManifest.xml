@@ -31,7 +31,7 @@
             android:name=".ui.lessons.LessonEditActivity"
             android:exported="false" />
         <activity
-            android:name=".ui.lessons.ClassActivity"
+            android:name=".ui.classes.ClassActivity"
             android:exported="false" />
         <activity
             android:name=".ui.player.SMPlayerActivity"

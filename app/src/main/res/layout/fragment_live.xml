@@ -9,5 +9,5 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:text="Live View"
-        android:textSize="@dimen/text_h2"/>
+        android:textSize="@dimen/text_headline"/>
 </FrameLayout>

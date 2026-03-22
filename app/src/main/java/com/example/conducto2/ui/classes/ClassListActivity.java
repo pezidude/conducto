@@ -50,6 +50,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         setupRecyclerView(buildQuery());
         setupListeners();
 
+        // User Dependent logic
         if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
             addClassFab.setOnClickListener(this::showFabMenu);
             addEditDelete();
@@ -133,16 +134,16 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {
-                // Edit
+                // Swipe to Edit
                 Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
-                intent.putExtra("class", classAdapter.getItem(position));
+                intent.putExtra("class_obj", classAdapter.getItem(position));
                 startActivity(intent);
                 classAdapter.notifyItemChanged(position); // To reset the item view
             }
 
             @Override
             public void onSwipeRight(int position) {
-                // Delete
+                // Swipe to Delete
                 new AlertDialog.Builder(ClassListActivity.this)
                         .setMessage("Are you sure you want to delete this class?")
                         .setPositiveButton("Yes", (dialog, which) -> {
@@ -187,17 +188,13 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     @Override
     protected void onStart() {
         super.onStart();
-        if (classAdapter != null) {
-            classesRecyclerView.post(() -> classAdapter.startListening());
-        }
+        classesRecyclerView.post(() -> classAdapter.startListening());
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (classAdapter != null) {
-            classAdapter.stopListening();
-        }
+        classAdapter.stopListening();
     }
 
     @Override
