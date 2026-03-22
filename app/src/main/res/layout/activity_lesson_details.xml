@@ -1,66 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/background_app"
+    tools:context=".ui.lessons.LessonDetailsActivity">
 
+    <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:elevation="@dimen/elevation_none">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.Conducto.Toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.AppCompat.Light" />
+            app:navigationIcon="@drawable/ic_edit"
+            app:titleTextAppearance="@style/TextAppearance.Conducto.ToolbarTitle"/>
+
     </com.google.android.material.appbar.AppBarLayout>
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp"
-        tools:context=".ui.lessons.LessonDetailsActivity">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false">
 
-        <TextView
-            android:id="@+id/lesson_details_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceHeadline5"
-            tools:text="Lesson Title" />
-
-        <TextView
-            android:id="@+id/lesson_details_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textAppearance="?attr/textAppearanceSubtitle1"
-            tools:text="Lesson Date" />
-
-        <TextView
-            android:id="@+id/lesson_details_info"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textAppearance="?attr/textAppearanceBody1"
-            tools:text="Lesson description and details go here." />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/music_xml_files_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Sheet Music:"
-            android:textAppearance="?attr/textAppearanceHeadline6" />
+            <!-- Header card with lesson meta -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/primary"
+                android:paddingStart="@dimen/screen_horizontal_margin"
+                android:paddingEnd="@dimen/screen_horizontal_margin"
+                android:paddingTop="@dimen/spacing_lg"
+                android:paddingBottom="@dimen/spacing_xl"
+                android:orientation="vertical">
 
-        <ListView
-            android:id="@+id/music_xml_files_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
+                <TextView
+                    android:id="@+id/lesson_details_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/text_headline"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="-0.015"
+                    tools:text="Scales &amp; Arpeggios"/>
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/lesson_details_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/navy_200"
+                    android:textSize="@dimen/text_body_sm"
+                    android:layout_marginTop="@dimen/spacing_xs"
+                    tools:text="Monday, March 17 · 10:00 AM"/>
+
+            </LinearLayout>
+
+            <!-- Body -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/screen_horizontal_margin"
+                android:paddingEnd="@dimen/screen_horizontal_margin"
+                android:paddingTop="@dimen/spacing_lg"
+                android:paddingBottom="@dimen/spacing_2xl">
+
+                <!-- Lesson notes -->
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.Conducto.Card.Flat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/spacing_base">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/card_padding">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Notes"
+                            style="@style/TextAppearance.Conducto.Label"
+                            android:layout_marginBottom="@dimen/spacing_sm"/>
+
+                        <TextView
+                            android:id="@+id/lesson_details_info"
+                            style="@style/TextAppearance.Conducto.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Focus on smooth transitions between hand positions."/>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Sheet music section -->
+                <TextView
+                    android:id="@+id/music_xml_files_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/player_lesson_notes"
+                    style="@style/TextAppearance.Conducto.Label"
+                    android:layout_marginBottom="@dimen/spacing_sm"
+                    android:layout_marginTop="@dimen/spacing_xs"/>
+
+                <ListView
+                    android:id="@+id/music_xml_files_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:divider="@null"
+                    android:dividerHeight="0dp"/>
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
 </LinearLayout>

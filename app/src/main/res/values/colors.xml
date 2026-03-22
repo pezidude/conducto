@@ -162,6 +162,12 @@
 
     <!-- Compatibility Aliases (Old -> New) -->
     <color name="primary">@color/brand_primary</color>
+    <color name="accent">@color/brand_accent</color>
+    <color name="accent_light">@color/brand_accent_light</color>
+    <color name="surface_card">@color/background_surface</color>
+    <color name="badge_today_text">@color/white</color>
+    <color name="surface_input">@color/input_background</color>
+    <color name="progress_track">@color/player_progress_track</color>
 
     <!-- Other -->
     <color name="switch_track_tint">#FFAAAAAA</color>

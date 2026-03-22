@@ -146,4 +146,31 @@
     <dimen name="annotation_toolbar_height">48dp</dimen>
     <dimen name="annotation_tool_size">40dp</dimen>
 
+    <!-- ── Compatibility Aliases (Old -> New) ── -->
+    <dimen name="screen_horizontal_margin">@dimen/screen_padding_horizontal</dimen>
+    <dimen name="spacing_base">@dimen/spacing_16</dimen>
+    <dimen name="text_body_sm">@dimen/text_body_small</dimen>
+    <dimen name="spacing_sm">@dimen/spacing_8</dimen>
+    <dimen name="spacing_xs">@dimen/spacing_4</dimen>
+    <dimen name="spacing_xxs">@dimen/spacing_2</dimen>
+    <dimen name="spacing_md">@dimen/spacing_12</dimen>
+    <dimen name="spacing_lg">@dimen/spacing_24</dimen>
+    <dimen name="spacing_xl">@dimen/spacing_32</dimen>
+    <dimen name="spacing_2xl">@dimen/spacing_40</dimen>
+    <dimen name="button_height">@dimen/btn_height</dimen>
+    <dimen name="hero_header_padding_bottom">@dimen/auth_hero_padding_bottom</dimen>
+    <dimen name="avatar_size_md">@dimen/avatar_medium</dimen>
+    <dimen name="stat_card_height">100dp</dimen>
+    <dimen name="card_padding_sm">@dimen/card_padding</dimen>
+    <dimen name="divider_height">@dimen/divider_thickness</dimen>
+    <dimen name="badge_height">20dp</dimen>
+    <dimen name="avatar_size_xl">@dimen/avatar_large</dimen>
+    <dimen name="avatar_size_lg">@dimen/avatar_large</dimen>
+    <dimen name="button_height_sm">@dimen/btn_height_small</dimen>
+    <dimen name="icon_tile_size_md">@dimen/list_item_icon_size</dimen>
+    <dimen name="elevation_sm">2dp</dimen>
+    <dimen name="progress_height">@dimen/progress_height_normal</dimen>
+    <dimen name="playback_control_size">@dimen/player_control_secondary_size</dimen>
+    <dimen name="playback_control_size_primary">@dimen/player_control_primary_size</dimen>
+
 </resources>

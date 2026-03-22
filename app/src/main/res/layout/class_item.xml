@@ -1,34 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/AppCard"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Conducto.Card.Flat"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="@dimen/screen_horizontal_margin"
+    android:layout_marginBottom="@dimen/spacing_sm"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:padding="@dimen/card_padding"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/class_title"
-            style="@style/TextAppearance.App.Title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <!-- Icon tile -->
+        <FrameLayout
+            android:layout_width="@dimen/icon_tile_size_md"
+            android:layout_height="@dimen/icon_tile_size_md"
+            android:background="@drawable/bg_icon_tile">
 
-        <TextView
-            android:id="@+id/class_info"
-            style="@style/TextAppearance.App.Body"
-            android:layout_width="wrap_content"
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_lessons"
+                android:tint="@color/accent"
+                android:contentDescription="@null"/>
+
+        </FrameLayout>
+
+        <!-- Text info -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="@dimen/spacing_md">
 
-        <TextView
-            android:id="@+id/class_teacher"
-            style="@style/TextAppearance.App.Caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
+            <TextView
+                android:id="@+id/class_title"
+                style="@style/TextAppearance.Conducto.Title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Advanced Piano Composition"/>
+
+            <TextView
+                android:id="@+id/class_info"
+                style="@style/TextAppearance.Conducto.BodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xxs"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="16 students · Mon &amp; Wed"/>
+
+            <TextView
+                android:id="@+id/class_teacher"
+                style="@style/TextAppearance.Conducto.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xxs"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Mr. Cohen"/>
+
+        </LinearLayout>
+
+        <!-- Chevron -->
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_play_arrow"
+            android:tint="@color/text_hint"
+            android:contentDescription="@null"
+            android:layout_marginStart="@dimen/spacing_sm"/>
 
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

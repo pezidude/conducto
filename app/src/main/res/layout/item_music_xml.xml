@@ -1,30 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Conducto.Card.Flat"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="8dp"
-    android:gravity="center_vertical">
+    android:layout_marginBottom="@dimen/spacing_xs">
 
-    <ImageView
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_music_note"
-        android:contentDescription="Music Note Icon" />
-
-    <TextView
-        android:id="@+id/music_xml_file_name"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="8dp"
-        android:text="file_name.xml"
-        android:textAppearance="?attr/textAppearanceListItem" />
+        android:orientation="horizontal"
+        android:padding="@dimen/card_padding_sm"
+        android:gravity="center_vertical">
 
-    <Button
-        android:id="@+id/assign_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Assign" />
+        <!-- File icon -->
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_icon_tile">
 
-</LinearLayout>
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_music_note"
+                android:tint="@color/accent"
+                android:contentDescription="@null"/>
+
+        </FrameLayout>
+
+        <!-- File name -->
+        <TextView
+            android:id="@+id/music_xml_file_name"
+            style="@style/TextAppearance.Conducto.BodySmall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:maxLines="1"
+            android:ellipsize="middle"
+            tools:text="hanon_exercise_12.musicxml"/>
+
+        <!-- Assign button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/assign_button"
+            style="@style/Widget.Conducto.Button.Text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Assign"
+            android:textSize="@dimen/text_caption"
+            android:minWidth="0dp"
+            android:paddingStart="@dimen/spacing_sm"
+            android:paddingEnd="@dimen/spacing_sm"/>
+
+        <!-- Delete button -->
+        <ImageButton
+            android:id="@+id/delete_button"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@null"
+            android:src="@drawable/ic_delete"
+            android:tint="@color/text_hint"
+            android:contentDescription="@string/btn_delete"
+            android:padding="@dimen/spacing_xs"/>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

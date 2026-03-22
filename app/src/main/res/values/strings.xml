@@ -18,9 +18,6 @@
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_homework">Homework</string>
     <string name="nav_profile">Profile</string>
-    <string name="menu_dashboard">@string/nav_dashboard</string>
-    <string name="menu_homework">@string/nav_homework</string>
-    <string name="menu_my_classes">@string/nav_my_classes</string>
 
     <!-- ── Sign In ── -->
     <string name="sign_in_title">Welcome back</string>

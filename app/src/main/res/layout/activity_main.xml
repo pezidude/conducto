@@ -4,99 +4,137 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?android:attr/colorBackground">
+    android:background="@color/primary">
 
+    <!-- Background decorative circle (top-right) -->
+    <View
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:background="@drawable/bg_circle_highlight"
+        android:alpha="0.06"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="-60dp"
+        android:layout_marginEnd="-60dp"/>
+
+    <!-- Logo mark -->
     <ImageView
         android:id="@+id/ivLogo"
-        android:layout_width="140dp"
-        android:layout_height="140dp"
-        android:src="@drawable/ic_launcher_background"
-        android:contentDescription="App Logo"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:src="@drawable/ic_music_note"
+        android:contentDescription="@string/app_name"
+        android:padding="16dp"
+        android:background="@drawable/bg_circle_highlight"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="80dp" />
+        app:layout_constraintBottom_toTopOf="@id/tvWelcome"
+        app:layout_constraintVertical_chainStyle="packed"
+        app:layout_constraintVertical_bias="0.38"/>
 
+    <!-- App name -->
     <TextView
         android:id="@+id/tvWelcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Welcome to Conducto"
-        style="@style/TextAppearance.App.Title"
+        android:text="@string/app_name"
+        android:textColor="@color/white"
+        android:textSize="@dimen/text_display"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="-0.02"
+        android:layout_marginTop="20dp"
         app:layout_constraintTop_toBottomOf="@id/ivLogo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp"/>
+        app:layout_constraintBottom_toTopOf="@id/tvSubtitle"/>
 
+    <!-- Tagline -->
     <TextView
         android:id="@+id/tvSubtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Practice • Learn • Perform Together"
-        style="@style/TextAppearance.App.Body"
+        android:text="@string/app_tagline"
+        android:textColor="@color/navy_200"
+        android:textSize="@dimen/text_body"
+        android:fontFamily="sans-serif"
+        android:layout_marginTop="6dp"
         app:layout_constraintTop_toBottomOf="@id/tvWelcome"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="8dp"/>
+        app:layout_constraintBottom_toTopOf="@id/btnSignIn"/>
 
+    <!-- Sign In button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSignIn"
-        style="@style/AppButton.Filled"
+        style="@style/Widget.Conducto.Button.Accent"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Sign In"
+        android:layout_height="@dimen/button_height"
+        android:text="@string/btn_sign_in"
+        android:layout_marginTop="40dp"
+        android:layout_marginStart="@dimen/spacing_2xl"
+        android:layout_marginEnd="@dimen/spacing_2xl"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        app:layout_constraintBottom_toTopOf="@id/btnSignUp"/>
 
+    <!-- Sign Up button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSignUp"
-        style="@style/AppButton.Outlined"
+        style="@style/Widget.Conducto.Button.Outlined"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Sign Up"
+        android:layout_height="@dimen/button_height"
+        android:text="@string/btn_create_account"
+        android:textColor="@color/white"
+        app:strokeColor="#4DFFFFFF"
+        android:layout_marginTop="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_2xl"
+        android:layout_marginEnd="@dimen/spacing_2xl"
         app:layout_constraintTop_toBottomOf="@id/btnSignIn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
+    <!-- Dev/test buttons (hidden in production) -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnGoToTest"
-        style="@style/AppButton.Outlined"
-        android:layout_width="0dp"
+        style="@style/Widget.Conducto.Button.Text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Go to Test Activity"
-        app:layout_constraintTop_toBottomOf="@id/btnSignUp"
+        android:text="Test Activity"
+        android:textColor="#33FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnNotify"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnNotify"
-        style="@style/AppButton.Outlined"
-        android:layout_width="0dp"
+        style="@style/Widget.Conducto.Button.Text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Notify Headset Status"
-        app:layout_constraintTop_toBottomOf="@id/btnGoToTest"
+        android:text="Notify"
+        android:textColor="#33FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/btnAlarm"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAlarm"
-        style="@style/AppButton.Outlined"
-        android:layout_width="0dp"
+        style="@style/Widget.Conducto.Button.Text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Alarm in 10 sec"
-        app:layout_constraintTop_toBottomOf="@id/btnNotify"
+        android:text="Alarm"
+        android:textColor="#33FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"/>
+        android:layout_marginBottom="@dimen/spacing_base"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

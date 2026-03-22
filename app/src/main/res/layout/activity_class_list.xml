@@ -1,76 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/background_app"
+    tools:context=".ui.classes.ClassListActivity">
 
+    <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:elevation="@dimen/elevation_none">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
+            style="@style/Widget.Conducto.Toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/Theme.AppCompat.Light" />
+            app:title="@string/title_classes"
+            app:titleTextAppearance="@style/TextAppearance.Conducto.ToolbarTitle"/>
+
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Search + filter bar -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:context=".ui.classes.ClassListActivity">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/primary"
+        android:paddingStart="@dimen/screen_horizontal_margin"
+        android:paddingEnd="@dimen/screen_horizontal_margin"
+        android:paddingBottom="@dimen/spacing_base"
+        android:gravity="center_vertical">
 
-        <LinearLayout
-            android:id="@+id/filter_sort_buttons"
+        <!-- Search field -->
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="end"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_weight="1"
+            style="@style/Widget.Conducto.TextInput"
+            app:startIconDrawable="@drawable/ic_sort"
+            app:startIconTint="@color/text_hint"
+            app:boxBackgroundColor="@color/white"
+            android:hint="@string/search_classes_hint">
 
-            <ImageButton
-                android:id="@+id/sort_by_name_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Sort by Name"
-                android:src="@drawable/ic_sort" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etSearch"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:inputType="text"
+                android:textSize="@dimen/text_body_sm"
+                android:textColor="@color/text_primary"/>
 
-            <ImageButton
-                android:id="@+id/filter_by_user_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Filter My Classes"
-                android:src="@drawable/ic_filter_list" />
-        </LinearLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/classes_recycler_view"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/filter_sort_buttons"
-            tools:listitem="@layout/class_item" />
+        <!-- Sort button -->
+        <ImageButton
+            android:id="@+id/sort_by_name_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_circle_highlight"
+            android:src="@drawable/ic_sort"
+            android:tint="@color/white"
+            android:contentDescription="@string/sort_by_name"
+            android:padding="@dimen/spacing_sm"/>
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/add_class_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:contentDescription="Add Class"
-            android:src="@android:drawable/ic_input_add"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+        <!-- Filter button -->
+        <ImageButton
+            android:id="@+id/filter_by_user_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="@dimen/spacing_xs"
+            android:background="@drawable/bg_circle_highlight"
+            android:src="@drawable/ic_filter_list"
+            android:tint="@color/white"
+            android:contentDescription="@string/filter_my_classes"
+            android:padding="@dimen/spacing_sm"/>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+    <!-- Class list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/classes_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingBottom="80dp"
+        android:clipToPadding="false"
+        tools:listitem="@layout/class_item"/>
+
+    <!-- FAB -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add_class_fab"
+        style="@style/Widget.Conducto.FAB"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:src="@android:drawable/ic_input_add"
+        android:contentDescription="@string/content_desc_add"
+        android:layout_marginBottom="@dimen/fab_margin"
+        android:layout_marginEnd="@dimen/fab_margin"/>
+
 </LinearLayout>

@@ -1,18 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_app">
 
-    <TextView
-        android:id="@+id/homework_text"
-        android:layout_width="wrap_content"
+    <!-- Toolbar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Homework Activity"
-        android:textSize="24sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        xmlns:app="http://schemas.android.com/apk/res-auto"/>
+        android:elevation="@dimen/elevation_none">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            style="@style/Widget.Conducto.Toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/title_homework"
+            app:titleTextAppearance="@style/TextAppearance.Conducto.ToolbarTitle"/>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Homework list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/homework_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="@dimen/spacing_sm"
+        android:paddingBottom="@dimen/spacing_lg"
+        android:clipToPadding="false"/>
+
+    <!-- Empty state -->
+    <LinearLayout
+        android:id="@+id/llEmptyState"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_lessons"
+            android:tint="@color/text_hint"
+            android:contentDescription="@null"/>
+
+        <TextView
+            android:id="@+id/homework_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/homework_no_homework"
+            style="@style/TextAppearance.Conducto.Body"
+            android:gravity="center"
+            android:layout_marginTop="@dimen/spacing_base"
+            android:paddingStart="@dimen/spacing_2xl"
+            android:paddingEnd="@dimen/spacing_2xl"/>
+
+    </LinearLayout>
+
+</LinearLayout>

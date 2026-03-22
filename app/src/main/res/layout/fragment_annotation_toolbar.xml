@@ -1,73 +1,123 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="8dp"
+    android:background="@color/primary"
+    android:paddingStart="@dimen/spacing_sm"
+    android:paddingEnd="@dimen/spacing_sm"
+    android:paddingTop="@dimen/spacing_xs"
+    android:paddingBottom="@dimen/spacing_xs"
     android:gravity="center_vertical"
-    android:background="?attr/colorPrimary">
+    android:elevation="@dimen/elevation_sm">
 
+    <!-- Tool: Scroll -->
     <ImageButton
         android:id="@+id/btn_scroll"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
         android:src="@drawable/ic_scroll"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Scroll" />
+        android:tint="@color/white"
+        android:contentDescription="Scroll mode"
+        android:padding="@dimen/spacing_sm"/>
 
+    <!-- Tool: Highlight -->
     <ImageButton
         android:id="@+id/btn_highlight"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
         android:src="@drawable/ic_edit"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="16dp"
-        android:contentDescription="Highlight" />
+        android:tint="@color/white"
+        android:contentDescription="Highlight"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
 
+    <!-- Tool: Dynamic -->
     <ImageButton
         android:id="@+id/btn_dynamic"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
         android:src="@drawable/ic_music_note"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="16dp"
-        android:contentDescription="Dynamic" />
+        android:tint="@color/white"
+        android:contentDescription="Dynamics"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
 
+    <!-- Tool: Text -->
+    <ImageButton
+        android:id="@+id/btn_text"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
+        android:src="@drawable/ic_text"
+        android:tint="@color/white"
+        android:contentDescription="Add text"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
+
+    <!-- Tool: Color picker -->
     <ImageButton
         android:id="@+id/btn_color_picker"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
         android:src="@drawable/ic_color_picker"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="16dp"
-        android:contentDescription="Color" />
+        android:tint="@color/white"
+        android:contentDescription="Pick color"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
 
+    <!-- Active color swatch -->
     <View
         android:id="@+id/color_indicator"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_marginStart="8dp"
-        android:background="@drawable/color_selection_background" />
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="@dimen/spacing_xs"
+        android:background="@drawable/color_selection_background"/>
 
+    <!-- Spacer -->
     <Space
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"/>
 
+    <!-- Brush style -->
+    <ImageButton
+        android:id="@+id/btn_brush"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
+        android:src="@drawable/ic_brush"
+        android:tint="@color/white"
+        android:contentDescription="Brush style"
+        android:padding="@dimen/spacing_sm"/>
+
+    <!-- Undo -->
     <ImageButton
         android:id="@+id/btn_undo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
         android:src="@android:drawable/ic_menu_revert"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Undo" />
+        android:tint="@color/white"
+        android:contentDescription="Undo"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
 
+    <!-- Clear -->
     <ImageButton
         android:id="@+id/btn_clear"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@android:drawable/ic_menu_delete"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="16dp"
-        android:contentDescription="Clear" />
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_circle_highlight"
+        android:src="@drawable/ic_delete"
+        android:tint="@color/white"
+        android:contentDescription="Clear annotations"
+        android:padding="@dimen/spacing_sm"
+        android:layout_marginStart="@dimen/spacing_xs"/>
+
 </LinearLayout>
