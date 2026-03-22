@@ -15,17 +15,16 @@ import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.fragments.HomeworkFragment;
 import com.example.conducto2.ui.classes.fragments.LiveFragment;
 import com.example.conducto2.ui.classes.fragments.PeopleFragment;
-import com.example.conducto2.ui.classes.fragments.ScheduledFragment;
+import com.example.conducto2.ui.classes.fragments.UpcomingFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 /**
- * Activity that displays class details with swipeable tabs for Homework, People, Live, and Scheduled.
+ * Activity that displays class details with swipeable tabs for Upcoming, People, Live, and Homework.
  * Uses ViewPager2 and BottomNavigationView for navigation.
  */
 public class ClassActivity extends BaseDrawerActivity {
 
-    // ViewPager2 is a modern alt. to ViewPager
     private ViewPager2 viewPager;
     private BottomNavigationView bottomNavigationView;
     private TextView joinCodeTextView;
@@ -63,11 +62,11 @@ public class ClassActivity extends BaseDrawerActivity {
                 super.onPageSelected(position);
                 int itemId;
                 switch (position) {
-                    case 0: itemId = R.id.nav_homework; break;
+                    case 0: itemId = R.id.nav_upcoming; break;
                     case 1: itemId = R.id.nav_people; break;
                     case 2: itemId = R.id.nav_live; break;
-                    case 3: itemId = R.id.nav_scheduled; break;
-                    default: itemId = R.id.nav_homework; break;
+                    case 3: itemId = R.id.nav_homework; break;
+                    default: itemId = R.id.nav_upcoming; break;
                 }
                 if (bottomNavigationView.getSelectedItemId() != itemId) {
                     bottomNavigationView.setSelectedItemId(itemId);
@@ -79,7 +78,7 @@ public class ClassActivity extends BaseDrawerActivity {
     private void setupBottomNavigation() {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
-            if (itemId == R.id.nav_homework) {
+            if (itemId == R.id.nav_upcoming) {
                 if (viewPager.getCurrentItem() != 0) viewPager.setCurrentItem(0);
                 return true;
             } else if (itemId == R.id.nav_people) {
@@ -88,7 +87,7 @@ public class ClassActivity extends BaseDrawerActivity {
             } else if (itemId == R.id.nav_live) {
                 if (viewPager.getCurrentItem() != 2) viewPager.setCurrentItem(2);
                 return true;
-            } else if (itemId == R.id.nav_scheduled) {
+            } else if (itemId == R.id.nav_homework) {
                 if (viewPager.getCurrentItem() != 3) viewPager.setCurrentItem(3);
                 return true;
             }
@@ -126,11 +125,11 @@ public class ClassActivity extends BaseDrawerActivity {
         @Override
         public Fragment createFragment(int position) {
             switch (position) {
-                case 0: return new HomeworkFragment();
+                case 0: return new UpcomingFragment();
                 case 1: return new PeopleFragment();
                 case 2: return new LiveFragment();
-                case 3: return new ScheduledFragment();
-                default: return new HomeworkFragment();
+                case 3: return new HomeworkFragment();
+                default: return new UpcomingFragment();
             }
         }
 
