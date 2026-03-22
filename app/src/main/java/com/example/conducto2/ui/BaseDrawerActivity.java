@@ -122,6 +122,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
 
         MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_homework);
         if (homeworkItem != null) {
+            // User Dependent logic
             if ("teacher".equals(user.getUserType())) {
                 homeworkItem.setTitle("Homework Review");
             } else {

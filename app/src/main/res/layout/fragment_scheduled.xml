@@ -8,6 +8,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:text="People View"
+        android:text="Scheduled Lessons View"
         android:textSize="@dimen/text_headline"/>
 </FrameLayout>
