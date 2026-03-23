@@ -15,7 +15,11 @@ import java.util.zip.ZipInputStream;
 
 public class FileIO {
     /**
+<<<<<<< HEAD
      * This class's purpose is to unzips the .mxl file
+=======
+     * This class's purpose if to unzips the .mxl file
+>>>>>>> aec405dc913b62bfae37eedda8494097b62302c4
      * and finds the first valid .xml entry inside the zip.
      */
     Context context;

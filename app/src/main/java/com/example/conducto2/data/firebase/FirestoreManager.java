@@ -86,7 +86,6 @@ public class FirestoreManager extends FirebaseComm {
 
     public FirestoreManager() {
         FIRESTORE = getFirestore();
-
     }
 
 

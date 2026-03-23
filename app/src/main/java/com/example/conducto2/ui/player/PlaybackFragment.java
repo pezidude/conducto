@@ -30,7 +30,9 @@ public class PlaybackFragment extends Fragment {
      */
     public interface PlaybackControlsListener {
         void onPlayPauseClicked();
+
         void onResetClicked();
+
         void onSpeedChanged(int speedPercentage);
     }
 

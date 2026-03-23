@@ -81,5 +81,4 @@
         android:max="100"
         android:progress="38"
         android:progressDrawable="@drawable/bg_progress_bar"/>
-
 </LinearLayout>

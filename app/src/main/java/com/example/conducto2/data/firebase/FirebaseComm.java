@@ -42,7 +42,7 @@ public class FirebaseComm {
     }
 
     public static void signOut() {
-         getAuth().signOut();
+        getAuth().signOut();
 
 
     }
