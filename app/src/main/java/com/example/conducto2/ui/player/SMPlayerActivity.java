@@ -116,7 +116,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                     }
                 });
             } catch (Exception e) {
-                Log.e(TAG, "Error reading file", e);
+                Log.d(TAG, "Error reading file", e);
                 runOnUiThread(() ->
                         Toast.makeText(this, "Failed to load file: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                 );

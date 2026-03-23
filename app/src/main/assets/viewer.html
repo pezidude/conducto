@@ -2,7 +2,6 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="opensheetmusicdisplay.min.js"></script>
     <style>
         body, html { margin: 0; padding: 0; }
     </style>
@@ -10,19 +9,27 @@
 <body>
 <div id="score-container"></div>
 
-<script>
-    <!-- Bare Minimum viewer. Extra functionallity implemented in activity js evaluation functions -->
-    var scoreContainer = document.getElementById("score-container");
-    var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer, {
-        autoResize: true,
-        backend: "svg",
-        drawingParameters: "compacttight",
-        drawTitle: true,
-    });
 
-    function loadScore(xmlData) {
-        osmd.load(xmlData).then(() => osmd.render(), (err) => console.error(err));
-    }
-</script>
+    <script src="opensheetmusicdisplay.min.js"></script>
+    <!--
+        slow - fetches library everytime
+        <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.6/build/opensheetmusicdisplay.min.js"></script>
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/osmd-audio-player/umd/OsmdAudioPlayer.min.js"></script>
+
+    <script>
+        <!-- Bare Minimum viewer. Extra functionallity implemented in activity js evaluation functions -->
+        var scoreContainer = document.getElementById("score-container");
+        var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer, {
+            autoResize: true,
+            backend: "svg",
+            drawingParameters: "compacttight",
+            drawTitle: true,
+        });
+
+        function loadScore(xmlData) {
+            osmd.load(xmlData).then(() => osmd.render(), (err) => console.error(err));
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,46 @@
+package com.example.conducto2.data.model;
+
+import java.io.Serializable;
+
+/**
+ * Describes a live lesson session.
+ */
+public class LiveLesson implements Serializable {
+    private String classID;
+    private String lessonID;
+    private boolean isActive;
+
+    public LiveLesson() {
+        // Default constructor required for Firestore
+    }
+
+    public LiveLesson(String classID, String lessonID, boolean isActive) {
+        this.classID = classID;
+        this.lessonID = lessonID;
+        this.isActive = isActive;
+    }
+
+    public String getClassID() {
+        return classID;
+    }
+
+    public void setClassID(String classID) {
+        this.classID = classID;
+    }
+
+    public String getLessonID() {
+        return lessonID;
+    }
+
+    public void setLessonID(String lessonID) {
+        this.lessonID = lessonID;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+}

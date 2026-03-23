@@ -19,8 +19,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
+import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.FileHelper;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
@@ -41,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class LessonEditActivity extends AppCompatActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener {
+public class LessonEditActivity extends BaseDrawerActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener {
 
     private EditText lessonTitleInput;
     private EditText lessonInfoInput;
@@ -54,7 +56,6 @@ public class LessonEditActivity extends AppCompatActivity implements FirestoreMa
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
 
-    private FirestoreManager firestoreManager;
     private ArrayList<String> classAttendees = new ArrayList<>();
     private List<User> allUsers = new ArrayList<>();
     private Lesson currentLesson;
@@ -98,6 +99,7 @@ public class LessonEditActivity extends AppCompatActivity implements FirestoreMa
             isEditMode = false;
             saveLessonButton.setText("Add Lesson");
             currentLesson = new Lesson();
+            DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
             uploadMusicXmlButton.setEnabled(false);
         }
 
@@ -162,13 +164,20 @@ public class LessonEditActivity extends AppCompatActivity implements FirestoreMa
             Toast.makeText(this, "Lesson must be saved before uploading files.", Toast.LENGTH_SHORT).show();
             return;
         }
+        // TODO: package in helper class
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String fileName = "musicxml_" + UUID.randomUUID().toString();
+
+        FileIO fileOps = new FileIO(this);
+
+        String fileName = "musicresource_" + UUID.randomUUID().toString() + "." + fileOps.getExtension(fileUri);
         StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + currentLesson.getId() + "/" + fileName);
+
+        // TODO: do-while loop for if file exists by chance
 
         fileRef.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
                     MusicFile musicFile = new MusicFile(title, uri);
+                    // TODO: move this function to FirestoreManager
                     FirebaseFirestore.getInstance()
                             .collection("classes").document(classId)
                             .collection("lessons").document(currentLesson.getId())

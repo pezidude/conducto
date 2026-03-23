@@ -16,6 +16,7 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.DynamicAnnotation;
 import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.User;
 
 import com.google.android.gms.tasks.Continuation;
@@ -84,7 +85,7 @@ public class FirestoreManager extends FirebaseComm {
 
 
     public FirestoreManager() {
-        FIRESTORE = getFisrestore();
+        FIRESTORE = getFirestore();
 
     }
 
@@ -119,26 +120,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    public void getUser() {
-        String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-        FirebaseFirestore.getInstance().collection("users").document(email)
-                .get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                    @Override
-                    public void onSuccess(DocumentSnapshot document) {
-                        Log.d("DATA", document.getId() + " => " + document.getData());
-                        String type = "data";
-                        User user = document.toObject(User.class);
-                        DataManager.setUser(user);
-                        Log.d("DATA", user.toString());
-
-                    }
-
-
-                });
-    }
 
     public void getUser(UserFetchListener listener) {
-        String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        String email = authUserEmail();
         FirebaseFirestore.getInstance().collection("users").document(email)
                 .get().addOnSuccessListener(document -> {
                     if (document.exists()) {
@@ -161,25 +145,6 @@ public class FirestoreManager extends FirebaseComm {
                         }
                     } else {
                         Toast.makeText(context, "Error getting users.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-    }
-
-    public void migrateUsersToTeachers() {
-        FirebaseFirestore.getInstance().collection("users")
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            // Check if userType field exists
-                            if (!document.contains("userType")) {
-                                document.getReference().update("userType", "teacher")
-                                        .addOnSuccessListener(aVoid -> Log.d(TAG, "User " + document.getId() + " migrated to teacher."))
-                                        .addOnFailureListener(e -> Log.w(TAG, "Error migrating user " + document.getId(), e));
-                            }
-                        }
-                    } else {
-                        Log.w(TAG, "Error getting documents.", task.getException());
                     }
                 });
     }
@@ -343,6 +308,51 @@ public class FirestoreManager extends FirebaseComm {
                         dbResult.displayMessage("Failed to find class: " + task.getException().getMessage());
                     }
                 });
+    }
+
+    /**
+     * Sets or overrides the live lesson for a class.
+     * The override happens only if isActive is currently false.
+     * If an active lesson already exists, returns an error message.
+     */
+    public void setLiveLesson(LiveLesson liveLesson) {
+        if (liveLesson.getClassID() == null || liveLesson.getClassID().isEmpty()) {
+            if (dbResult != null) dbResult.displayMessage("Class ID is missing");
+            return;
+        }
+
+        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(liveLesson.getClassID());
+        
+        docRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                LiveLesson existing = documentSnapshot.toObject(LiveLesson.class);
+                // If there's an active lesson and we are trying to start another active one (or same), block it.
+                // We allow the set if the new liveLesson has isActive = false, to allow stopping it.
+                if (existing != null && existing.isActive() && liveLesson.isActive()) {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("A live lesson is already active for this class");
+                    }
+                    return;
+                }
+            }
+
+            // Perform the set (starting a new one or stopping the existing one)
+            docRef.set(liveLesson)
+                    .addOnSuccessListener(aVoid -> {
+                        if (dbResult != null) {
+                            dbResult.displayMessage("Live lesson status updated");
+                            dbResult.uploadResult(true);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (dbResult != null)
+                            dbResult.displayMessage("Failed to set live lesson: " + e.getMessage());
+                    });
+
+        }).addOnFailureListener(e -> {
+            if (dbResult != null)
+                dbResult.displayMessage("Error checking live lesson status: " + e.getMessage());
+        });
     }
 
     public void getAnnotationsForLesson(String classId, String lessonId, AnnotationFetchListener listener) {

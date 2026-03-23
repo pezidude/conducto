@@ -23,9 +23,6 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Annotation toolbar (shown while annotating) -->
-    <include layout="@layout/fragment_annotation_toolbar"/>
-
     <!-- Playback controls (docked at top below toolbar) -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/playback_fragment_container"

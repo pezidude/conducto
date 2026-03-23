@@ -86,6 +86,7 @@ public class HomeworkFragment extends Fragment {
         });
 
         addLessonFab.setOnClickListener(v -> {
+            DataManager.setCurLesson(); // set an empty lesson to be edited
             Intent intent = new Intent(getContext(), LessonEditActivity.class);
             startActivity(intent);
         });

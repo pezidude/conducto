@@ -40,8 +40,6 @@ public class MusicXmlAdapter extends RecyclerView.Adapter<MusicXmlAdapter.ViewHo
         holder.fileNameTextView.setText(musicFile.getTitle());
         holder.assignButton.setOnClickListener(v -> {
             if (listener != null) {
-                // update the correct title
-                musicFile.setTitle(FileHelper.getTitleFromUri(holder.itemView.getContext(), musicFile.getUri()));
                 listener.onAssignButtonClick(musicFile);
             }
         });

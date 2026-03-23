@@ -136,6 +136,13 @@
         <item name="rippleColor">@color/ripple_accent</item>
     </style>
 
+    <!-- Destructive: red fill, white text (for Go Live) -->
+    <style name="Widget.Conducto.Button.Destructive" parent="Widget.Conducto.Button.Primary">
+        <item name="backgroundTint">@color/error</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="rippleColor">@color/ripple_on_dark</item>
+    </style>
+
     <!-- Icon button (square, borderless) -->
     <style name="Widget.Conducto.Button.Icon" parent="Widget.Material3.Button.IconButton">
         <item name="android:backgroundTint">@color/background_app</item>

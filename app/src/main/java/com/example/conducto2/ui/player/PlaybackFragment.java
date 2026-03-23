@@ -36,7 +36,6 @@ public class PlaybackFragment extends Fragment {
 
     private PlaybackControlsListener mListener;
     private ImageButton playPauseButton;
-    private TextView speedText;
     private boolean isPlaying = false;
 
     public PlaybackFragment() {
@@ -65,11 +64,9 @@ public class PlaybackFragment extends Fragment {
             }
         });
 
-        speedText = view.findViewById(R.id.speed_text);
         Slider speedSlider = view.findViewById(R.id.speed_slider);
         speedSlider.addOnChangeListener((slider, value, fromUser) -> {
             int speedPercentage = (int) value;
-            speedText.setText(String.format(Locale.getDefault(), "%d%%", speedPercentage));
             if (mListener != null) {
                 mListener.onSpeedChanged(speedPercentage);
             }

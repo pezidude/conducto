@@ -9,52 +9,16 @@
     android:background="@color/surface_card"
     android:paddingStart="@dimen/screen_horizontal_margin"
     android:paddingEnd="@dimen/screen_horizontal_margin"
-    android:paddingTop="@dimen/spacing_lg"
-    android:paddingBottom="@dimen/spacing_lg"
+    android:paddingTop="@dimen/spacing_sm"
+    android:paddingBottom="@dimen/spacing_sm"
     tools:context=".ui.player.PlaybackFragment">
 
-    <!-- Progress bar -->
-    <ProgressBar
-        android:id="@+id/playback_progress_bar"
-        style="@style/Widget.Conducto.ProgressBar"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/progress_height"
-        android:max="100"
-        android:progress="38"
-        android:progressDrawable="@drawable/bg_progress_bar"/>
-
-    <!-- Time labels -->
+    <!-- Single Main Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginTop="@dimen/spacing_xs">
-
-        <TextView
-            android:id="@+id/tvCurrentTime"
-            style="@style/TextAppearance.Conducto.Caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            tools:text="12:04"/>
-
-        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-
-        <TextView
-            android:id="@+id/tvTotalTime"
-            style="@style/TextAppearance.Conducto.Caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            tools:text="32:00"/>
-
-    </LinearLayout>
-
-    <!-- Controls row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="@dimen/spacing_base">
+        android:gravity="center_vertical">
 
         <!-- Reset / skip back -->
         <ImageButton
@@ -65,15 +29,15 @@
             android:src="@drawable/skip_previous_24px"
             android:tint="@color/text_primary"
             android:contentDescription="@string/reset_playback"
-            android:padding="@dimen/spacing_md"
+            android:padding="@dimen/spacing_sm"
             android:scaleType="fitCenter"/>
 
         <!-- Play / Pause (primary) -->
         <FrameLayout
             android:layout_width="@dimen/playback_control_size_primary"
             android:layout_height="@dimen/playback_control_size_primary"
-            android:layout_marginStart="@dimen/spacing_base"
-            android:layout_marginEnd="@dimen/spacing_base"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:layout_marginEnd="@dimen/spacing_sm"
             android:background="@drawable/bg_avatar_circle">
 
             <ImageButton
@@ -88,56 +52,34 @@
 
         </FrameLayout>
 
-        <!-- Speed display -->
-        <TextView
-            android:id="@+id/speed_text"
-            android:layout_width="@dimen/playback_control_size"
-            android:layout_height="@dimen/playback_control_size"
-            android:background="@drawable/bg_card_rounded"
-            android:text="@string/playback_speed_default"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_body_sm"
-            android:fontFamily="sans-serif-medium"
-            android:gravity="center"/>
+        <!-- Compact Speed slider in the row -->
+        <com.google.android.material.slider.Slider
+            android:id="@+id/speed_slider"
+            style="@style/Widget.Conducto.SeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:valueFrom="50.0"
+            android:valueTo="200.0"
+            android:stepSize="25.0"
+            android:value="100.0"
+            app:labelBehavior="gone"
+            app:thumbColor="@color/accent"
+            app:trackColorActive="@color/accent"
+            app:trackColorInactive="@color/progress_track"
+            app:trackHeight="@dimen/progress_height"/>
 
     </LinearLayout>
 
-    <!-- Speed slider -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/playback_speed"
-        style="@style/TextAppearance.Conducto.Label"
-        android:layout_marginTop="@dimen/spacing_lg"
-        android:layout_marginBottom="@dimen/spacing_xs"/>
-
-    <com.google.android.material.slider.Slider
-        android:id="@+id/speed_slider"
-        style="@style/Widget.Conducto.SeekBar"
+    <!-- Progress bar under the main controls row -->
+    <ProgressBar
+        android:id="@+id/playback_progress_bar"
+        style="@style/Widget.Conducto.ProgressBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:valueFrom="50.0"
-        android:valueTo="200.0"
-        android:stepSize="25.0"
-        android:value="100.0"
-        app:labelBehavior="gone"
-        app:thumbColor="@color/accent"
-        app:trackColorActive="@color/accent"
-        app:trackColorInactive="@color/progress_track"
-        app:trackHeight="@dimen/progress_height"/>
-
-    <!-- Speed labels row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <TextView style="@style/TextAppearance.Conducto.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="0.5×" android:gravity="center"/>
-        <TextView style="@style/TextAppearance.Conducto.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="0.75×" android:gravity="center"/>
-        <TextView style="@style/TextAppearance.Conducto.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1×" android:gravity="center" android:textColor="@color/accent" android:fontFamily="sans-serif-medium"/>
-        <TextView style="@style/TextAppearance.Conducto.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1.5×" android:gravity="center"/>
-        <TextView style="@style/TextAppearance.Conducto.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2×" android:gravity="center"/>
-
-    </LinearLayout>
+        android:layout_height="@dimen/progress_height"
+        android:layout_marginTop="@dimen/spacing_xs"
+        android:max="100"
+        android:progress="38"
+        android:progressDrawable="@drawable/bg_progress_bar"/>
 
 </LinearLayout>

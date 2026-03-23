@@ -17,13 +17,17 @@ public class DataManager {
         return user;
     }
     public  static void setUser(User other){
-        user = new User(other.getEmail(), other.getFname(), other.getLname());
+        user = new User(other.getEmail(), other.getFname(), other.getLname(), other.getUserType());
     }
 
     public static  Lesson getCurLessonInstance(){return curLesson;}
     public static void setCurLesson(Lesson lesson){
         curLesson = new Lesson(lesson);
     }
+    public static void setCurLesson() {
+        curLesson = null;
+    }
+
     public static String getCurClassID(){
         return curClassID;
     }

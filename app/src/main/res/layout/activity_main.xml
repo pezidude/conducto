@@ -105,7 +105,7 @@
         android:text="Test Activity"
         android:textColor="#33FFFFFF"
         android:textSize="12sp"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@id/btnNotify"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>

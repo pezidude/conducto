@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         AlarmScheduler.requestExactAlarmPermission(this);
         
         firestoreManager = new FirestoreManager();
-        firestoreManager.migrateUsersToTeachers();
 
         initViews();
         notificationHelper = new NotificationHelper(this);

@@ -10,6 +10,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.InputStream;
+import java.net.URL;
 
 public class FileHelper {
     public static String getTitleFromUri(Context context, Uri uri) {
@@ -20,8 +21,16 @@ public class FileHelper {
         return getFileName(context, uri);
     }
 
+    private static InputStream openInputStream(Context context, Uri uri) throws Exception {
+        String scheme = uri.getScheme();
+        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+            return new URL(uri.toString()).openStream();
+        }
+        return context.getContentResolver().openInputStream(uri);
+    }
+
     private static String getTitleFromMusicXml(Context context, Uri uri) {
-        try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+        try (InputStream inputStream = openInputStream(context, uri)) {
             XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = factory.newPullParser();
             parser.setInput(inputStream, null);
@@ -66,7 +75,7 @@ public class FileHelper {
 
     private static String getFileName(Context context, Uri uri) {
         String result = null;
-        if (uri.getScheme().equals("content")) {
+        if (uri.getScheme() != null && uri.getScheme().equals("content")) {
             try (Cursor cursor = context.getContentResolver().query(uri, null, null, null, null)) {
                 if (cursor != null && cursor.moveToFirst()) {
                     int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
@@ -78,9 +87,11 @@ public class FileHelper {
         }
         if (result == null) {
             result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) {
-                result = result.substring(cut + 1);
+            if (result != null) {
+                int cut = result.lastIndexOf('/');
+                if (cut != -1) {
+                    result = result.substring(cut + 1);
+                }
             }
         }
         return result;
