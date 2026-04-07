@@ -301,9 +301,9 @@
     </style>
 
     <style name="Widget.Conducto.BottomNav.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/nav_indicator</item>
-        <item name="android:width">56dp</item>
-        <item name="android:height">28dp</item>
+        <item name="android:color">@android:color/transparent</item>
+        <item name="android:width">0dp</item>
+        <item name="android:height">0dp</item>
         <item name="shapeAppearance">@style/Shape.Conducto.Pill</item>
     </style>
 

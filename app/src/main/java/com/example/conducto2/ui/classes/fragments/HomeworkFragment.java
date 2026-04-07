@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
@@ -51,6 +52,10 @@ public class HomeworkFragment extends Fragment {
         setupListeners();
         setupUI();
         setupItemClickListener();
+
+        // delete me
+        FirestoreManager fbManager = new FirestoreManager();
+        fbManager.clearLiveLesson(DataManager.getCurClassID());
 
         return view;
     }

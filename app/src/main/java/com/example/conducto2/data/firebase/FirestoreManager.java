@@ -24,7 +24,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -335,7 +334,7 @@ public class FirestoreManager extends FirebaseComm {
                 }
             }
 
-            // Perform the set (starting a new one or stopping the existing one)
+            // Perform the set
             docRef.set(liveLesson)
                     .addOnSuccessListener(aVoid -> {
                         if (dbResult != null) {
@@ -352,6 +351,45 @@ public class FirestoreManager extends FirebaseComm {
             if (dbResult != null)
                 dbResult.displayMessage("Error checking live lesson status: " + e.getMessage());
         });
+    }
+
+    public void isLiveLessonActive(String classID) {
+        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(classID);
+
+        docRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (dbResult == null) return;
+            if (documentSnapshot.exists()) {
+                LiveLesson liveLesson = documentSnapshot.toObject(LiveLesson.class);
+                dbResult.uploadResult(liveLesson != null && liveLesson.isActive());
+            } else {
+                dbResult.uploadResult(false);
+            }
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "Error checking live lesson", e);
+            if (dbResult != null) dbResult.uploadResult(false);
+        });
+    }
+
+    public void clearLiveLesson(String classID) {
+        if (classID == null || classID.isEmpty()) {
+            if (dbResult != null) dbResult.displayMessage("Class ID is missing");
+            return;
+        }
+
+        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(classID);
+        docRef.delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Live lesson cleared");
+                        dbResult.uploadResult(true);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Failed to clear live lesson: " + e.getMessage());
+                        dbResult.uploadResult(false);
+                    }
+                });
     }
 
     public void getAnnotationsForLesson(String classId, String lessonId, AnnotationFetchListener listener) {
