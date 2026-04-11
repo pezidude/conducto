@@ -293,18 +293,12 @@
 
     <style name="Widget.Conducto.BottomNav" parent="Widget.Material3.BottomNavigationView">
         <item name="android:background">@color/nav_background</item>
+        <item name="backgroundTint">@color/nav_background</item>
         <item name="itemIconTint">@color/nav_icon_selector</item>
         <item name="itemTextColor">@color/nav_label_selector</item>
-        <item name="itemActiveIndicatorStyle">@style/Widget.Conducto.BottomNav.Indicator</item>
         <item name="android:elevation">8dp</item>
         <item name="labelVisibilityMode">labeled</item>
-    </style>
-
-    <style name="Widget.Conducto.BottomNav.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@android:color/transparent</item>
-        <item name="android:width">0dp</item>
-        <item name="android:height">0dp</item>
-        <item name="shapeAppearance">@style/Shape.Conducto.Pill</item>
+        <item name="itemActiveIndicatorStyle">@null</item>
     </style>
 
 

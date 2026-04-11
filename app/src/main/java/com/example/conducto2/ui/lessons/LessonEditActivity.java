@@ -14,7 +14,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -84,8 +83,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
         setupUI();
 
-        if (DataManager.getCurLessonInstance() != null) {
-            currentLesson = DataManager.getCurLessonInstance();
+        if (DataManager.getCurLesson() != null) {
+            currentLesson = DataManager.getCurLesson();
             isEditMode = true;
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
@@ -101,10 +100,12 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             currentLesson = new Lesson();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
             uploadMusicXmlButton.setEnabled(false);
+            // TODO: change the style / set enabled to true but give an error.
+            //  the current state is confusing
         }
 
-        if (DataManager.getCurClassID() != null) {
-            classId = DataManager.getCurClassID();
+        if (DataManager.getCurClass() != null) {
+            classId = DataManager.getCurClass().getId();
             fetchClassAttendees();
         }
 

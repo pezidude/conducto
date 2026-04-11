@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Annotation;
@@ -27,8 +28,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -67,6 +70,10 @@ public class FirestoreManager extends FirebaseComm {
     
     public interface AnnotationFetchListener {
         void onAnnotationsFetched(List<Annotation> annotations);
+    }
+
+    public interface LiveLessonListener {
+        void onLiveLessonChanged(LiveLesson liveLesson);
     }
 
     public void setDbResult(DBResult dbr) {
@@ -309,8 +316,8 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     /**
-     * Sets or overrides the live lesson for a class.
-     * The override happens only if isActive is currently false.
+     * Sets (or overwrites) the live lesson for a class in liveLessons collection
+     * An overwrite happens only if isActive is currently false.
      * If an active lesson already exists, returns an error message.
      */
     public void setLiveLesson(LiveLesson liveLesson) {
@@ -354,6 +361,7 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     public void isLiveLessonActive(String classID) {
+        // result is passed in uploadResult as boolean
         DocumentReference docRef = FIRESTORE.collection("liveLessons").document(classID);
 
         docRef.get().addOnSuccessListener(documentSnapshot -> {
@@ -369,28 +377,30 @@ public class FirestoreManager extends FirebaseComm {
             if (dbResult != null) dbResult.uploadResult(false);
         });
     }
+    public void listenForLiveLesson(String classID, LiveLessonListener listener) {
+        FIRESTORE.collection("liveLessons").whereEqualTo("classID", classID).addSnapshotListener(
+                new EventListener<QuerySnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException e) {
+                        if (e != null) {
+                            Log.w(TAG, "Listen failed.", e);
+                            return;
+                        }
 
-    public void clearLiveLesson(String classID) {
-        if (classID == null || classID.isEmpty()) {
-            if (dbResult != null) dbResult.displayMessage("Class ID is missing");
-            return;
-        }
-
-        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(classID);
-        docRef.delete()
-                .addOnSuccessListener(aVoid -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("Live lesson cleared");
-                        dbResult.uploadResult(true);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("Failed to clear live lesson: " + e.getMessage());
-                        dbResult.uploadResult(false);
+                        if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
+                            // should never be more than one
+                            LiveLesson liveLesson = snapshot.getDocuments().get(0).toObject(LiveLesson.class);
+                            listener.onLiveLessonChanged(liveLesson);
+                        } else {
+                            // got empty query result, lesson seems to be deleted.
+                            listener.onLiveLessonChanged(null);
+                            Log.d(TAG, "Current lesson: null");
+                        }
                     }
                 });
+
     }
+
 
     public void getAnnotationsForLesson(String classId, String lessonId, AnnotationFetchListener listener) {
         FIRESTORE.collection("classes").document(classId)
@@ -424,7 +434,7 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 });
     }
-
+    // DELETE ME
     public static class FileStorage extends FirebaseComm {
 
         private static final String LOG_TAG = "FileStorage";

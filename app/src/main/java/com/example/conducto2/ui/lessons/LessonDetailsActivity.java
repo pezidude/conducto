@@ -12,8 +12,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
@@ -74,7 +72,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
      * Also sets up the teacher-specific "Go Live" button.
      */
     private void loadData() {
-        lesson = DataManager.getCurLessonInstance();
+        lesson = DataManager.getCurLesson();
 
         if (lesson != null) {
             lessonTitle.setText(lesson.getTitle());
@@ -163,7 +161,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
      * Updates the class document in Firestore to set this lesson as the current live lesson.
      */
     private void goLive() {
-        String classId = DataManager.getCurClassID();
+        String classId = DataManager.getCurClass().getId();
         if (classId == null || lesson == null || lesson.getId() == null) {
             Toast.makeText(this, "Error: Missing data to go live.", Toast.LENGTH_SHORT).show();
             return;

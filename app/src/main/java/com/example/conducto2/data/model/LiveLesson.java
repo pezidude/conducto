@@ -10,6 +10,14 @@ public class LiveLesson implements Serializable {
     private String lessonID;
     private boolean isActive;
 
+    public enum lessonState {
+        PLAYING,
+        PAUSED,
+        STOPPED
+    }
+    private lessonState state;
+
+
     public LiveLesson() {
         // Default constructor required for Firestore
     }
@@ -18,6 +26,15 @@ public class LiveLesson implements Serializable {
         this.classID = classID;
         this.lessonID = lessonID;
         this.isActive = isActive;
+        state = lessonState.STOPPED; // default state for our case
+    }
+
+    public lessonState getState() {
+        return state;
+    }
+
+    public void setState(lessonState state) {
+        this.state = state;
     }
 
     public String getClassID() {

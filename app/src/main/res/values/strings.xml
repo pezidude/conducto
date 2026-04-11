@@ -129,6 +129,11 @@
     <string name="lesson_no_recording">No recording available</string>
     <string name="lesson_no_lessons">No lessons yet</string>
 
+    <!-- ── Live Lesson ── -->
+    <string name="live_no_active_lesson">There is no live lesson active for this class</string>
+    <string name="live_main_content_todo">TODO: Implement main live lesson interface</string>
+    <string name="btn_join_lesson">Join Lesson</string>
+
     <!-- ── Audio Player ── -->
     <string name="title_player">Now Playing</string>
     <string name="player_play">Play</string>

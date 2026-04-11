@@ -4,7 +4,7 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" /> <!-- For older versions, and still good practice tohave -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" /> <!-- For older versions, and still good practice to have -->
     <uses-permission android:name="android.permission.SET_ALARM" /> <!-- To ensure the alarm can run after the device reboots -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -43,10 +43,7 @@
             android:name=".ui.ProfileActivity"
             android:label="@string/title_activity_profile"
             android:exported="false" />
-        <activity
-            android:name=".ui.HomeworkActivity"
-            android:label="@string/title_activity_homework"
-            android:exported="false" />
+
 
         <receiver
             android:name=".receivers.HeadsetReceiver"

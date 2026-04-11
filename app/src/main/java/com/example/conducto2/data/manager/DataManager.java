@@ -1,9 +1,9 @@
 package com.example.conducto2.data.manager;
 
-import android.util.Log;
-
 import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.User;
+import com.example.conducto2.data.model.Class;
 
 public class DataManager {
 
@@ -11,7 +11,17 @@ public class DataManager {
 
     private static User user;
     private static Lesson curLesson;
-    private static String curClassID;
+    private static Class curClass;
+
+    public static LiveLesson getCurLiveLesson() {
+        return curLiveLesson;
+    }
+
+    public static void setCurLiveLesson(LiveLesson curLiveLesson) {
+        DataManager.curLiveLesson = curLiveLesson;
+    }
+
+    private static LiveLesson curLiveLesson;
 
     public static User getUserInstance(){
         return user;
@@ -20,18 +30,15 @@ public class DataManager {
         user = new User(other.getEmail(), other.getFname(), other.getLname(), other.getUserType());
     }
 
-    public static  Lesson getCurLessonInstance(){return curLesson;}
+    public static  Lesson getCurLesson(){return curLesson;}
     public static void setCurLesson(Lesson lesson){
         curLesson = new Lesson(lesson);
     }
-    public static void setCurLesson() {
-        curLesson = null;
-    }
 
-    public static String getCurClassID(){
-        return curClassID;
+    public static Class getCurClass(){
+        return curClass;
     }
-    public static void setCurClassID(String classID){
-        curClassID = classID;
+    public static void setCurClass(Class cls){
+        curClass = cls;
     }
 }

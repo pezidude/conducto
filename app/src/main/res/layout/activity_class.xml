@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/background_app"
+    android:theme="@style/Theme.Material3.Light.NoActionBar"
     tools:context=".ui.classes.ClassActivity">
 
     <!-- Toolbar -->
@@ -59,11 +60,9 @@
     <!-- Bottom navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
-        style="@style/Widget.Conducto.BottomNav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:menu="@menu/class_bottom_navigation_menu"
-        app:itemIconTint="@color/nav_icon_selector"
-        app:itemTextColor="@color/nav_icon_selector"/>
+        app:labelVisibilityMode="labeled" />
 
 </LinearLayout>

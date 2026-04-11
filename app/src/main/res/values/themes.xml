@@ -38,6 +38,7 @@
         <item name="colorSurfaceContainerHigh">@color/navy_100</item>
         <item name="colorSurfaceContainerLow">@color/white</item>
 
+
         <item name="android:colorBackground">@color/background_app</item>
         <item name="android:windowBackground">@color/background_app</item>
 
@@ -64,11 +65,11 @@
         <!-- ── Component defaults ── -->
         <item name="materialButtonStyle">@style/Widget.Conducto.Button.Primary</item>
         <item name="materialCardViewStyle">@style/Widget.Conducto.Card</item>
-        <item name="bottomNavigationStyle">@style/Widget.Conducto.BottomNav</item>
         <item name="toolbarStyle">@style/Widget.Conducto.Toolbar</item>
         <item name="floatingActionButtonStyle">@style/Widget.Conducto.FAB</item>
         <item name="textInputStyle">@style/Widget.Conducto.TextInput</item>
         <item name="chipStyle">@style/Widget.Conducto.Chip</item>
+        <item name="bottomNavigationStyle">@style/Widget.Conducto.BottomNav</item>
 
         <!-- ── Shape system ── -->
         <item name="shapeAppearanceSmallComponent">@style/Shape.Conducto.Small</item>

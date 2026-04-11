@@ -21,6 +21,7 @@ import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassListActivity;
+import com.example.conducto2.ui.classes.fragments.UpcomingFragment;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.ui.classes.ClassActivity;
 import com.google.android.material.navigation.NavigationView;
@@ -28,6 +29,7 @@ import com.google.android.material.navigation.NavigationView;
 /**
  * Base activity for screens that include a navigation drawer.
  * It handles the drawer setup, header, and dynamic menu items for classes.
+ * Activities that need this functionality should extend this class.
  */
 public class BaseDrawerActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -120,7 +122,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             drawerLayout.closeDrawer(GravityCompat.START);
         });
 
-        MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_homework);
+        MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_scheduled);
         if (homeworkItem != null) {
             // User Dependent logic
             if ("teacher".equals(user.getUserType())) {
@@ -149,7 +151,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                          menu.add(DYNAMIC_CLASSES_GROUP_ID, Menu.NONE, Menu.NONE, cls.getName())
                                 .setOnMenuItemClickListener(menuItem -> {
                                     Intent intent = new Intent(BaseDrawerActivity.this, ClassActivity.class);
-                                    intent.putExtra("class_id", cls.getId());
+                                    DataManager.setCurClass(cls);
                                     startActivity(intent);
                                     drawerLayout.closeDrawer(GravityCompat.START);
                                     return true;
@@ -170,8 +172,9 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         int id = item.getItemId();
         if (id == R.id.nav_dashboard) {
             startActivity(new Intent(this, DashboardActivity.class));
-        } else if (id == R.id.nav_homework) {
-            startActivity(new Intent(this, HomeworkActivity.class));
+        } else if (id == R.id.nav_scheduled) {
+            // TODO: THIS CRASHES. Replace fragment with proper alternative
+            startActivity(new Intent(this, UpcomingFragment.class));
         } else if (id == R.id.nav_my_classes) {
             startActivity(new Intent(this, ClassListActivity.class));
         }
