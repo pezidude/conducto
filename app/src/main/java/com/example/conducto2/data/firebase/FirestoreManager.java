@@ -64,6 +64,10 @@ public class FirestoreManager extends FirebaseComm {
         void onUserFetched(User user);
     }
 
+    public interface AllUsersFetchListener {
+        void onUsersFetched(List<User> users);
+    }
+
     public interface ClassesFetchListener {
         void onClassesFetched(List<Class> classes);
     }
@@ -118,9 +122,10 @@ public class FirestoreManager extends FirebaseComm {
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null)
+                        if (dbResult != null) {
                             dbResult.displayMessage("upload failed " + e.getMessage());
-
+                            dbResult.uploadResult(false);
+                        }
                     }
                 });
     }
@@ -139,7 +144,7 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 });
     }
-    public void getAllUsers(List<User> allUsers, Context context) {
+    public void getAllUsers(List<User> allUsers, AllUsersFetchListener listener) {
         FirebaseFirestore.getInstance().collection("users")
                 .get()
                 .addOnCompleteListener(task -> {
@@ -148,8 +153,16 @@ public class FirestoreManager extends FirebaseComm {
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             allUsers.add(document.toObject(User.class));
                         }
+                        if (listener != null) {
+                            listener.onUsersFetched(allUsers);
+                        }
                     } else {
-                        Toast.makeText(context, "Error getting users.", Toast.LENGTH_SHORT).show();
+                        if (dbResult != null) {
+                            dbResult.displayMessage("Error getting users: " + task.getException().getMessage());
+                        }
+                        if (listener != null) {
+                            listener.onUsersFetched(null);
+                        }
                     }
                 });
     }
@@ -189,8 +202,10 @@ public class FirestoreManager extends FirebaseComm {
                         dbResult.uploadResult(true);
                     }
                 }).addOnFailureListener(e -> {
-                    if (dbResult != null)
+                    if (dbResult != null) {
                         dbResult.displayMessage("lesson upload failed " + e.getMessage());
+                        dbResult.uploadResult(false);
+                    }
                 });
     }
 
@@ -198,6 +213,7 @@ public class FirestoreManager extends FirebaseComm {
         if (lesson.getId() == null || lesson.getId().isEmpty()) {
             if (dbResult != null) {
                 dbResult.displayMessage("Lesson ID is missing, cannot update.");
+                dbResult.uploadResult(false);
             }
             return;
         }
@@ -220,8 +236,10 @@ public class FirestoreManager extends FirebaseComm {
                         dbResult.uploadResult(true);
                     }
                 }).addOnFailureListener(e -> {
-                    if (dbResult != null)
+                    if (dbResult != null) {
                         dbResult.displayMessage("lesson update failed " + e.getMessage());
+                        dbResult.uploadResult(false);
+                    }
                 });
     }
 
@@ -243,9 +261,10 @@ public class FirestoreManager extends FirebaseComm {
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null)
+                        if (dbResult != null) {
                             dbResult.displayMessage("class upload failed " + e.getMessage());
-
+                            dbResult.uploadResult(false);
+                        }
                     }
                 });
     }
@@ -267,9 +286,10 @@ public class FirestoreManager extends FirebaseComm {
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null)
+                        if (dbResult != null) {
                             dbResult.displayMessage("class upload failed " + e.getMessage());
-
+                            dbResult.uploadResult(false);
+                        }
                     }
                 });
     }
@@ -305,12 +325,15 @@ public class FirestoreManager extends FirebaseComm {
                                     })
                                     .addOnFailureListener(e -> {
                                         dbResult.displayMessage("Failed to join class: " + e.getMessage());
+                                        dbResult.uploadResult(false);
                                     });
                         } else {
                             dbResult.displayMessage("Invalid join code");
+                            dbResult.uploadResult(false);
                         }
                     } else {
                         dbResult.displayMessage("Failed to find class: " + task.getException().getMessage());
+                        dbResult.uploadResult(false);
                     }
                 });
     }
@@ -350,13 +373,17 @@ public class FirestoreManager extends FirebaseComm {
                         }
                     })
                     .addOnFailureListener(e -> {
-                        if (dbResult != null)
+                        if (dbResult != null) {
                             dbResult.displayMessage("Failed to set live lesson: " + e.getMessage());
+                            dbResult.uploadResult(false);
+                        }
                     });
 
         }).addOnFailureListener(e -> {
-            if (dbResult != null)
+            if (dbResult != null) {
                 dbResult.displayMessage("Error checking live lesson status: " + e.getMessage());
+                dbResult.uploadResult(false);
+            }
         });
     }
 

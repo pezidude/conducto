@@ -79,6 +79,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
         musicXmlFilesRecyclerView = findViewById(R.id.music_xml_files_recyclerview);
         musicXmlFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         musicXmlFilesRecyclerView.setNestedScrollingEnabled(false);
+        //musicXmlFilesRecyclerView.setItemAnimator(null); // fix bug in recycle view
         btnGoLive = findViewById(R.id.btn_go_live);
         tvStatusMessage = findViewById(R.id.tv_status_message);
     }
@@ -125,30 +126,6 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
                 .collection("lessons").document(lesson.getId())
                 .collection("musicFiles");
 
-        // If the user is a student, filter music files based on the assignments in lesson.fileMapping
-        if ("student".equals(user.getUserType())) {
-            Map<String, List<String>> fileMapping = lesson.getFileMapping();
-            List<String> assignedUrls = new ArrayList<>();
-
-            if (fileMapping != null) {
-                String studentEmail = user.getEmail();
-                for (Map.Entry<String, List<String>> entry : fileMapping.entrySet()) {
-                    if (entry.getValue() != null && entry.getValue().contains(studentEmail)) {
-                        assignedUrls.add(entry.getKey());
-                    }
-                }
-            }
-
-            if (!assignedUrls.isEmpty()) {
-                // Firestore 'whereIn' filter limits to 10 items.
-                // If more are needed, multiple queries or a different data structure would be required.
-                query = query.whereIn("url", assignedUrls);
-            } else {
-                // If no files are specifically assigned to this student, we return an empty result set.
-                // We use a dummy filter that is guaranteed to match nothing.
-                query = query.whereEqualTo("url", "___no_assigned_files___");
-            }
-        }
 
         FirestoreRecyclerOptions<MusicFile> options = new FirestoreRecyclerOptions.Builder<MusicFile>()
                 .setQuery(query, MusicFile.class)

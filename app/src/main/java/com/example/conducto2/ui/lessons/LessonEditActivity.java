@@ -6,6 +6,7 @@ import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -28,9 +29,12 @@ import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -42,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class LessonEditActivity extends BaseDrawerActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener {
+public class LessonEditActivity extends BaseDrawerActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener, MusicXmlAdapter.OnDeleteButtonClickListener {
 
     private EditText lessonTitleInput;
     private EditText lessonInfoInput;
@@ -54,14 +58,15 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private Button uploadMusicXmlButton;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
+    private LinearProgressIndicator loadingProgress;
 
-    private ArrayList<String> classAttendees = new ArrayList<>();
-    private List<User> allUsers = new ArrayList<>();
+    private final ArrayList<String> classAttendees = new ArrayList<>();
+    private final List<User> allUsers = new ArrayList<>();
     private Lesson currentLesson;
     private String classId;
     private boolean isEditMode = false;
-    private Calendar calendar = Calendar.getInstance();
-    private List<MusicFile> musicFiles = new ArrayList<>();
+    private final Calendar calendar = Calendar.getInstance();
+    private int pendingTasks = 0;
 
     private final ActivityResultLauncher<Intent> musicXmlLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -89,19 +94,14 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
             }
-            if (currentLesson.getMusicXMLFiles() != null) {
-                musicFiles.addAll(currentLesson.getMusicXMLFiles());
-            }
             populateLessonData();
-            saveLessonButton.setText("Save Changes");
+            saveLessonButton.setText(R.string.btn_save);
         } else {
             isEditMode = false;
-            saveLessonButton.setText("Add Lesson");
+            saveLessonButton.setText(R.string.btn_save_lesson);
             currentLesson = new Lesson();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
             uploadMusicXmlButton.setEnabled(false);
-            // TODO: change the style / set enabled to true but give an error.
-            //  the current state is confusing
         }
 
         if (DataManager.getCurClass() != null) {
@@ -112,10 +112,29 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         updateDateAndTimeViews();
         setupRecyclerView();
         setupListeners();
-        firestoreManager.getAllUsers(allUsers, this);
+        
+        startTask(getString(R.string.status_loading));
+        firestoreManager.getAllUsers(allUsers, users -> endTask());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (musicXmlAdapter != null) {
+            musicXmlAdapter.startListening();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (musicXmlAdapter != null) {
+            musicXmlAdapter.stopListening();
+        }
     }
 
     private void fetchClassAttendees() {
+        startTask(getString(R.string.status_loading));
         FirebaseFirestore.getInstance().collection("classes").document(classId)
                 .get()
                 .addOnSuccessListener((DocumentSnapshot documentSnapshot) -> {
@@ -126,7 +145,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                             classAttendees.addAll(currentClass.getMembers());
                         }
                     }
-                });
+                    endTask();
+                })
+                .addOnFailureListener(e -> endTask());
     }
 
     private void setupUI() {
@@ -139,12 +160,29 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         saveLessonButton = findViewById(R.id.save_lesson_button);
         uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
+        loadingProgress = findViewById(R.id.loading_progress);
     }
 
     private void setupRecyclerView() {
         musicXmlRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        musicXmlAdapter = new MusicXmlAdapter(musicFiles, this);
-        musicXmlRecyclerView.setAdapter(musicXmlAdapter);
+        musicXmlRecyclerView.setItemAnimator(null); // fix bug in recycle view
+
+        if (classId != null && currentLesson != null && currentLesson.getId() != null) {
+            Query query = FirebaseFirestore.getInstance()
+                    .collection("classes").document(classId)
+                    .collection("lessons").document(currentLesson.getId())
+                    .collection("musicFiles");
+
+            FirestoreRecyclerOptions<MusicFile> options = new FirestoreRecyclerOptions.Builder<MusicFile>()
+                    .setQuery(query, MusicFile.class)
+                    .build();
+
+            musicXmlAdapter = new MusicXmlAdapter(options, true);
+            musicXmlAdapter.setOnAssignButtonClickListener(this);
+            musicXmlAdapter.setOnDeleteButtonClickListener(this);
+            musicXmlRecyclerView.setAdapter(musicXmlAdapter);
+            musicXmlAdapter.startListening();
+        }
     }
 
     private void setupListeners() {
@@ -165,32 +203,35 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             Toast.makeText(this, "Lesson must be saved before uploading files.", Toast.LENGTH_SHORT).show();
             return;
         }
-        // TODO: package in helper class
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
 
+        startTask(getString(R.string.status_uploading));
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         FileIO fileOps = new FileIO(this);
 
         String fileName = "musicresource_" + UUID.randomUUID().toString() + "." + fileOps.getExtension(fileUri);
         StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + currentLesson.getId() + "/" + fileName);
 
-        // TODO: do-while loop for if file exists by chance
-
         fileRef.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
                     MusicFile musicFile = new MusicFile(title, uri);
-                    // TODO: move this function to FirestoreManager
                     FirebaseFirestore.getInstance()
                             .collection("classes").document(classId)
                             .collection("lessons").document(currentLesson.getId())
-                            .update("musicXMLFiles", FieldValue.arrayUnion(musicFile))
+                            .collection("musicFiles")
+                            .add(musicFile)
                             .addOnSuccessListener(aVoid -> {
-                                musicFiles.add(musicFile);
-                                musicXmlAdapter.notifyItemInserted(musicFiles.size() - 1);
-                                Toast.makeText(LessonEditActivity.this, "File uploaded and saved.", Toast.LENGTH_SHORT).show();
+                                endTask();
+                                displayMessage("File uploaded and saved.");
                             })
-                            .addOnFailureListener(e -> Toast.makeText(LessonEditActivity.this, "Failed to save file URL: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            .addOnFailureListener(e -> {
+                                endTask();
+                                displayMessage("Failed to save file URL: " + e.getMessage());
+                            });
                 }))
-                .addOnFailureListener(e -> Toast.makeText(LessonEditActivity.this, "Upload failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                .addOnFailureListener(e -> {
+                    endTask();
+                    displayMessage("Upload failed: " + e.getMessage());
+                });
     }
 
     private void showDatePickerDialog() {
@@ -221,8 +262,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     }
 
     private void updateDateAndTimeViews() {
-        dateTextView.setText("Selected Date: " + DateFormat.getDateInstance().format(calendar.getTime()));
-        timeTextView.setText("Selected Time: " + DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
+        dateTextView.setText(getString(R.string.label_lesson_date) + ": " + DateFormat.getDateInstance().format(calendar.getTime()));
+        timeTextView.setText(getString(R.string.label_lesson_time) + ": " + DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
     }
 
     private void populateLessonData() {
@@ -243,13 +284,13 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         currentLesson.setInfo(info);
         currentLesson.setDate(calendar.getTime());
         currentLesson.setAttendees(classAttendees);
-        currentLesson.setMusicXMLFiles(musicFiles);
-        // fileMapping is updated in onAssignButtonClick
 
+        startTask(getString(R.string.status_saving));
         if (isEditMode) {
             firestoreManager.updateLesson(classId, currentLesson);
         } else {
             if (!FirebaseComm.isUserSignedIn()) {
+                endTask();
                 Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -261,12 +302,17 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     @Override
     public void uploadResult(boolean success) {
+        endTask();
         if (success) {
+            // Check if we were just saving/updating the lesson (which triggers finish())
+            // or if it was another uploadResult trigger.
+            // Since we moved getAllUsers to its own listener, only save/update operations
+            // from firestoreManager should trigger this.
             if (!isEditMode) {
                 uploadMusicXmlButton.setEnabled(true);
                 isEditMode = true;
-                saveLessonButton.setText("Save Changes");
-                Toast.makeText(this, "Lesson saved. You can now upload files.", Toast.LENGTH_SHORT).show();
+                saveLessonButton.setText(R.string.btn_save);
+                setupRecyclerView();
             } else {
                 finish();
             }
@@ -275,7 +321,27 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     @Override
     public void displayMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
+    }
+
+    private void startTask(String message) {
+        pendingTasks++;
+        if (loadingProgress != null) {
+            loadingProgress.setVisibility(View.VISIBLE);
+        }
+        if (message != null && !message.isEmpty()) {
+            Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
+        }
+    }
+
+    private void endTask() {
+        pendingTasks--;
+        if (pendingTasks <= 0) {
+            pendingTasks = 0;
+            if (loadingProgress != null) {
+                loadingProgress.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override
@@ -288,6 +354,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         List<String> availableStudents = new ArrayList<>();
         final Map<String, List<String>> fileMapping = currentLesson.getFileMapping() != null ? currentLesson.getFileMapping() : new HashMap<>();
 
+        // Get students assigned for this file
         List<String> assignedStudentsForThisFile = fileMapping.get(musicFile.getUrl());
         if (assignedStudentsForThisFile == null) {
             assignedStudentsForThisFile = new ArrayList<>();
@@ -313,7 +380,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         for (int i = 0; i < availableStudents.size(); i++) {
             String studentEmail = availableStudents.get(i);
             // Find user object to display full name
-            String displayName = studentEmail;
+            String displayName = studentEmail; // default to email
             for (User user : allUsers) {
                 if (user.getEmail().equals(studentEmail)) {
                     displayName = user.getFname() + " " + user.getLname();
@@ -347,5 +414,25 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         });
         builder.setNegativeButton("Cancel", null);
         builder.create().show();
+    }
+
+    @Override
+    public void onDeleteButtonClick(MusicFile musicFile, String documentId) {
+        if (classId != null && currentLesson != null && currentLesson.getId() != null) {
+            startTask(getString(R.string.status_deleting));
+            FirebaseFirestore.getInstance()
+                    .collection("classes").document(classId)
+                    .collection("lessons").document(currentLesson.getId())
+                    .collection("musicFiles").document(documentId)
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+                        endTask();
+                        displayMessage("File deleted.");
+                    })
+                    .addOnFailureListener(e -> {
+                        endTask();
+                        displayMessage("Error deleting file.");
+                    });
+        }
     }
 }

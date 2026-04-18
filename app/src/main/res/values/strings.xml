@@ -224,6 +224,12 @@
     <string name="error_email_taken">An account with this email already exists.</string>
     <string name="error_class_not_found">Class not found. Check the code and try again.</string>
 
+    <!-- ── Status Messages ── -->
+    <string name="status_loading">Loading…</string>
+    <string name="status_saving">Saving…</string>
+    <string name="status_uploading">Uploading…</string>
+    <string name="status_deleting">Deleting…</string>
+
     <!-- ── Accessibility ── -->
     <string name="content_desc_avatar">Profile picture</string>
     <string name="content_desc_play">Play recording</string>
