@@ -149,8 +149,8 @@
                     android:layout_marginBottom="@dimen/spacing_sm"
                     android:layout_marginTop="@dimen/spacing_xs"/>
 
-                <ListView
-                    android:id="@+id/music_xml_files_list"
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/music_xml_files_recyclerview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:divider="@null"

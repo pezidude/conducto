@@ -5,12 +5,11 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
@@ -21,12 +20,16 @@ import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.player.SMPlayerActivity;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Activity that displays the details of a specific lesson, including its title, date, notes, and music files.
@@ -37,10 +40,10 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
     private TextView lessonTitle;
     private TextView lessonDate;
     private TextView lessonInfo;
-    private ListView musicXmlFilesList;
+    private RecyclerView musicXmlFilesRecyclerView;
     private MaterialButton btnGoLive;
     private TextView tvStatusMessage;
-    private Lesson lesson;
+    private MusicXmlAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,98 +52,128 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
 
         firestoreManager.setDbResult(this);
         initViews();
-        loadData();
+        // populateLessonView(); // This is called in onResume()
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadData(); // Refresh lesson details when returning from editing
+        if (adapter != null) {
+            adapter.startListening();
+        }
+        populateLessonView(); // Refresh lesson details when returning from editing
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (adapter != null) {
+            adapter.stopListening();
+        }
     }
 
     private void initViews() {
         lessonTitle = findViewById(R.id.lesson_details_title);
         lessonDate = findViewById(R.id.lesson_details_date);
         lessonInfo = findViewById(R.id.lesson_details_info);
-        musicXmlFilesList = findViewById(R.id.music_xml_files_list);
+        musicXmlFilesRecyclerView = findViewById(R.id.music_xml_files_recyclerview);
+        musicXmlFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        musicXmlFilesRecyclerView.setNestedScrollingEnabled(false);
         btnGoLive = findViewById(R.id.btn_go_live);
         tvStatusMessage = findViewById(R.id.tv_status_message);
     }
 
     /**
      * Loads the lesson data from the DataManager and populates the UI.
-     * Also sets up the teacher-specific "Go Live" button.
+     * Also sets up the teacher-specific "Live" button.
      */
-    private void loadData() {
-        lesson = DataManager.getCurLesson();
+    private void populateLessonView() {
+        Lesson lesson = DataManager.getCurLesson();
 
-        if (lesson != null) {
-            lessonTitle.setText(lesson.getTitle());
-            if (lesson.getDate() != null) {
-                SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());
-                lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
-            } else {
-                lessonDate.setText("No date set");
-            }
-            lessonInfo.setText(lesson.getInfo());
-
-            setupMusicFilesList();
-            setupGoLiveButton();
-        }
-    }
-
-    /**
-     * Configures the music files list with an adapter and click listeners.
-     */
-    private void setupMusicFilesList() {
-        if (lesson.getMusicXMLFiles() != null && !lesson.getMusicXMLFiles().isEmpty()) {
-            List<String> fileTitles = new ArrayList<>();
-            for (MusicFile musicFile : lesson.getMusicXMLFiles()) {
-                fileTitles.add(musicFile.getTitle());
-            }
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                    android.R.layout.simple_list_item_1, fileTitles);
-            musicXmlFilesList.setAdapter(adapter);
-
-            // Adjust height to show all elements inside the ScrollView
-            setListViewHeightBasedOnChildren(musicXmlFilesList);
-
-            musicXmlFilesList.setOnItemClickListener((parent, view, position, id) -> {
-                MusicFile selectedFile = lesson.getMusicXMLFiles().get(position);
-                Intent intent = new Intent(this, SMPlayerActivity.class);
-                intent.putExtra("readOnly", true);
-                if (selectedFile.getUri() != null) {
-                    intent.putExtra("fileUri", selectedFile.getUri().toString());
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(this, "File URI is missing.", Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            musicXmlFilesList.setAdapter(null);
-        }
-    }
-
-    /**
-     * Helper to set ListView height based on its children so it expands fully inside a ScrollView.
-     */
-    private void setListViewHeightBasedOnChildren(ListView listView) {
-        ListAdapter listAdapter = listView.getAdapter();
-        if (listAdapter == null) {
+        if (lesson == null) {
             return;
         }
 
-        int totalHeight = 0;
-        for (int i = 0; i < listAdapter.getCount(); i++) {
-            View listItem = listAdapter.getView(i, null, listView);
-            listItem.measure(0, 0);
-            totalHeight += listItem.getMeasuredHeight();
+        lessonTitle.setText(lesson.getTitle());
+        if (lesson.getDate() != null) {
+            SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());
+            lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
+        } else {
+            lessonDate.setText("No date set");
+        }
+        lessonInfo.setText(lesson.getInfo());
+
+        setupMusicFilesList();
+        setupGoLiveButton();
+
+    }
+
+    /**
+     * Configures the music files list with an adapter and click listeners and appropriate
+     * query for the student-specific music files based on the file mapping in the lesson.
+     */
+    private void setupMusicFilesList() {
+        Lesson lesson = DataManager.getCurLesson();
+        User user = DataManager.getUserInstance();
+
+        if (lesson == null || lesson.getId() == null || DataManager.getCurClass() == null || user == null) {
+            return;
         }
 
-        ViewGroup.LayoutParams params = listView.getLayoutParams();
-        params.height = totalHeight + (listView.getDividerHeight() * (listAdapter.getCount() - 1));
-        listView.setLayoutParams(params);
-        listView.requestLayout();
+        Query query = FirebaseFirestore.getInstance()
+                .collection("classes").document(DataManager.getCurClass().getId())
+                .collection("lessons").document(lesson.getId())
+                .collection("musicFiles");
+
+        // If the user is a student, filter music files based on the assignments in lesson.fileMapping
+        if ("student".equals(user.getUserType())) {
+            Map<String, List<String>> fileMapping = lesson.getFileMapping();
+            List<String> assignedUrls = new ArrayList<>();
+
+            if (fileMapping != null) {
+                String studentEmail = user.getEmail();
+                for (Map.Entry<String, List<String>> entry : fileMapping.entrySet()) {
+                    if (entry.getValue() != null && entry.getValue().contains(studentEmail)) {
+                        assignedUrls.add(entry.getKey());
+                    }
+                }
+            }
+
+            if (!assignedUrls.isEmpty()) {
+                // Firestore 'whereIn' filter limits to 10 items.
+                // If more are needed, multiple queries or a different data structure would be required.
+                query = query.whereIn("url", assignedUrls);
+            } else {
+                // If no files are specifically assigned to this student, we return an empty result set.
+                // We use a dummy filter that is guaranteed to match nothing.
+                query = query.whereEqualTo("url", "___no_assigned_files___");
+            }
+        }
+
+        FirestoreRecyclerOptions<MusicFile> options = new FirestoreRecyclerOptions.Builder<MusicFile>()
+                .setQuery(query, MusicFile.class)
+                .build();
+
+        // If an adapter already exists, stop it before creating a new one to prevent leaks
+        if (adapter != null) {
+            adapter.stopListening();
+        }
+
+        adapter = new MusicXmlAdapter(options, false);
+        adapter.setOnItemClickListener(selectedFile -> {
+            Intent intent = new Intent(this, SMPlayerActivity.class);
+            intent.putExtra("readOnly", true);
+            if (selectedFile.getUri() != null) {
+                // fileUri contains the path to the musicFile in Firebase Cloud Storage.
+                intent.putExtra("fileUri", selectedFile.getUri().toString());
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, "File URI is missing.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        musicXmlFilesRecyclerView.setAdapter(adapter);
+        adapter.startListening();
     }
 
 
@@ -161,6 +194,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
      * Updates the class document in Firestore to set this lesson as the current live lesson.
      */
     private void goLive() {
+        Lesson lesson = DataManager.getCurLesson();
         String classId = DataManager.getCurClass().getId();
         if (classId == null || lesson == null || lesson.getId() == null) {
             Toast.makeText(this, "Error: Missing data to go live.", Toast.LENGTH_SHORT).show();

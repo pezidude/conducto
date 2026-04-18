@@ -7,10 +7,10 @@
 
     <!-- Main Live Lesson Content (TODO) -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/live_content_layout"
+        android:id="@+id/live_available_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible">
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/tv_live_todo"
@@ -44,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="24dp"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <ImageView
             android:id="@+id/iv_no_live"

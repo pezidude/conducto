@@ -4,27 +4,61 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.MusicFile;
-import com.example.conducto2.utils.FileHelper;
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
-import java.util.List;
+/**
+ * Adapter for displaying MusicXML files using FirestoreRecyclerAdapter.
+ * This adapter connects to a Firestore collection or query for real-time updates.
+ */
+public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXmlAdapter.ViewHolder> {
 
-public class MusicXmlAdapter extends RecyclerView.Adapter<MusicXmlAdapter.ViewHolder> {
-
-    private final List<MusicFile> musicFiles;
-    private OnAssignButtonClickListener listener;
+    private OnAssignButtonClickListener assignListener;
+    private OnItemClickListener itemClickListener;
+    private OnDeleteButtonClickListener deleteListener;
+    private final boolean showButtons;
 
     public interface OnAssignButtonClickListener {
         void onAssignButtonClick(MusicFile musicFile);
     }
 
-    public MusicXmlAdapter(List<MusicFile> musicFiles, OnAssignButtonClickListener listener) {
-        this.musicFiles = musicFiles;
-        this.listener = listener;
+    public interface OnItemClickListener {
+        void onItemClick(MusicFile musicFile);
+    }
+
+    public interface OnDeleteButtonClickListener {
+        void onDeleteButtonClick(MusicFile musicFile, String documentId);
+    }
+
+    /**
+     * Constructor for MusicXmlAdapter.
+     *
+     * @param options     FirestoreRecyclerOptions for MusicFile.
+     * @param showButtons Whether to show Assign and Delete buttons (e.g., true for teachers in edit mode).
+     */
+    public MusicXmlAdapter(@NonNull FirestoreRecyclerOptions<MusicFile> options, boolean showButtons) {
+        super(options);
+        this.showButtons = showButtons;
+    }
+
+    public void setOnAssignButtonClickListener(OnAssignButtonClickListener listener) {
+        this.assignListener = listener;
+    }
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.itemClickListener = listener;
+    }
+
+    public void setOnDeleteButtonClickListener(OnDeleteButtonClickListener listener) {
+        this.deleteListener = listener;
     }
 
     @NonNull
@@ -35,29 +69,45 @@ public class MusicXmlAdapter extends RecyclerView.Adapter<MusicXmlAdapter.ViewHo
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        MusicFile musicFile = musicFiles.get(position);
-        holder.fileNameTextView.setText(musicFile.getTitle());
-        holder.assignButton.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onAssignButtonClick(musicFile);
+    protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull MusicFile model) {
+        holder.fileNameTextView.setText(model.getTitle());
+
+        if (showButtons) {
+            holder.assignButton.setVisibility(View.VISIBLE);
+            holder.deleteButton.setVisibility(View.VISIBLE);
+            holder.assignButton.setOnClickListener(v -> {
+                if (assignListener != null) {
+                    assignListener.onAssignButtonClick(model);
+                }
+            });
+            holder.deleteButton.setOnClickListener(v -> {
+                if (deleteListener != null) {
+                    String docId = getSnapshots().getSnapshot(position).getId();
+                    deleteListener.onDeleteButtonClick(model, docId);
+                }
+            });
+        } else {
+            holder.assignButton.setVisibility(View.GONE);
+            holder.deleteButton.setVisibility(View.GONE);
+        }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (itemClickListener != null) {
+                itemClickListener.onItemClick(model);
             }
         });
     }
 
-    @Override
-    public int getItemCount() {
-        return musicFiles.size();
-    }
-
-    static class ViewHolder extends RecyclerView.ViewHolder {
+    public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView fileNameTextView;
         Button assignButton;
+        ImageButton deleteButton;
 
         ViewHolder(View view) {
             super(view);
             fileNameTextView = view.findViewById(R.id.music_xml_file_name);
             assignButton = view.findViewById(R.id.assign_button);
+            deleteButton = view.findViewById(R.id.delete_button);
         }
     }
 }
