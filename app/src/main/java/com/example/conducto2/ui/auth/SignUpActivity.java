@@ -9,8 +9,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,6 +20,8 @@ import com.example.conducto2.data.firebase.FBAuth;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.User;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 public class SignUpActivity extends AppCompatActivity implements View.OnClickListener,FBAuth.SignInResult, FirestoreManager.DBResult {
 
@@ -29,7 +29,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     TextView tvError, tvGoToSignIn;
     EditText etEmail, etPassword, etConfirmPassword;
     EditText etFname, etLname, etUname;
-    RadioGroup rgUserType;
+    MaterialButtonToggleGroup rgUserType;
 
 
     Button btnSignUp;
@@ -116,9 +116,9 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         // 1st step: fbauth result function
         if (result) {
             // here user is authed
-            int selectedId = rgUserType.getCheckedRadioButtonId();
-            RadioButton selectedRadioButton = findViewById(selectedId);
-            String userType = selectedRadioButton.getText().toString().toLowerCase();
+            int selectedId = rgUserType.getCheckedButtonId();
+            MaterialButton selectedButton = findViewById(selectedId);
+            String userType = selectedButton.getText().toString().toLowerCase();
 
             User user = new User(etEmail.getText().toString().trim(), etFname.getText().toString().trim(), etLname.getText().toString().trim(), userType);
             insertUserToFB(user);
