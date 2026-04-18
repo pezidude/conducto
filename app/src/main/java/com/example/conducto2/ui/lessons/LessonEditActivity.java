@@ -102,6 +102,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             currentLesson = new Lesson();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
             uploadMusicXmlButton.setEnabled(false);
+            // TODO: change the style / set enabled to true but give an error.
+            //  the current state is confusing
         }
 
         if (DataManager.getCurClass() != null) {
@@ -203,6 +205,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             Toast.makeText(this, "Lesson must be saved before uploading files.", Toast.LENGTH_SHORT).show();
             return;
         }
+        // TODO: package in helper class
 
         startTask(getString(R.string.status_uploading));
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
@@ -211,9 +214,12 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         String fileName = "musicresource_" + UUID.randomUUID().toString() + "." + fileOps.getExtension(fileUri);
         StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + currentLesson.getId() + "/" + fileName);
 
+        // TODO: do-while loop for if file exists by chance
+
         fileRef.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
                     MusicFile musicFile = new MusicFile(title, uri);
+                    // TODO: move this function to FirestoreManager
                     FirebaseFirestore.getInstance()
                             .collection("classes").document(classId)
                             .collection("lessons").document(currentLesson.getId())
