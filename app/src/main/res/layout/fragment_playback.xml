@@ -27,7 +27,6 @@
             android:layout_height="@dimen/playback_control_size"
             android:background="@drawable/bg_card_rounded"
             android:src="@drawable/skip_previous_24px"
-            android:tint="@color/text_primary"
             android:contentDescription="@string/reset_playback"
             android:padding="@dimen/spacing_sm"
             android:scaleType="fitCenter"/>
@@ -46,7 +45,6 @@
                 android:layout_height="match_parent"
                 android:background="@null"
                 android:src="@drawable/play_pause_24px"
-                android:tint="@color/white"
                 android:contentDescription="@string/play_pause"
                 android:padding="@dimen/spacing_md"/>
 

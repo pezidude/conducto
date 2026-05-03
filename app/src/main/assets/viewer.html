@@ -35,7 +35,86 @@
 <body>
 <div id="osmd-container"></div>
 
-<script>
+</body>
+<script type="text/javascript">
+
+    /* ---------------------- FUNCTIONS --------------------------- */
+
+        function enableClickToSeek(playbackManager, osmd) {
+    const svgElement = document.querySelector("#osmd-container svg");
+    if (!svgElement) return;
+
+    svgElement.addEventListener("click", (event) => {
+        // 1. Get raw SVG coordinates
+        const pt = svgElement.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        const ctm = svgElement.getScreenCTM();
+        if (!ctm) return;
+
+        const svgP = pt.matrixTransform(ctm.inverse());
+        const clickX = svgP.x / 10;
+        const clickY = svgP.y / 10;
+
+        // 2. Grab all playback steps directly
+        const containers = osmd.graphic?.verticalGraphicalStaffEntryContainers;
+        if (!containers || containers.length === 0) return;
+
+        let exactTargetStep = -1;
+        let minXDistance = Infinity;
+
+        // 3. Scan containers to find the closest one on the clicked line
+        for (let i = 0; i < containers.length; i++) {
+            const container = containers[i];
+
+            // Just check the first valid note in this vertical slice
+            const firstEntry = container.staffEntries.find(e => e && e.PositionAndShape);
+            if (!firstEntry) continue;
+
+            const noteX = firstEntry.PositionAndShape.AbsolutePosition.x;
+            const noteY = firstEntry.PositionAndShape.AbsolutePosition.y;
+
+            // Check if the click is on the same vertical row (+/- 15 units is a generous buffer for a staff)
+            if (Math.abs(clickY - noteY) < 15) {
+                // Find the closest note horizontally
+                const distX = Math.abs(clickX - noteX);
+
+                if (distX < minXDistance) {
+                    minXDistance = distX;
+                    exactTargetStep = i;
+                }
+            }
+        }
+
+        // 4. Trigger the jump if we found a valid step
+        if (exactTargetStep !== -1) {
+            console.log(`Jumping to precise step #${exactTargetStep}`);
+
+            const wasPlaying = playbackManager.state === "PLAYING";
+
+            if (wasPlaying) {
+                playbackManager.pause();
+                if (typeof playbackManager.clearTimeouts === 'function') playbackManager.clearTimeouts();
+            }
+
+            playbackManager.jumpToStep(exactTargetStep);
+
+            if (playbackManager.cursor && playbackManager.iterator) {
+                playbackManager.cursor.Iterator = playbackManager.iterator;
+                playbackManager.cursor.update();
+            }
+
+            if (wasPlaying) {
+                setTimeout(() => playbackManager.play(), 50);
+            }
+        }
+    });
+}
+
+
+
+
+
     let osmd;
     let playbackManager;
 
@@ -67,14 +146,18 @@
     /**
      * Expose this named function to window for easy access via java's evaluateJavascript function.
      */
-    window.loadScore = async function(url) {
+    window.loadScore = async function(url, zoomLevel) {
         try {
             console.log("WebView: Loading " + url);
             await osmd.load(url);
+            osmd.zoom = zoomLevel;
             osmd.render();
             await waitForDOMUpdate();
 
             await playbackManager.loadScore(osmd);
+
+            enableClickToSeek(playbackManager, osmd);
+
             osmd.cursor.show();
             console.log("WebView: Ready");
             if (window.AndroidInterface) {
@@ -166,7 +249,6 @@
 
 
 </script>
-</body>
 
 
 <!--   Android Java Control Guide

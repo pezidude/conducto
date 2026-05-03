@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
@@ -13,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
-import com.example.conducto2.ui.player.widget.InteractiveWebView;
 
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
@@ -24,9 +24,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     // log tag
     private static final String TAG = "SMPlayerActivity";
 
-    private InteractiveWebView sheetMusicView;
+    private WebView sheetMusicView;
     private boolean isPlaying = false;
-    private int currentSpeedPercentage = 100;
+    private int currentBPM = 100;
+    // int bpm = 120; // default bpm
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,8 +60,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         public void onLoadScoreFinished() {
             runOnUiThread(() -> {
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
-                int bpm = 120; // default bpm
-                sheetMusicView.evaluateJavascript("setBpm(" + bpm + ");", null);
+                sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
             });
         }
     }
@@ -99,9 +99,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      * @param xmlData The MusicXML data to load.
      */
     private void loadXmlInWebView(String xmlData) {
-        // an attempt of preventing XSS. TODO: improve for production.
+        double zoomLevel = 0.75;
+        // basic attempt of preventing XSS. TODO: improve for production.
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
-        sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`);", null);
+        sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`, " + zoomLevel + ");", null);
     }
 
     /**
@@ -192,11 +193,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     @Override
-    public void onSpeedChanged(int speedPercentage) {
-        currentSpeedPercentage = speedPercentage;
+    public void onSpeedChanged(int bpmValue) {
+        currentBPM = bpmValue;
         if (isPlaying) {
-            // this.onPlayPauseClicked();
-            // sheetMusicView.evaluateJavascript("clearInterval(window.playbackIntervalId);", null);
+            sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
             handlePlayback(); // restart interval with new speed
         }
     }
