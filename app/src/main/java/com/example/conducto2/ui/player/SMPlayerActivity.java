@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -24,8 +25,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private static final String TAG = "SMPlayerActivity";
 
     private InteractiveWebView sheetMusicView;
-    private boolean isEngineReady = false; // flag
-    private String pendingXmlData = null;
     private boolean isPlaying = false;
     private int currentSpeedPercentage = 100;
 
@@ -36,13 +35,33 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         sheetMusicView = findViewById(R.id.sheetMusicView);
         setupWebView();
+    }
 
-        Intent intent = getIntent();
+    /**
+     * A bridge class to handle callbacks from JavaScript.
+     */
+    private class WebAppInterface {
+        @JavascriptInterface
+        public void onEngineReady() {
+            runOnUiThread(() -> {
+                // now that all JS has executed, it's safe to load the file.
+                Toast.makeText(SMPlayerActivity.this, "OSMD Engine Ready", Toast.LENGTH_SHORT).show();
+                Intent intent = getIntent();
+                if (intent.hasExtra("fileUri")) {
+                    String uriString = intent.getStringExtra("fileUri");
+                    Uri fileUri = Uri.parse(uriString);
+                    loadFile(fileUri);
+                }
+            });
+        }
 
-        if (intent.hasExtra("fileUri")) {
-            String uriString = intent.getStringExtra("fileUri");
-            Uri fileUri = Uri.parse(uriString);
-            loadFile(fileUri);
+        @JavascriptInterface
+        public void onLoadScoreFinished() {
+            runOnUiThread(() -> {
+                Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
+                int bpm = 120; // default bpm
+                sheetMusicView.evaluateJavascript("setBpm(" + bpm + ");", null);
+            });
         }
     }
 
@@ -58,23 +77,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
 
+        // Register the bridge interface
+        sheetMusicView.addJavascriptInterface(new WebAppInterface(), "AndroidInterface");
+
         sheetMusicView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(android.webkit.WebView view, String url) {
                 super.onPageFinished(view, url);
-                try {
-                    Thread.sleep(2500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 runOnUiThread(() -> {
                     Toast.makeText(SMPlayerActivity.this, "Page finished loading", Toast.LENGTH_SHORT).show();
                 });
-                isEngineReady = true;
-                if (pendingXmlData != null) {
-                    loadXmlInWebView(pendingXmlData);
-                    pendingXmlData = null;
-                }
             }
         });
         sheetMusicView.loadUrl("file:///android_asset/viewer.html");
@@ -84,17 +96,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     /**
      * Loads the given MusicXML data into the WebView.
-     * If the WebView is not ready, it stores the data in {@link #pendingXmlData}.
      * @param xmlData The MusicXML data to load.
      */
     private void loadXmlInWebView(String xmlData) {
-        if (!isEngineReady) {
-            return;
-        }
         // an attempt of preventing XSS. TODO: improve for production.
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
         sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`);", null);
-       // sheetMusicView.evaluateJavascript("osmd.cursor.reset();", null);
     }
 
     /**
@@ -119,7 +126,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 runOnUiThread(() -> {
                     // basic file format check
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
-                        pendingXmlData = xmlContent;
+                        loadXmlInWebView(xmlContent);
                     } else {
                         Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
                     }
@@ -132,6 +139,31 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             }
         }).start();
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (sheetMusicView != null) {
+            sheetMusicView.pauseTimers(); // Pauses JS timers and background tasks
+            sheetMusicView.onPause();     // Pauses WebView rendering
+
+            // Optional: Tell JS to pause the music if it's currently playing
+            sheetMusicView.evaluateJavascript("if(window.pauseMusic) window.pauseMusic();", null);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (sheetMusicView != null) {
+            sheetMusicView.resumeTimers(); // Wakes up JS timers
+            sheetMusicView.onResume();     // Wakes up WebView rendering
+
+            // CRUCIAL: Tell JS to wake up the AudioContext
+            sheetMusicView.evaluateJavascript("if(window.wakeUpAudio) window.wakeUpAudio();", null);
+        }
+    }
+
 
     /**
      * Called when the play/pause button in the PlaybackFragment is clicked.
@@ -148,8 +180,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private void handlePlayback() {
         Toast.makeText(this, "Click!", Toast.LENGTH_SHORT).show();
         if (isPlaying) {
-            int bpm = 120; // default bpm
-            sheetMusicView.evaluateJavascript("setBpm(" + bpm + ");", null);
             sheetMusicView.evaluateJavascript("play();", null);
         } else {
             sheetMusicView.evaluateJavascript("pause();", null);

@@ -54,6 +54,15 @@
     playbackManager = new OsmdAudioPlayer();
 
 
+    function waitForDOMUpdate() {
+    return new Promise(resolve => {
+        // requestAnimationFrame waits for the next screen repaint
+        requestAnimationFrame(() => {
+            // A tiny timeout ensures the layout calculation is fully complete
+            setTimeout(resolve, 50);
+        });
+    });
+}
 
     /**
      * Expose this named function to window for easy access via java's evaluateJavascript function.
@@ -63,9 +72,14 @@
             console.log("WebView: Loading " + url);
             await osmd.load(url);
             osmd.render();
+            await waitForDOMUpdate();
+
             await playbackManager.loadScore(osmd);
             osmd.cursor.show();
             console.log("WebView: Ready");
+            if (window.AndroidInterface) {
+                window.AndroidInterface.onLoadScoreFinished();
+            }
             return "SUCCESS";
         } catch (e) {
             console.error("WebView Load Error: " + e.message);
@@ -109,9 +123,46 @@
         console.log("WebView: BPM set to " + bpm);
     };
 
+    window.wakeUpAudio = async function() {
+        console.log("WebView: Waking up from background...");
+
+        // Safely check if the playback manager and its audio context exist
+        if (typeof playbackManager !== 'undefined' &&
+            playbackManager.audioPlayer &&
+            playbackManager.audioPlayer.context) {
+
+            const audioCtx = playbackManager.audioPlayer.context;
+
+            // If the OS suspended the audio context, force it to resume
+            if (audioCtx.state === 'suspended') {
+                try {
+                    await audioCtx.resume();
+                    console.log("WebView: AudioContext successfully resumed.");
+                } catch (e) {
+                    console.error("WebView: Failed to resume AudioContext", e);
+                }
+            } else {
+                console.log("WebView: AudioContext was already running.");
+            }
+        }
+    };
+
+    // Optional: A helper to ensure music stops when the app is minimized
+    window.pauseMusic = function() {
+        if (typeof playbackManager !== 'undefined' && playbackManager.state === 'PLAYING') {
+            playbackManager.pause();
+        }
+    };
+
+
     // Auto-load default example so something is visible immediately
     // delete me before deploying
     // window.loadScore("https://opensheetmusicdisplay.github.io/demo/Mozart_String_Quartet_in_G_K._387_1st_Mvmnt_excerpt.musicxml");
+
+    // Callback to android onEngineReady web-interface function
+    if (window.AndroidInterface) {
+        window.AndroidInterface.onEngineReady();
+    }
 
 
 </script>
