@@ -42,7 +42,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         if (intent.hasExtra("fileUri")) {
             String uriString = intent.getStringExtra("fileUri");
             Uri fileUri = Uri.parse(uriString);
-            handleFileSelection(fileUri);
+            loadFile(fileUri);
         }
     }
 
@@ -52,6 +52,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private void setupWebView() {
         WebSettings settings = sheetMusicView.getSettings();
         settings.setJavaScriptEnabled(true);
+        // JavaScript is required for interactive with OSMD and OSMD audio player
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(true);
@@ -60,8 +61,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         sheetMusicView.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageFinished(android.webkit.WebView view, String url) {
+                super.onPageFinished(view, url);
+                try {
+                    Thread.sleep(2500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                runOnUiThread(() -> {
+                    Toast.makeText(SMPlayerActivity.this, "Page finished loading", Toast.LENGTH_SHORT).show();
+                });
                 isEngineReady = true;
-                sheetMusicView.evaluateJavascript("window.playbackIntervalId = null;", null);
                 if (pendingXmlData != null) {
                     loadXmlInWebView(pendingXmlData);
                     pendingXmlData = null;
@@ -80,20 +89,20 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      */
     private void loadXmlInWebView(String xmlData) {
         if (!isEngineReady) {
-            pendingXmlData = xmlData;
             return;
         }
+        // an attempt of preventing XSS. TODO: improve for production.
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
         sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`);", null);
-        sheetMusicView.evaluateJavascript("osmd.cursor.reset();", null);
+       // sheetMusicView.evaluateJavascript("osmd.cursor.reset();", null);
     }
 
     /**
-     * Handles the selection of a sheet music file.
+     * Loads a given sheet music file.
      * It reads the file content in a background thread and then loads it into the WebView.
      * @param uri The URI of the selected file.
      */
-    private void handleFileSelection(Uri uri) {
+    private void loadFile(Uri uri) {
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
         Toast.makeText(this, "Loading: " + fileName, Toast.LENGTH_SHORT).show();
@@ -110,7 +119,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 runOnUiThread(() -> {
                     // basic file format check
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
-                        loadXmlInWebView(xmlContent);
+                        pendingXmlData = xmlContent;
                     } else {
                         Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
                     }
@@ -137,21 +146,19 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      * Starts or stops the playback cursor in the WebView.
      */
     private void handlePlayback() {
+        Toast.makeText(this, "Click!", Toast.LENGTH_SHORT).show();
         if (isPlaying) {
             int bpm = 120; // default bpm
-            int interval = (int) ((1000.0 / (bpm/60.0))/ (currentSpeedPercentage / 100.0));
-            sheetMusicView.evaluateJavascript("osmd.cursor.show();", null);
-            sheetMusicView.evaluateJavascript("if(window.playbackIntervalId) clearInterval(window.playbackIntervalId);", null);
-            sheetMusicView.evaluateJavascript("window.playbackIntervalId = setInterval(function(){ osmd.cursor.next(); }, " + interval + ");", null);
+            sheetMusicView.evaluateJavascript("setBpm(" + bpm + ");", null);
+            sheetMusicView.evaluateJavascript("play();", null);
         } else {
-            sheetMusicView.evaluateJavascript("clearInterval(window.playbackIntervalId);", null);
-            sheetMusicView.evaluateJavascript("window.playbackIntervalId = null;", null);
+            sheetMusicView.evaluateJavascript("pause();", null);
         }
     }
 
     @Override
     public void onResetClicked() {
-        sheetMusicView.evaluateJavascript("osmd.cursor.reset();", null);
+        sheetMusicView.evaluateJavascript("stop();", null);
     }
 
     @Override

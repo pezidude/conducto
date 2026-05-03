@@ -67,11 +67,14 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private boolean isEditMode = false;
     private final Calendar calendar = Calendar.getInstance();
     private int pendingTasks = 0;
+    private boolean shouldFinishOnTasksEnd = false;
+    private final List<String> pendingDeletions = new ArrayList<>();
 
     private final ActivityResultLauncher<Intent> musicXmlLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                    // TODO: validate file ZIP header + xml 'score-partwise' tag inside it.
                     Uri fileUri = result.getData().getData();
                     String title = FileHelper.getTitleFromUri(this, fileUri);
                     uploadFileToStorage(fileUri, title);
@@ -180,6 +183,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                     .build();
 
             musicXmlAdapter = new MusicXmlAdapter(options, true);
+            musicXmlAdapter.setPendingDeletions(pendingDeletions);
             musicXmlAdapter.setOnAssignButtonClickListener(this);
             musicXmlAdapter.setOnDeleteButtonClickListener(this);
             musicXmlRecyclerView.setAdapter(musicXmlAdapter);
@@ -196,7 +200,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     private void openFilePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
+        intent.setType("*/*"); // wildcard for all file types
         musicXmlLauncher.launch(intent);
     }
 
@@ -292,6 +296,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         currentLesson.setAttendees(classAttendees);
 
         startTask(getString(R.string.status_saving));
+        
+        performPendingDeletions();
+
         if (isEditMode) {
             firestoreManager.updateLesson(classId, currentLesson);
         } else {
@@ -306,6 +313,21 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         }
     }
 
+    private void performPendingDeletions() {
+        if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
+
+        for (String docId : pendingDeletions) {
+            startTask(null);
+            FirebaseFirestore.getInstance()
+                    .collection("classes").document(classId)
+                    .collection("lessons").document(currentLesson.getId())
+                    .collection("musicFiles").document(docId)
+                    .delete()
+                    .addOnCompleteListener(task -> endTask());
+        }
+        pendingDeletions.clear();
+    }
+
     @Override
     public void uploadResult(boolean success) {
         endTask();
@@ -318,9 +340,11 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                 uploadMusicXmlButton.setEnabled(true);
                 isEditMode = true;
                 saveLessonButton.setText(R.string.btn_save);
-                setupRecyclerView();
             } else {
-                finish();
+                shouldFinishOnTasksEnd = true;
+                if (pendingTasks == 0) {
+                    finish();
+                }
             }
         }
     }
@@ -346,6 +370,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             pendingTasks = 0;
             if (loadingProgress != null) {
                 loadingProgress.setVisibility(View.GONE);
+            }
+            if (shouldFinishOnTasksEnd) {
+                finish();
             }
         }
     }
@@ -424,21 +451,13 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     @Override
     public void onDeleteButtonClick(MusicFile musicFile, String documentId) {
-        if (classId != null && currentLesson != null && currentLesson.getId() != null) {
-            startTask(getString(R.string.status_deleting));
-            FirebaseFirestore.getInstance()
-                    .collection("classes").document(classId)
-                    .collection("lessons").document(currentLesson.getId())
-                    .collection("musicFiles").document(documentId)
-                    .delete()
-                    .addOnSuccessListener(aVoid -> {
-                        endTask();
-                        displayMessage("File deleted.");
-                    })
-                    .addOnFailureListener(e -> {
-                        endTask();
-                        displayMessage("Error deleting file.");
-                    });
+        if (pendingDeletions.contains(documentId)) {
+            pendingDeletions.remove(documentId);
+        } else {
+            pendingDeletions.add(documentId);
+        }
+        if (musicXmlAdapter != null) {
+            musicXmlAdapter.setPendingDeletions(pendingDeletions);
         }
     }
 }

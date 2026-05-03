@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
@@ -25,7 +26,8 @@ public class ClassAdapter extends FirestoreRecyclerAdapter<Class, ClassAdapter.C
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), ClassActivity.class);
             model.setId(getSnapshots().getSnapshot(position).getId());
-            intent.putExtra("class_id", model.getId());
+            // intent.putExtra("class_id", model.getId());
+            DataManager.setCurClass(model);
             v.getContext().startActivity(intent);
         });
     }

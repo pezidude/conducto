@@ -49,7 +49,7 @@ public class LiveFragment extends Fragment implements FirestoreManager.LiveLesso
 
     @Override
     public void onLiveLessonChanged(LiveLesson liveLesson) {
-        if (liveLesson.isActive()) {
+        if (liveLesson != null && liveLesson.isActive()) {
             liveAvailableLayout.setVisibility(View.VISIBLE);
             noLiveLessonLayout.setVisibility(View.GONE);
         } else {

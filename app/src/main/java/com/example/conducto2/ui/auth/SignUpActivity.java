@@ -30,6 +30,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     EditText etEmail, etPassword, etConfirmPassword;
     EditText etFname, etLname, etUname;
     MaterialButtonToggleGroup rgUserType;
+    // new variant of RadioGroup
 
 
     Button btnSignUp;

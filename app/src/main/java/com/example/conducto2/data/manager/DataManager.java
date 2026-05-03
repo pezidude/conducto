@@ -1,5 +1,7 @@
 package com.example.conducto2.data.manager;
 
+import androidx.annotation.Nullable;
+
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.User;
@@ -31,7 +33,11 @@ public class DataManager {
     }
 
     public static  Lesson getCurLesson(){return curLesson;}
-    public static void setCurLesson(Lesson lesson){
+    public static void setCurLesson(@Nullable Lesson lesson){
+        if (lesson == null) {
+            curLesson = null;
+            return;
+        }
         curLesson = new Lesson(lesson);
     }
 

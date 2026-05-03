@@ -1,5 +1,6 @@
 package com.example.conducto2.ui.lessons;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,6 +16,9 @@ import com.example.conducto2.data.model.MusicFile;
 import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Adapter for displaying MusicXML files using FirestoreRecyclerAdapter.
  * This adapter connects to a Firestore collection or query for real-time updates.
@@ -25,6 +29,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     private OnItemClickListener itemClickListener;
     private OnDeleteButtonClickListener deleteListener;
     private final boolean showButtons;
+    private List<String> pendingDeletions = new ArrayList<>();
 
     public interface OnAssignButtonClickListener {
         void onAssignButtonClick(MusicFile musicFile);
@@ -61,6 +66,11 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         this.deleteListener = listener;
     }
 
+    public void setPendingDeletions(List<String> pendingDeletions) {
+        this.pendingDeletions = pendingDeletions;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -71,6 +81,19 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     @Override
     protected void onBindViewHolder(@NonNull ViewHolder holder, int position, @NonNull MusicFile model) {
         holder.fileNameTextView.setText(model.getTitle());
+        String docId = getSnapshots().getSnapshot(position).getId();
+
+        boolean isPendingDelete = pendingDeletions.contains(docId);
+        
+        if (isPendingDelete) {
+            holder.itemView.setAlpha(0.4f);
+            holder.fileNameTextView.setPaintFlags(holder.fileNameTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.assignButton.setEnabled(false);
+        } else {
+            holder.itemView.setAlpha(1.0f);
+            holder.fileNameTextView.setPaintFlags(holder.fileNameTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            holder.assignButton.setEnabled(true);
+        }
 
         if (showButtons) {
             holder.assignButton.setVisibility(View.VISIBLE);
@@ -82,7 +105,6 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
             });
             holder.deleteButton.setOnClickListener(v -> {
                 if (deleteListener != null) {
-                    String docId = getSnapshots().getSnapshot(position).getId();
                     deleteListener.onDeleteButtonClick(model, docId);
                 }
             });
@@ -92,7 +114,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (itemClickListener != null) {
+            if (itemClickListener != null && !isPendingDelete) {
                 itemClickListener.onItemClick(model);
             }
         });

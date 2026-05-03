@@ -1,35 +1,145 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OSMD WebView Engine</title>
+    <!-- Local library files for faster, offline loading -->
+    <!-- OSMD Core -->
+    <script src="file:///android_asset/opensheetmusicdisplay.min.js"></script>
+    <!-- OSMD Audio Player Plugin -->
+    <script src="file:///android_asset/OsmdAudioPlayer.min.js"></script>
+    <!-- Files origin credit:
+    https://unpkg.com/opensheetmusicdisplay/build/opensheetmusicdisplay.min.js
+    https://unpkg.com/osmd-audio-player/umd/OsmdAudioPlayer.min.js
+    -->
+
     <style>
-        body, html { margin: 0; padding: 0; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #osmd-container {
+            width: 100%;
+        }
+        /* Hide scrollbars for app feel */
+        ::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
 <body>
-<div id="score-container"></div>
+<div id="osmd-container"></div>
+
+<script>
+    let osmd;
+    let playbackManager;
+
+    // Initialize OSMD Visual Engine
+    osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmd-container", {
+        autoResize: true,
+        backend: "svg",
+        drawTitle: true,
+        followCursor: true,
+        cursorsOptions: [{type: 0, color: "#33e02f", alpha: 0.5, follow: true}]
+    });
+
+    osmd.EngravingRules.CursorIgnoreRepetitions = false;
+
+    // Initialize Audio Timing Engine
+    playbackManager = new OsmdAudioPlayer();
 
 
-    <script src="opensheetmusicdisplay.min.js"></script>
-    <!--
-        slow - fetches library everytime
-        <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.6/build/opensheetmusicdisplay.min.js"></script>
-    -->
-    <script src="https://cdn.jsdelivr.net/npm/osmd-audio-player/umd/OsmdAudioPlayer.min.js"></script>
 
-    <script>
-        <!-- Bare Minimum viewer. Extra functionallity implemented in activity js evaluation functions -->
-        var scoreContainer = document.getElementById("score-container");
-        var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(scoreContainer, {
-            autoResize: true,
-            backend: "svg",
-            drawingParameters: "compacttight",
-            drawTitle: true,
-        });
-
-        function loadScore(xmlData) {
-            osmd.load(xmlData).then(() => osmd.render(), (err) => console.error(err));
+    /**
+     * Expose this named function to window for easy access via java's evaluateJavascript function.
+     */
+    window.loadScore = async function(url) {
+        try {
+            console.log("WebView: Loading " + url);
+            await osmd.load(url);
+            osmd.render();
+            await playbackManager.loadScore(osmd);
+            osmd.cursor.show();
+            console.log("WebView: Ready");
+            return "SUCCESS";
+        } catch (e) {
+            console.error("WebView Load Error: " + e.message);
+            return "ERROR";
         }
-    </script>
+    };
+
+    /**
+     * Named function to Play.
+     */
+    window.play = async function() {
+        const ac = playbackManager.ac;
+        if (ac && ac.state === 'suspended') {
+            await ac.resume();
+        }
+        playbackManager.play();
+        console.log("WebView: Playing");
+    };
+
+    /**
+     * Named function to Pause.
+     */
+    window.pause = function() {
+        playbackManager.pause();
+        console.log("WebView: Paused");
+    };
+
+    /**
+     * Named function to Stop.
+     */
+    window.stop = function() {
+        playbackManager.stop();
+        console.log("WebView: Stopped");
+    };
+
+    /**
+     * Named function to change BPM.
+     */
+    window.setBpm = function(bpm) {
+        playbackManager.setBpm(parseInt(bpm));
+        console.log("WebView: BPM set to " + bpm);
+    };
+
+    // Auto-load default example so something is visible immediately
+    // delete me before deploying
+    // window.loadScore("https://opensheetmusicdisplay.github.io/demo/Mozart_String_Quartet_in_G_K._387_1st_Mvmnt_excerpt.musicxml");
+
+
+</script>
+</body>
+
+
+<!--   Android Java Control Guide
+  To control the sheet music player from your Android Java code, you will use the evaluateJavascript method. Here are the commands you should evaluate:
+  1. Start Playback
+  This function also handles resuming the AudioContext, which is required for sound to work in WebViews.
+   1 webView.evaluateJavascript("play();", null);
+
+  2. Pause Playback
+   1 webView.evaluateJavascript("pause();", null);
+
+  3. Stop and Reset
+  Stops the music and returns the cursor to the beginning.
+   1 webView.evaluateJavascript("stop();", null);
+
+  4. Change Tempo (BPM)
+  Pass the desired beats per minute as an integer.
+   1 int bpm = 140;
+   2 webView.evaluateJavascript("setBpm(" + bpm + ");", null);
+
+  5. Load a New Score
+  Use this to switch between different MusicXML files dynamically.
+   1 String scoreUrl = "https://example.com/my_song.xml";
+   2 webView.evaluateJavascript("loadScore('" + scoreUrl + "');", null);
+    -->
 </body>
 </html>
