@@ -4,25 +4,32 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
+import android.util.Log;
 
-import java.io.BufferedReader;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 public class FileIO {
     /**
-<<<<<<< HEAD
-     * This class's purpose is to unzips the .mxl file
-=======
-     * This class's purpose if to unzips the .mxl file
->>>>>>> aec405dc913b62bfae37eedda8494097b62302c4
-     * and finds the first valid .xml entry inside the zip.
+     * This class's purpose is to handle reading MusicXML files,
+     * supporting both plain XML and compressed .mxl formats (ZIP).
      */
-    Context context;
+    private static final String TAG = "FileIO";
+    private final Context context;
 
     public FileIO(Context context) {
         this.context = context;
@@ -36,42 +43,117 @@ public class FileIO {
         return context.getContentResolver().openInputStream(uri);
     }
 
-    public String readZippedXMLFromUri(Uri uri) throws Exception {
-        try (InputStream inputStream = openInputStream(uri);
-             ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+    public String readMusicXmlContent(Uri uri) throws Exception {
+        byte[] data = readAllBytes(uri);
+        return processMusicXmlData(data);
+    }
 
+    private byte[] readAllBytes(Uri uri) throws Exception {
+        try (InputStream is = openInputStream(uri);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int n;
+            while ((n = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, n);
+            }
+            return baos.toByteArray();
+        }
+    }
+
+    private String processMusicXmlData(byte[] data) throws Exception {
+        if (isZip(data)) {
+            return readFromZipRecursively(data);
+        } else {
+            return new String(data, StandardCharsets.UTF_8);
+        }
+    }
+
+    private boolean isZip(byte[] data) {
+        return data.length > 4 &&
+                data[0] == 0x50 && data[1] == 0x4B &&
+                data[2] == 0x03 && data[3] == 0x04;
+    }
+
+    private String readFromZipRecursively(byte[] zipData) throws Exception {
+        Map<String, byte[]> entries = new HashMap<>();
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipData))) {
             ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                String name = entry.getName();
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buffer = new byte[8192];
+                int n;
+                while ((n = zis.read(buffer)) != -1) {
+                    baos.write(buffer, 0, n);
+                }
+                entries.put(entry.getName(), baos.toByteArray());
+                zis.closeEntry();
+            }
+        }
 
-                // We ignore the container metadata file and look for the actual music sheet
-                if (!name.contains("META-INF") && (name.endsWith(".xml") || name.endsWith(".musicxml"))) {
+        if (entries.isEmpty()) {
+            throw new Exception("ZIP file is empty");
+        }
 
-                    // Found the xml file inside the ZIP! Read it.
-                    StringBuilder stringBuilder = new StringBuilder();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(zipInputStream, StandardCharsets.UTF_8));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        stringBuilder.append(line).append("\n");
-                    }
-                    return stringBuilder.toString();
+        // Check if there's a container.xml
+        String rootFilePath = null;
+        if (entries.containsKey("META-INF/container.xml")) {
+            rootFilePath = getRootFilePath(entries.get("META-INF/container.xml"));
+        }
+
+        if (rootFilePath != null && entries.containsKey(rootFilePath)) {
+            byte[] rootFileData = entries.get(rootFilePath);
+            if (isZip(rootFileData)) {
+                return readFromZipRecursively(rootFileData);
+            }
+            return new String(rootFileData, StandardCharsets.UTF_8);
+        }
+
+        // Fallback: search for any .xml or .musicxml file, or another ZIP
+        for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
+            String name = entry.getKey();
+            byte[] data = entry.getValue();
+
+            if (isZip(data)) {
+                try {
+                    return readFromZipRecursively(data);
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to recurse into nested ZIP: " + name);
+                }
+            }
+
+            if (name.endsWith(".xml") || name.endsWith(".musicxml")) {
+                if (!name.equals("META-INF/container.xml")) {
+                    return new String(data, StandardCharsets.UTF_8);
                 }
             }
         }
-        throw new Exception("No valid MusicXML file found inside .mxl package");
-    }
 
-    public String readTextFromUri(Uri uri) throws Exception {
-        StringBuilder stringBuilder = new StringBuilder();
-        try (InputStream inputStream = openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line).append("\n");
+        // If we only have one file and it's not identified, just return it as string if it looks like XML
+        if (entries.size() == 1) {
+            byte[] data = entries.values().iterator().next();
+            String content = new String(data, StandardCharsets.UTF_8);
+            if (content.trim().startsWith("<?xml") || content.contains("<score-partwise")) {
+                return content;
             }
         }
-        return stringBuilder.toString();
+
+        throw new Exception("No valid MusicXML content found in ZIP");
+    }
+
+    private String getRootFilePath(byte[] containerXmlData) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new ByteArrayInputStream(containerXmlData));
+            NodeList rootfiles = doc.getElementsByTagName("rootfile");
+            if (rootfiles.getLength() > 0) {
+                return ((Element) rootfiles.item(0)).getAttribute("full-path");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing container.xml", e);
+        }
+        return null;
     }
 
     public String getFileName(Uri uri) {
@@ -98,12 +180,18 @@ public class FileIO {
         return result;
     }
 
-    /**
-     * Extracts the file extension from a Uri.
-     * @param uri The URI of the file.
-     * @return The extension (e.g., "xml", "mxl") or an empty string if not found.
-     */
+    public String getMimeType(Uri uri) {
+        return context.getContentResolver().getType(uri);
+    }
+
     public String getExtension(Uri uri) {
+        String mimeType = getMimeType(uri);
+        if (mimeType != null) {
+            if (mimeType.equals("application/vnd.recordare.musicxml.zipped")) return "mxl";
+            if (mimeType.equals("application/vnd.recordare.musicxml+xml")) return "musicxml";
+            if (mimeType.equals("application/xml") || mimeType.equals("text/xml")) return "xml";
+            if (mimeType.equals("application/zip")) return "zip";
+        }
         String fileName = getFileName(uri);
         if (fileName != null && fileName.contains(".")) {
             return fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();

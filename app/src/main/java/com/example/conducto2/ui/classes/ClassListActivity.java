@@ -198,8 +198,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     }
 
     @Override
-    public void uploadResult(boolean success) {
-        if (success) {
+    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
+        if (success && operation == FirestoreManager.DbOperation.JOIN_CLASS) {
             Toast.makeText(this, "Joined class successfully", Toast.LENGTH_SHORT).show();
         }
     }

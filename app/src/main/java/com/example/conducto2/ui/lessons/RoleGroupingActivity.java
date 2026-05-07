@@ -17,17 +17,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
+import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.utils.MusicXmlParser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.firebase.firestore.Query;
 
 import org.w3c.dom.Document;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,20 +55,23 @@ public class RoleGroupingActivity extends AppCompatActivity {
 
     private Document originalDoc;
     private Map<String, MusicXmlParser.PartInfo> partInfoMap;
-    private List<Role> roles = new ArrayList<>();
     private RoleAdapter roleAdapter;
+    private FirestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_role_grouping);
 
-        initViews();
+        firestoreManager = new FirestoreManager();
+        findViews();
         parseIntent();
+        
+        initFirestoreComponents();
         loadSourceFile();
     }
 
-    private void initViews() {
+    private void findViews() {
         tvSourceFile = findViewById(R.id.tv_source_file);
         btnAddRole = findViewById(R.id.btn_add_role);
         rvRoles = findViewById(R.id.rv_roles);
@@ -75,15 +79,48 @@ public class RoleGroupingActivity extends AppCompatActivity {
         pbLoading = findViewById(R.id.pb_loading);
 
         rvRoles.setLayoutManager(new LinearLayoutManager(this));
-        roleAdapter = new RoleAdapter(roles, this::showVoiceSelectionDialog);
+    }
+
+    private void initFirestoreComponents() {
+        if (classId == null || lessonId == null) {
+            Toast.makeText(this, "Error: Missing lesson context", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        Query query = firestoreManager.getDraftRolesQuery(classId, lessonId);
+
+        FirestoreRecyclerOptions<Role> options = new FirestoreRecyclerOptions.Builder<Role>()
+                .setQuery(query, Role.class)
+                .build();
+
+        roleAdapter = new RoleAdapter(options, this::showVoiceSelectionDialog, this::updateRoleName);
         rvRoles.setAdapter(roleAdapter);
 
         btnAddRole.setOnClickListener(v -> {
-            roles.add(new Role("New Role " + (roles.size() + 1)));
-            roleAdapter.notifyItemInserted(roles.size() - 1);
+            Role newRole = new Role("New Role " + (roleAdapter.getItemCount() + 1));
+            firestoreManager.addDraftRole(classId, lessonId, newRole);
         });
 
         btnSaveUpload.setOnClickListener(v -> saveAndUpload());
+    }
+
+    private void updateRoleName(String docId, String newName) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("name", newName);
+        firestoreManager.updateDraftRole(classId, lessonId, docId, updates);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (roleAdapter != null) roleAdapter.startListening();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (roleAdapter != null) roleAdapter.stopListening();
     }
 
     private void parseIntent() {
@@ -95,7 +132,9 @@ public class RoleGroupingActivity extends AppCompatActivity {
         lessonId = intent.getStringExtra("lessonId");
         originalTitle = intent.getStringExtra("title");
 
-        tvSourceFile.setText("Source File: " + originalTitle);
+        if (tvSourceFile != null) {
+            tvSourceFile.setText("Source File: " + (originalTitle != null ? originalTitle : "Unknown"));
+        }
     }
 
     private void loadSourceFile() {
@@ -103,9 +142,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 FileIO fileOps = new FileIO(this);
-                String xmlContent = originalTitle.toLowerCase().endsWith(".mxl")
-                        ? fileOps.readZippedXMLFromUri(sourceFileUri)
-                        : fileOps.readTextFromUri(sourceFileUri);
+                String xmlContent = fileOps.readMusicXmlContent(sourceFileUri);
 
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
@@ -127,10 +164,9 @@ public class RoleGroupingActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void showVoiceSelectionDialog(int rolePosition) {
+    private void showVoiceSelectionDialog(Role role, String docId) {
         if (partInfoMap == null) return;
 
-        Role role = roles.get(rolePosition);
         List<String> voiceLabels = new ArrayList<>();
         List<String> partIds = new ArrayList<>();
         List<String> voices = new ArrayList<>();
@@ -146,11 +182,12 @@ public class RoleGroupingActivity extends AppCompatActivity {
         String[] labelsArray = voiceLabels.toArray(new String[0]);
         boolean[] checkedItems = new boolean[voiceLabels.size()];
 
+        Map<String, List<String>> selectedVoices = role.getSelectedVoicesPerPart();
         for (int i = 0; i < voiceLabels.size(); i++) {
             String pId = partIds.get(i);
             String v = voices.get(i);
-            if (role.getSelectedVoicesPerPart().containsKey(pId) &&
-                role.getSelectedVoicesPerPart().get(pId).contains(v)) {
+            if (selectedVoices != null && selectedVoices.containsKey(pId) &&
+                selectedVoices.get(pId).contains(v)) {
                 checkedItems[i] = true;
             }
         }
@@ -162,25 +199,27 @@ public class RoleGroupingActivity extends AppCompatActivity {
         });
 
         builder.setPositiveButton("OK", (dialog, which) -> {
-            role.getSelectedVoicesPerPart().clear();
+            Map<String, List<String>> newSelection = new HashMap<>();
             for (int i = 0; i < checkedItems.length; i++) {
                 if (checkedItems[i]) {
                     String pId = partIds.get(i);
                     String v = voices.get(i);
-                    if (!role.getSelectedVoicesPerPart().containsKey(pId)) {
-                        role.getSelectedVoicesPerPart().put(pId, new HashSet<>());
+                    if (!newSelection.containsKey(pId)) {
+                        newSelection.put(pId, new ArrayList<>());
                     }
-                    role.getSelectedVoicesPerPart().get(pId).add(v);
+                    newSelection.get(pId).add(v);
                 }
             }
-            roleAdapter.notifyItemChanged(rolePosition);
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("selectedVoicesPerPart", newSelection);
+            firestoreManager.updateDraftRole(classId, lessonId, docId, updates);
         });
         builder.setNegativeButton("Cancel", null);
         builder.show();
     }
 
     private void saveAndUpload() {
-        if (roles.isEmpty()) {
+        if (roleAdapter.getItemCount() == 0) {
             Toast.makeText(this, "Add at least one role", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -188,13 +227,27 @@ public class RoleGroupingActivity extends AppCompatActivity {
         pbLoading.setVisibility(View.VISIBLE);
         new Thread(() -> {
             try {
-                for (Role role : roles) {
-                    if (role.getSelectedVoicesPerPart().isEmpty()) continue;
+                for (int i = 0; i < roleAdapter.getItemCount(); i++) {
+                    Role role = roleAdapter.getItem(i);
+                    if (role.getSelectedVoicesPerPart() == null || role.getSelectedVoicesPerPart().isEmpty()) continue;
 
-                    Document filteredDoc = MusicXmlParser.filterVoices(originalDoc, role.getSelectedVoicesPerPart());
+                    // Convert List back to Set for filterVoices
+                    Map<String, Set<String>> voicesSetMap = new HashMap<>();
+                    for (Map.Entry<String, List<String>> entry : role.getSelectedVoicesPerPart().entrySet()) {
+                        voicesSetMap.put(entry.getKey(), new HashSet<>(entry.getValue()));
+                    }
+
+                    Document filteredDoc = MusicXmlParser.filterVoices(originalDoc, voicesSetMap);
                     String xmlString = MusicXmlParser.documentToString(filteredDoc);
                     uploadRoleFile(role.getName(), xmlString);
                 }
+
+                // Clean up draft roles after upload
+                for (int i = 0; i < roleAdapter.getItemCount(); i++) {
+                    String docId = roleAdapter.getSnapshots().getSnapshot(i).getId();
+                    firestoreManager.deleteDraftRole(classId, lessonId, docId);
+                }
+
                 runOnUiThread(() -> {
                     pbLoading.setVisibility(View.GONE);
                     Toast.makeText(this, "Roles processed and upload started", Toast.LENGTH_SHORT).show();
@@ -211,20 +264,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
     }
 
     private void uploadRoleFile(String roleName, String content) {
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String fileName = "role_" + roleName.replaceAll("\\s+", "_") + "_" + UUID.randomUUID().toString() + ".musicxml";
-        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
-
-        byte[] data = content.getBytes(StandardCharsets.UTF_8);
-        fileRef.putBytes(data)
-                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    MusicFile musicFile = new MusicFile(originalTitle + " - " + roleName, uri);
-                    FirebaseFirestore.getInstance()
-                            .collection("classes").document(classId)
-                            .collection("lessons").document(lessonId)
-                            .collection("musicFiles")
-                            .add(musicFile);
-                }))
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
+        firestoreManager.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content);
     }
 }

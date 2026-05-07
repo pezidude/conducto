@@ -18,6 +18,7 @@ import com.example.conducto2.data.model.DynamicAnnotation;
 import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.LiveLesson;
+import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
 
 import com.google.android.gms.tasks.Continuation;
@@ -32,6 +33,7 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -54,8 +56,22 @@ public class FirestoreManager extends FirebaseComm {
 
     private DBResult dbResult;
 
+    public enum DbOperation {
+        INSERT_USER,
+        INSERT_LESSON,
+        UPDATE_LESSON,
+        INSERT_CLASS,
+        UPDATE_CLASS,
+        JOIN_CLASS,
+        SET_LIVE_LESSON,
+        CHECK_LIVE_LESSON,
+        UPLOAD_MUSIC_FILE,
+        RENAME_MUSIC_FILE,
+        OTHER
+    }
+
     public interface DBResult {
-        void uploadResult(boolean success);
+        void uploadResult(boolean success, DbOperation operation);
 
         void displayMessage(String message);
     }
@@ -115,7 +131,7 @@ public class FirestoreManager extends FirebaseComm {
                         Log.d(TAG, "onSuccess: user loaded successfully ");
                         if (dbResult != null) {
                             dbResult.displayMessage("post uploaded successfuly");
-                            dbResult.uploadResult(true);
+                            dbResult.uploadResult(true, DbOperation.INSERT_USER);
                         }
 
                     }
@@ -124,7 +140,7 @@ public class FirestoreManager extends FirebaseComm {
                     public void onFailure(@NonNull Exception e) {
                         if (dbResult != null) {
                             dbResult.displayMessage("upload failed " + e.getMessage());
-                            dbResult.uploadResult(false);
+                            dbResult.uploadResult(false, DbOperation.INSERT_USER);
                         }
                     }
                 });
@@ -199,12 +215,12 @@ public class FirestoreManager extends FirebaseComm {
                     Log.d(TAG, "onSuccess: lesson loaded successfully ");
                     if (dbResult != null) {
                         dbResult.displayMessage("lesson uploaded successfully");
-                        dbResult.uploadResult(true);
+                        dbResult.uploadResult(true, DbOperation.INSERT_LESSON);
                     }
                 }).addOnFailureListener(e -> {
                     if (dbResult != null) {
                         dbResult.displayMessage("lesson upload failed " + e.getMessage());
-                        dbResult.uploadResult(false);
+                        dbResult.uploadResult(false, DbOperation.INSERT_LESSON);
                     }
                 });
     }
@@ -213,7 +229,7 @@ public class FirestoreManager extends FirebaseComm {
         if (lesson.getId() == null || lesson.getId().isEmpty()) {
             if (dbResult != null) {
                 dbResult.displayMessage("Lesson ID is missing, cannot update.");
-                dbResult.uploadResult(false);
+                dbResult.uploadResult(false, DbOperation.UPDATE_LESSON);
             }
             return;
         }
@@ -224,7 +240,6 @@ public class FirestoreManager extends FirebaseComm {
         updates.put("title", lesson.getTitle());
         updates.put("info", lesson.getInfo());
         updates.put("date", lesson.getDate());
-        updates.put("attendees", lesson.getAttendees());
         updates.put("musicXMLFiles", lesson.getMusicXMLFiles());
         updates.put("fileMapping", lesson.getFileMapping());
 
@@ -233,12 +248,12 @@ public class FirestoreManager extends FirebaseComm {
                     Log.d(TAG, "onSuccess: lesson updated successfully ");
                     if (dbResult != null) {
                         dbResult.displayMessage("lesson updated successfully");
-                        dbResult.uploadResult(true);
+                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON);
                     }
                 }).addOnFailureListener(e -> {
                     if (dbResult != null) {
                         dbResult.displayMessage("lesson update failed " + e.getMessage());
-                        dbResult.uploadResult(false);
+                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON);
                     }
                 });
     }
@@ -254,7 +269,7 @@ public class FirestoreManager extends FirebaseComm {
                         Log.d(TAG, "onSuccess: class loaded successfully ");
                         if (dbResult != null) {
                             dbResult.displayMessage("class uploaded successfuly");
-                            dbResult.uploadResult(true);
+                            dbResult.uploadResult(true, DbOperation.INSERT_CLASS);
                         }
 
                     }
@@ -263,7 +278,7 @@ public class FirestoreManager extends FirebaseComm {
                     public void onFailure(@NonNull Exception e) {
                         if (dbResult != null) {
                             dbResult.displayMessage("class upload failed " + e.getMessage());
-                            dbResult.uploadResult(false);
+                            dbResult.uploadResult(false, DbOperation.INSERT_CLASS);
                         }
                     }
                 });
@@ -279,7 +294,7 @@ public class FirestoreManager extends FirebaseComm {
                         Log.d(TAG, "onSuccess: class loaded successfully ");
                         if (dbResult != null) {
                             dbResult.displayMessage("class uploaded successfuly");
-                            dbResult.uploadResult(true);
+                            dbResult.uploadResult(true, DbOperation.UPDATE_CLASS);
                         }
 
                     }
@@ -288,7 +303,7 @@ public class FirestoreManager extends FirebaseComm {
                     public void onFailure(@NonNull Exception e) {
                         if (dbResult != null) {
                             dbResult.displayMessage("class upload failed " + e.getMessage());
-                            dbResult.uploadResult(false);
+                            dbResult.uploadResult(false, DbOperation.UPDATE_CLASS);
                         }
                     }
                 });
@@ -321,19 +336,19 @@ public class FirestoreManager extends FirebaseComm {
                             document.getReference().update("members", FieldValue.arrayUnion(userEmail))
                                     .addOnSuccessListener(aVoid -> {
                                         dbResult.displayMessage("Successfully joined class");
-                                        dbResult.uploadResult(true);
+                                        dbResult.uploadResult(true, DbOperation.JOIN_CLASS);
                                     })
                                     .addOnFailureListener(e -> {
                                         dbResult.displayMessage("Failed to join class: " + e.getMessage());
-                                        dbResult.uploadResult(false);
+                                        dbResult.uploadResult(false, DbOperation.JOIN_CLASS);
                                     });
                         } else {
                             dbResult.displayMessage("Invalid join code");
-                            dbResult.uploadResult(false);
+                            dbResult.uploadResult(false, DbOperation.JOIN_CLASS);
                         }
                     } else {
                         dbResult.displayMessage("Failed to find class: " + task.getException().getMessage());
-                        dbResult.uploadResult(false);
+                        dbResult.uploadResult(false, DbOperation.JOIN_CLASS);
                     }
                 });
     }
@@ -369,20 +384,20 @@ public class FirestoreManager extends FirebaseComm {
                     .addOnSuccessListener(aVoid -> {
                         if (dbResult != null) {
                             dbResult.displayMessage("Live lesson status updated");
-                            dbResult.uploadResult(true);
+                            dbResult.uploadResult(true, DbOperation.SET_LIVE_LESSON);
                         }
                     })
                     .addOnFailureListener(e -> {
                         if (dbResult != null) {
                             dbResult.displayMessage("Failed to set live lesson: " + e.getMessage());
-                            dbResult.uploadResult(false);
+                            dbResult.uploadResult(false, DbOperation.SET_LIVE_LESSON);
                         }
                     });
 
         }).addOnFailureListener(e -> {
             if (dbResult != null) {
                 dbResult.displayMessage("Error checking live lesson status: " + e.getMessage());
-                dbResult.uploadResult(false);
+                dbResult.uploadResult(false, DbOperation.SET_LIVE_LESSON);
             }
         });
     }
@@ -395,13 +410,13 @@ public class FirestoreManager extends FirebaseComm {
             if (dbResult == null) return;
             if (documentSnapshot.exists()) {
                 LiveLesson liveLesson = documentSnapshot.toObject(LiveLesson.class);
-                dbResult.uploadResult(liveLesson != null && liveLesson.isActive());
+                dbResult.uploadResult(liveLesson != null && liveLesson.isActive(), DbOperation.CHECK_LIVE_LESSON);
             } else {
-                dbResult.uploadResult(false);
+                dbResult.uploadResult(false, DbOperation.CHECK_LIVE_LESSON);
             }
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Error checking live lesson", e);
-            if (dbResult != null) dbResult.uploadResult(false);
+            if (dbResult != null) dbResult.uploadResult(false, DbOperation.CHECK_LIVE_LESSON);
         });
     }
     public void listenForLiveLesson(String classID, LiveLessonListener listener) {
@@ -461,6 +476,104 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 });
     }
+
+    public void uploadMusicFile(String classId, String lessonId, Uri fileUri, String title, String extension) {
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+        String fileName = "musicresource_" + java.util.UUID.randomUUID().toString() + "." + extension;
+        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
+
+        fileRef.putFile(fileUri)
+                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    MusicFile musicFile = new MusicFile(title, uri);
+                    FIRESTORE.collection("classes").document(classId)
+                            .collection("lessons").document(lessonId)
+                            .collection("musicFiles")
+                            .add(musicFile)
+                            .addOnSuccessListener(aVoid -> {
+                                if (dbResult != null) {
+                                    dbResult.displayMessage("File uploaded and saved.");
+                                    dbResult.uploadResult(true, DbOperation.UPLOAD_MUSIC_FILE);
+                                }
+                            })
+                            .addOnFailureListener(e -> {
+                                if (dbResult != null) {
+                                    dbResult.displayMessage("Failed to save file URL: " + e.getMessage());
+                                    dbResult.uploadResult(false, DbOperation.UPLOAD_MUSIC_FILE);
+                                }
+                            });
+                }))
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Upload failed: " + e.getMessage());
+                        dbResult.uploadResult(false, DbOperation.UPLOAD_MUSIC_FILE);
+                    }
+                });
+    }
+
+    public void renameMusicFile(String classId, String lessonId, String fileDocId, String newTitle) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("musicFiles").document(fileDocId)
+                .update("title", newTitle)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("File renamed.");
+                        dbResult.uploadResult(true, DbOperation.RENAME_MUSIC_FILE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Failed to rename file: " + e.getMessage());
+                        dbResult.uploadResult(false, DbOperation.RENAME_MUSIC_FILE);
+                    }
+                });
+    }
+
+    public void addDraftRole(String classId, String lessonId, com.example.conducto2.ui.lessons.Role role) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("draftRoles")
+                .add(role);
+    }
+
+    public void updateDraftRole(String classId, String lessonId, String roleDocId, Map<String, Object> updates) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("draftRoles").document(roleDocId)
+                .update(updates);
+    }
+
+    public void deleteDraftRole(String classId, String lessonId, String roleDocId) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("draftRoles").document(roleDocId)
+                .delete();
+    }
+
+    public Query getDraftRolesQuery(String classId, String lessonId) {
+        return FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("draftRoles")
+                .orderBy("name", Query.Direction.ASCENDING);
+    }
+
+    public void uploadRoleMusicFile(String classId, String lessonId, String originalTitle, String roleName, String content) {
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
+        String fileName = "role_" + roleName.replaceAll("\\s+", "_") + "_" + java.util.UUID.randomUUID().toString() + ".musicxml";
+        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
+
+        byte[] data = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        fileRef.putBytes(data)
+                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    MusicFile musicFile = new MusicFile(originalTitle + " - " + roleName, uri);
+                    FIRESTORE.collection("classes").document(classId)
+                            .collection("lessons").document(lessonId)
+                            .collection("musicFiles")
+                            .add(musicFile);
+                }))
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
+    }
+
     // DELETE ME
     public static class FileStorage extends FirebaseComm {
 

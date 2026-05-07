@@ -96,7 +96,7 @@ public class ClassEditActivity extends AppCompatActivity implements FirestoreMan
     }
 
     @Override
-    public void uploadResult(boolean success) {
+    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
         if (success) {
             finish();
         }

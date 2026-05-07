@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class LessonEditActivity extends BaseDrawerActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener, MusicXmlAdapter.OnDeleteButtonClickListener {
+public class LessonEditActivity extends BaseDrawerActivity implements FirestoreManager.DBResult, MusicXmlAdapter.OnAssignButtonClickListener, MusicXmlAdapter.OnDeleteButtonClickListener, MusicXmlAdapter.OnRenameListener {
 
     private EditText lessonTitleInput;
     private EditText lessonInfoInput;
@@ -70,6 +70,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private int pendingTasks = 0;
     private boolean shouldFinishOnTasksEnd = false;
     private final List<String> pendingDeletions = new ArrayList<>();
+    private final List<String> pendingUrlDeletions = new ArrayList<>();
 
     private final ActivityResultLauncher<Intent> musicXmlLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -204,6 +205,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             musicXmlAdapter.setPendingDeletions(pendingDeletions);
             musicXmlAdapter.setOnAssignButtonClickListener(this);
             musicXmlAdapter.setOnDeleteButtonClickListener(this);
+            musicXmlAdapter.setOnRenameListener(this);
             musicXmlRecyclerView.setAdapter(musicXmlAdapter);
             musicXmlAdapter.startListening();
         }
@@ -228,39 +230,12 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             Toast.makeText(this, "Lesson must be saved before uploading files.", Toast.LENGTH_SHORT).show();
             return;
         }
-        // TODO: package in helper class
 
         startTask(getString(R.string.status_uploading));
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         FileIO fileOps = new FileIO(this);
-
-        String fileName = "musicresource_" + UUID.randomUUID().toString() + "." + fileOps.getExtension(fileUri);
-        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + currentLesson.getId() + "/" + fileName);
-
-        // TODO: do-while loop for if file exists by chance
-
-        fileRef.putFile(fileUri)
-                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    MusicFile musicFile = new MusicFile(title, uri);
-                    // TODO: move this function to FirestoreManager
-                    FirebaseFirestore.getInstance()
-                            .collection("classes").document(classId)
-                            .collection("lessons").document(currentLesson.getId())
-                            .collection("musicFiles")
-                            .add(musicFile)
-                            .addOnSuccessListener(aVoid -> {
-                                endTask();
-                                displayMessage("File uploaded and saved.");
-                            })
-                            .addOnFailureListener(e -> {
-                                endTask();
-                                displayMessage("Failed to save file URL: " + e.getMessage());
-                            });
-                }))
-                .addOnFailureListener(e -> {
-                    endTask();
-                    displayMessage("Upload failed: " + e.getMessage());
-                });
+        String extension = fileOps.getExtension(fileUri);
+        
+        firestoreManager.uploadMusicFile(classId, currentLesson.getId(), fileUri, title, extension);
     }
 
     private void showDatePickerDialog() {
@@ -312,7 +287,15 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         currentLesson.setTitle(title);
         currentLesson.setInfo(info);
         currentLesson.setDate(calendar.getTime());
-        currentLesson.setAttendees(classAttendees);
+
+        // Remove assignments for files pending deletion
+        Map<String, List<String>> fileMapping = currentLesson.getFileMapping();
+        if (fileMapping != null) {
+            for (String url : pendingUrlDeletions) {
+                fileMapping.remove(url);
+            }
+            currentLesson.setFileMapping(fileMapping);
+        }
 
         startTask(getString(R.string.status_saving));
         
@@ -345,25 +328,26 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                     .addOnCompleteListener(task -> endTask());
         }
         pendingDeletions.clear();
+        pendingUrlDeletions.clear();
     }
 
     @Override
-    public void uploadResult(boolean success) {
+    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
         endTask();
         if (success) {
-            // Check if we were just saving/updating the lesson (which triggers finish())
-            // or if it was another uploadResult trigger.
-            // Since we moved getAllUsers to its own listener, only save/update operations
-            // from firestoreManager should trigger this.
-            if (!isEditMode) {
-                uploadMusicXmlButton.setEnabled(true);
-                groupVoicesPickerButton.setEnabled(true);
-                isEditMode = true;
-                saveLessonButton.setText(R.string.btn_save);
-            } else {
-                shouldFinishOnTasksEnd = true;
-                if (pendingTasks == 0) {
-                    finish();
+            if (operation == FirestoreManager.DbOperation.INSERT_LESSON || operation == FirestoreManager.DbOperation.UPDATE_LESSON) {
+                if (!isEditMode) {
+                    uploadMusicXmlButton.setEnabled(true);
+                    groupVoicesPickerButton.setEnabled(true);
+                    isEditMode = true;
+                    saveLessonButton.setText(R.string.btn_save);
+                    // Also need to update the query in adapter since currentLesson.getId() is now available
+                    setupRecyclerView();
+                } else {
+                    shouldFinishOnTasksEnd = true;
+                    if (pendingTasks == 0) {
+                        finish();
+                    }
                 }
             }
         }
@@ -473,11 +457,44 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     public void onDeleteButtonClick(MusicFile musicFile, String documentId) {
         if (pendingDeletions.contains(documentId)) {
             pendingDeletions.remove(documentId);
+            pendingUrlDeletions.remove(musicFile.getUrl());
         } else {
             pendingDeletions.add(documentId);
+            pendingUrlDeletions.add(musicFile.getUrl());
         }
         if (musicXmlAdapter != null) {
             musicXmlAdapter.setPendingDeletions(pendingDeletions);
         }
+    }
+
+    @Override
+    public void onRename(MusicFile musicFile, String documentId) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Rename File");
+
+        final EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        input.setText(musicFile.getTitle());
+        input.setSelectAllOnFocus(true);
+        builder.setView(input);
+
+        builder.setPositiveButton("Rename", (dialog, which) -> {
+            String newTitle = input.getText().toString().trim();
+            if (!newTitle.isEmpty()) {
+                renameFileInFirestore(documentId, newTitle);
+            } else {
+                Toast.makeText(this, "Title cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void renameFileInFirestore(String documentId, String newTitle) {
+        if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
+
+        startTask(null);
+        firestoreManager.renameMusicFile(classId, currentLesson.getId(), documentId, newTitle);
     }
 }

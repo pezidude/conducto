@@ -199,7 +199,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
     }
 
     @Override
-    public void uploadResult(boolean success) {
+    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
         // Handled by FirestoreManager displayMessage if success/fail toast is needed
     }
 

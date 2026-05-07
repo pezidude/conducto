@@ -28,6 +28,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     private OnAssignButtonClickListener assignListener;
     private OnItemClickListener itemClickListener;
     private OnDeleteButtonClickListener deleteListener;
+    private OnRenameListener renameListener;
     private final boolean showButtons;
     private List<String> pendingDeletions = new ArrayList<>();
 
@@ -41,6 +42,10 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
 
     public interface OnDeleteButtonClickListener {
         void onDeleteButtonClick(MusicFile musicFile, String documentId);
+    }
+
+    public interface OnRenameListener {
+        void onRename(MusicFile musicFile, String documentId);
     }
 
     /**
@@ -64,6 +69,10 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
 
     public void setOnDeleteButtonClickListener(OnDeleteButtonClickListener listener) {
         this.deleteListener = listener;
+    }
+
+    public void setOnRenameListener(OnRenameListener listener) {
+        this.renameListener = listener;
     }
 
     public void setPendingDeletions(List<String> pendingDeletions) {
@@ -107,6 +116,14 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
                 if (deleteListener != null) {
                     deleteListener.onDeleteButtonClick(model, docId);
                 }
+            });
+
+            holder.itemView.setOnLongClickListener(v -> {
+                if (renameListener != null && !isPendingDelete) {
+                    renameListener.onRename(model, docId);
+                    return true;
+                }
+                return false;
             });
         } else {
             holder.assignButton.setVisibility(View.GONE);

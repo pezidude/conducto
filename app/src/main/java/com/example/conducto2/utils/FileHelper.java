@@ -9,8 +9,11 @@ import android.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class FileHelper {
     public static String getTitleFromUri(Context context, Uri uri) {
@@ -31,44 +34,73 @@ public class FileHelper {
 
     private static String getTitleFromMusicXml(Context context, Uri uri) {
         try (InputStream inputStream = openInputStream(context, uri)) {
-            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
-            XmlPullParser parser = factory.newPullParser();
-            parser.setInput(inputStream, null);
+            BufferedInputStream bis = new BufferedInputStream(inputStream);
+            bis.mark(4);
+            byte[] header = new byte[4];
+            int read = bis.read(header);
+            bis.reset();
 
-            int eventType = parser.getEventType();
-            boolean inWorkTitle = false;
-            boolean inMovementTitle = false;
-
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                String tagName = parser.getName();
-                switch (eventType) {
-                    case XmlPullParser.START_TAG:
-                        if ("work-title".equals(tagName)) {
-                            inWorkTitle = true;
-                        } else if ("movement-title".equals(tagName)) {
-                            inMovementTitle = true;
-                        }
-                        break;
-                    case XmlPullParser.TEXT:
-                        if (inWorkTitle || inMovementTitle) {
-                            String parsedTitle = parser.getText();
-                            if (parsedTitle != null && !parsedTitle.trim().isEmpty()) {
-                                return parsedTitle.trim();
-                            }
-                        }
-                        break;
-                    case XmlPullParser.END_TAG:
-                        if ("work-title".equals(tagName)) {
-                            inWorkTitle = false;
-                        } else if ("movement-title".equals(tagName)) {
-                            inMovementTitle = false;
-                        }
-                        break;
-                }
-                eventType = parser.next();
+            if (read >= 2 && header[0] == 'P' && header[1] == 'K') {
+                return getTitleFromZippedMusicXml(bis);
+            } else {
+                return parseTitleFromStream(bis);
             }
         } catch (Exception e) {
             Log.e("FileHelper", "Error parsing MusicXML", e);
+        }
+        return null;
+    }
+
+    private static String getTitleFromZippedMusicXml(InputStream is) throws Exception {
+        ZipInputStream zis = new ZipInputStream(is);
+        ZipEntry entry;
+        while ((entry = zis.getNextEntry()) != null) {
+            String name = entry.getName();
+            if (!entry.isDirectory() && name.toLowerCase().endsWith(".xml")
+                    && !name.equalsIgnoreCase("META-INF/container.xml")
+                    && !name.equalsIgnoreCase("container.xml")) {
+                return parseTitleFromStream(zis);
+            }
+        }
+        return null;
+    }
+
+    private static String parseTitleFromStream(InputStream is) throws Exception {
+        XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+        XmlPullParser parser = factory.newPullParser();
+        parser.setInput(is, null);
+
+        int eventType = parser.getEventType();
+        boolean inWorkTitle = false;
+        boolean inMovementTitle = false;
+
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            String tagName = parser.getName();
+            switch (eventType) {
+                case XmlPullParser.START_TAG:
+                    if ("work-title".equals(tagName)) {
+                        inWorkTitle = true;
+                    } else if ("movement-title".equals(tagName)) {
+                        inMovementTitle = true;
+                    }
+                    break;
+                case XmlPullParser.TEXT:
+                    if (inWorkTitle || inMovementTitle) {
+                        String parsedTitle = parser.getText();
+                        if (parsedTitle != null && !parsedTitle.trim().isEmpty()) {
+                            return parsedTitle.trim();
+                        }
+                    }
+                    break;
+                case XmlPullParser.END_TAG:
+                    if ("work-title".equals(tagName)) {
+                        inWorkTitle = false;
+                    } else if ("movement-title".equals(tagName)) {
+                        inMovementTitle = false;
+                    }
+                    break;
+            }
+            eventType = parser.next();
         }
         return null;
     }

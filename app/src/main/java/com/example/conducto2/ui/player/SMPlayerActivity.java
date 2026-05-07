@@ -160,11 +160,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         new Thread(() -> { // run in background so UI execution is not blocked
             try {
-                String xmlContent = fileName.toLowerCase().endsWith(".mxl")
-                        ? fileOps.readZippedXMLFromUri(uri)
-                        : fileOps.readTextFromUri(uri);
+                String xmlContent = fileOps.readMusicXmlContent(uri);
 
-                if (xmlContent == null) {
+                if (xmlContent == null || xmlContent.isEmpty()) {
                     throw new Exception("Empty or invalid file content");
                 }
                 runOnUiThread(() -> {
@@ -177,7 +175,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                     }
                 });
             } catch (Exception e) {
-                Log.d(TAG, "Error reading file", e);
+                Log.e(TAG, "Error reading file", e);
                 runOnUiThread(() -> {
                         Toast.makeText(this, "Failed to load file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "Failed to load file: " + e.getMessage());

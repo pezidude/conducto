@@ -142,7 +142,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     @Override
-    public void uploadResult(boolean success) {
+    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
         // firestore result function (should be success because of auth step)
         if (success) {
             Intent go = new Intent(SignUpActivity.this, DashboardActivity.class);

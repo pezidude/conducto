@@ -57,8 +57,15 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         applyNavigationStyles();
 
         // setup listener to firestore
-        firestoreManager.listenForLiveLesson(DataManager.getCurClass().getId(), this);
-        Log.d(DataManager.getCurClass().getId(), TAG);
+        Class currentClass = DataManager.getCurClass();
+        if (currentClass == null || currentClass.getId() == null) {
+            Toast.makeText(this, "Error: Class data is missing", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        firestoreManager.listenForLiveLesson(currentClass.getId(), this);
+        Log.d(TAG, "Listening for live lesson for class: " + currentClass.getId());
 
     }
 
