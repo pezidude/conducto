@@ -1,25 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/background_app">
 
-    <!-- Playback controls (docked at top below toolbar) -->
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/playback_fragment_container"
-        android:name="com.example.conducto2.ui.player.PlaybackFragment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <!-- Sheet music view (fills remaining space) -->
+    <!-- Sheet music view (fills entire screen) -->
     <com.example.conducto2.ui.player.widget.InteractiveWebView
         android:id="@+id/sheetMusicView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/white"/>
+        android:layout_height="match_parent"
+        android:background="@color/white" />
 
-</LinearLayout>
+    <!-- Overlay for playback controls at the bottom -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:clickable="false"
+        android:focusable="false">
+
+        <!-- Small arrow for toggling visibility -->
+        <ImageButton
+            android:id="@+id/btn_toggle_playback"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="4dp"
+            android:background="@drawable/bg_circle_highlight"
+            android:src="@drawable/ic_play_arrow"
+            android:rotation="90"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/white"
+            android:contentDescription="Toggle playback controls" />
+
+        <!-- Playback fragment container that partially covers the WebView -->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/playback_fragment_container"
+            android:name="com.example.conducto2.ui.player.PlaybackFragment"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="8dp"
+            android:visibility="visible" />
+    </LinearLayout>
+
+</FrameLayout>

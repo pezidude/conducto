@@ -90,6 +90,10 @@
         if (exactTargetStep !== -1) {
             console.log(`Jumping to precise step #${exactTargetStep}`);
 
+            if (window.AndroidInterface && window.AndroidInterface.onStepSelected) {
+                window.AndroidInterface.onStepSelected(exactTargetStep);
+            }
+
             const wasPlaying = playbackManager.state === "PLAYING";
 
             if (wasPlaying) {
@@ -236,6 +240,20 @@
             playbackManager.pause();
         }
     };
+
+    window.syncCursorPosition = function() {
+    if (osmd && osmd.cursor && playbackManager && playbackManager.iterator) {
+        // Re-assign the iterator to ensure it's pointing to the audio engine's current step
+        osmd.cursor.Iterator = playbackManager.iterator;
+        // Force a visual update of the SVG element
+        osmd.cursor.update();
+        console.log("WebView: Cursor synced manually.");
+    }
+};
+    window.addEventListener('resize', () => {
+    // When Android resizes the WebView, tell OSMD to catch up
+    osmd.render();
+});
 
 
     // Auto-load default example so something is visible immediately

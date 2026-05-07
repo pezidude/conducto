@@ -4,10 +4,12 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,7 +19,7 @@ import com.example.conducto2.data.file.FileIO;
 
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
- * It uses a WebView to render the sheet music and provides playback controls.
+ * It uses a WebView to render the sheet music and provides playback controls via a fragment overlay.
  */
 public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragment.PlaybackControlsListener {
 
@@ -25,9 +27,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private static final String TAG = "SMPlayerActivity";
 
     private WebView sheetMusicView;
+    private View playbackFragmentContainer;
+    private ImageButton btnTogglePlayback;
     private boolean isPlaying = false;
     private int currentBPM = 100;
-    // int bpm = 120; // default bpm
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +38,21 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         setContentView(R.layout.activity_smplayer);
 
         sheetMusicView = findViewById(R.id.sheetMusicView);
+        playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
+        btnTogglePlayback = findViewById(R.id.btn_toggle_playback);
+
+        btnTogglePlayback.setOnClickListener(v -> {
+            if (playbackFragmentContainer.getVisibility() == View.VISIBLE) {
+                playbackFragmentContainer.setVisibility(View.GONE);
+                // Rotate arrow to point up (suggesting expansion)
+                btnTogglePlayback.animate().rotation(270).setDuration(200).start();
+            } else {
+                playbackFragmentContainer.setVisibility(View.VISIBLE);
+                // Rotate arrow back to 90 degrees (pointing down towards the panel)
+                btnTogglePlayback.animate().rotation(90).setDuration(200).start();
+            }
+        });
+
         setupWebView();
     }
 
@@ -47,6 +65,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             runOnUiThread(() -> {
                 // now that all JS has executed, it's safe to load the file.
                 Toast.makeText(SMPlayerActivity.this, "OSMD Engine Ready", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "OSMD Engine Ready");
                 Intent intent = getIntent();
                 if (intent.hasExtra("fileUri")) {
                     String uriString = intent.getStringExtra("fileUri");
@@ -60,7 +79,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         public void onLoadScoreFinished() {
             runOnUiThread(() -> {
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "File loaded.");
                 sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
+            });
+        }
+
+        @JavascriptInterface
+        public void onStepSelected(int exactTargetStep) {
+            runOnUiThread(() -> {
+                Toast.makeText(SMPlayerActivity.this, "Selected step: " + exactTargetStep, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "Selected step: " + exactTargetStep);
             });
         }
     }
@@ -86,13 +114,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 super.onPageFinished(view, url);
                 runOnUiThread(() -> {
                     Toast.makeText(SMPlayerActivity.this, "Page finished loading", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Page finished loading");
                 });
             }
         });
         sheetMusicView.loadUrl("file:///android_asset/viewer.html");
     }
-
-
 
     /**
      * Loads the given MusicXML data into the WebView.
@@ -114,6 +141,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
         Toast.makeText(this, "Loading: " + fileName, Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Loading: " + fileName);
 
         new Thread(() -> { // run in background so UI execution is not blocked
             try {
@@ -130,13 +158,15 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                         loadXmlInWebView(xmlContent);
                     } else {
                         Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
+                        Log.d(TAG, "File format not recognized.");
                     }
                 });
             } catch (Exception e) {
                 Log.d(TAG, "Error reading file", e);
-                runOnUiThread(() ->
-                        Toast.makeText(this, "Failed to load file: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                runOnUiThread(() -> {
+                        Toast.makeText(this, "Failed to load file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Failed to load file: " + e.getMessage());
+                });
             }
         }).start();
     }
@@ -157,14 +187,13 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onResume() {
         super.onResume();
         if (sheetMusicView != null) {
-            sheetMusicView.resumeTimers(); // Wakes up JS timers
             sheetMusicView.onResume();     // Wakes up WebView rendering
+            sheetMusicView.resumeTimers(); // Wakes up JS timers
 
             // CRUCIAL: Tell JS to wake up the AudioContext
             sheetMusicView.evaluateJavascript("if(window.wakeUpAudio) window.wakeUpAudio();", null);
         }
     }
-
 
     /**
      * Called when the play/pause button in the PlaybackFragment is clicked.
@@ -180,6 +209,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      */
     private void handlePlayback() {
         Toast.makeText(this, "Click!", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Click!");
         if (isPlaying) {
             sheetMusicView.evaluateJavascript("play();", null);
         } else {
