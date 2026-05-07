@@ -56,6 +56,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private TextView timeTextView;
     private Button saveLessonButton;
     private Button uploadMusicXmlButton;
+    private Button groupVoicesPickerButton;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
     private LinearProgressIndicator loadingProgress;
@@ -78,6 +79,21 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                     Uri fileUri = result.getData().getData();
                     String title = FileHelper.getTitleFromUri(this, fileUri);
                     uploadFileToStorage(fileUri, title);
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> groupVoicesLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
+                    Uri fileUri = result.getData().getData();
+                    String title = FileHelper.getTitleFromUri(this, fileUri);
+                    Intent intent = new Intent(this, RoleGroupingActivity.class);
+                    intent.putExtra("fileUri", fileUri.toString());
+                    intent.putExtra("classId", classId);
+                    intent.putExtra("lessonId", currentLesson.getId());
+                    intent.putExtra("title", title);
+                    startActivity(intent);
                 }
             });
 
@@ -105,6 +121,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             currentLesson = new Lesson();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
             uploadMusicXmlButton.setEnabled(false);
+            groupVoicesPickerButton.setEnabled(false);
             // TODO: change the style / set enabled to true but give an error.
             //  the current state is confusing
         }
@@ -164,6 +181,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         timeTextView = findViewById(R.id.time_text_view);
         saveLessonButton = findViewById(R.id.save_lesson_button);
         uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
+        groupVoicesPickerButton = findViewById(R.id.btn_group_voices_picker);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
         loadingProgress = findViewById(R.id.loading_progress);
     }
@@ -194,14 +212,15 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void setupListeners() {
         lessonDatePicker.setOnClickListener(v -> showDatePickerDialog());
         lessonTimePicker.setOnClickListener(v -> showTimePickerDialog());
-        uploadMusicXmlButton.setOnClickListener(v -> openFilePicker());
+        uploadMusicXmlButton.setOnClickListener(v -> openFilePicker(musicXmlLauncher));
+        groupVoicesPickerButton.setOnClickListener(v -> openFilePicker(groupVoicesLauncher));
         saveLessonButton.setOnClickListener(v -> saveLesson());
     }
 
-    private void openFilePicker() {
+    private void openFilePicker(ActivityResultLauncher<Intent> launcher) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*"); // wildcard for all file types
-        musicXmlLauncher.launch(intent);
+        launcher.launch(intent);
     }
 
     private void uploadFileToStorage(Uri fileUri, String title) {
@@ -338,6 +357,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             // from firestoreManager should trigger this.
             if (!isEditMode) {
                 uploadMusicXmlButton.setEnabled(true);
+                groupVoicesPickerButton.setEnabled(true);
                 isEditMode = true;
                 saveLessonButton.setText(R.string.btn_save);
             } else {

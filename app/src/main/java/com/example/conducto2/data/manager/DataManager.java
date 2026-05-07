@@ -34,7 +34,7 @@ public class DataManager {
 
     public static  Lesson getCurLesson(){return curLesson;}
     public static void setCurLesson(@Nullable Lesson lesson){
-        if (lesson == null) {
+        if (lesson == null) { // imply lesson creation
             curLesson = null;
             return;
         }

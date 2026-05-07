@@ -1,9 +1,11 @@
 package com.example.conducto2.ui.player;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -37,6 +39,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
 
+        initViews();
+
+        setupWebView();
+    }
+
+    public void initViews() {
         sheetMusicView = findViewById(R.id.sheetMusicView);
         playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
         btnTogglePlayback = findViewById(R.id.btn_toggle_playback);
@@ -52,8 +60,14 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 btnTogglePlayback.animate().rotation(90).setDuration(200).start();
             }
         });
+        // disable the toggle button until OSMD initializes
+        btnTogglePlayback.setEnabled(false);
 
-        setupWebView();
+    }
+
+    public void enablePlayback() {
+        btnTogglePlayback.setEnabled(true);
+        btnTogglePlayback.callOnClick(); // show the playback controls
     }
 
     /**
@@ -81,6 +95,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "File loaded.");
                 sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
+                enablePlayback();
             });
         }
 
@@ -177,9 +192,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         if (sheetMusicView != null) {
             sheetMusicView.pauseTimers(); // Pauses JS timers and background tasks
             sheetMusicView.onPause();     // Pauses WebView rendering
-
-            // Optional: Tell JS to pause the music if it's currently playing
-            sheetMusicView.evaluateJavascript("if(window.pauseMusic) window.pauseMusic();", null);
         }
     }
 
@@ -189,9 +201,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         if (sheetMusicView != null) {
             sheetMusicView.onResume();     // Wakes up WebView rendering
             sheetMusicView.resumeTimers(); // Wakes up JS timers
-
-            // CRUCIAL: Tell JS to wake up the AudioContext
-            sheetMusicView.evaluateJavascript("if(window.wakeUpAudio) window.wakeUpAudio();", null);
         }
     }
 
@@ -199,8 +208,20 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      * Called when the play/pause button in the PlaybackFragment is clicked.
      */
     @Override
+    @SuppressLint("ClickableViewAccessibility") // silence android onTouch warning
     public void onPlayPauseClicked() {
         isPlaying = !isPlaying;
+        if (isPlaying) {
+            sheetMusicView.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    // This prevents the user from manually scrolling the webview.
+                    return (event.getAction() == MotionEvent.ACTION_MOVE);
+                }
+            });
+        } else {
+            sheetMusicView.setOnTouchListener(null); // re-enable scrolling and touching
+        }
         handlePlayback();
     }
 
@@ -216,7 +237,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             sheetMusicView.evaluateJavascript("pause();", null);
         }
     }
-
+    /*
+     * Called when the functions in PlaybackFragment is clicked.
+     */
     @Override
     public void onResetClicked() {
         sheetMusicView.evaluateJavascript("stop();", null);

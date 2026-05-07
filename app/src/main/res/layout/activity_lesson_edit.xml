@@ -194,6 +194,16 @@
                 app:iconTint="@color/text_primary"
                 android:layout_marginTop="@dimen/spacing_base"/>
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_group_voices_picker"
+                style="@style/Widget.Conducto.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:text="Group Voices &amp; Upload"
+                app:icon="@drawable/ic_brush"
+                app:iconTint="@color/text_primary"
+                android:layout_marginTop="@dimen/spacing_sm"/>
+
             <!-- Music XML list -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/music_xml_recycler_view"
