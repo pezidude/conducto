@@ -178,16 +178,12 @@
      * Named function to Play.
      */
     window.play = async function() {
-        const startTime = performance.now();
         const ac = playbackManager.ac;
-        let resumed = false;
         if (ac && ac.state === 'suspended') {
             await ac.resume();
-            resumed = true;
         }
         playbackManager.play();
-        const endTime = performance.now();
-        console.log("WebView: play() executed in " + (endTime - startTime).toFixed(2) + "ms. Resumed: " + resumed);
+        console.log("WebView: Playing");
     };
 
     /**
@@ -200,10 +196,16 @@
 
     /**
      * Named function to Stop.
+     * Changed to pause and jump to start to keep the engine "hot" for faster restarts.
      */
     window.stop = function() {
-        playbackManager.stop();
-        console.log("WebView: Stopped");
+        playbackManager.pause();
+        playbackManager.jumpToStep(0);
+        if (playbackManager.cursor && playbackManager.iterator) {
+            playbackManager.cursor.Iterator = playbackManager.iterator;
+            playbackManager.cursor.update();
+        }
+        console.log("WebView: Stopped (Reset to 0)");
     };
 
     /**

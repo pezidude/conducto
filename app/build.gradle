@@ -70,6 +70,7 @@ dependencies {
     implementation libs.firebase.firestore
     implementation libs.google.ai.generativeai
     implementation libs.google.guava
+    implementation libs.firebase.database
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
