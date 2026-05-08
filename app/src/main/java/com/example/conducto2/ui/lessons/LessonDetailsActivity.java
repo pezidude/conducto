@@ -126,6 +126,29 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
                 .collection("lessons").document(lesson.getId())
                 .collection("musicFiles");
 
+        // If the user is a student, filter the music files based on the file mapping.
+        if (user.getUserType() != null && user.getUserType().equals("student")) {
+            Map<String, List<String>> fileMapping = lesson.getFileMapping();
+            List<String> assignedUrls = new ArrayList<>();
+            String userEmail = user.getEmail();
+
+            if (fileMapping != null && userEmail != null) {
+                for (Map.Entry<String, List<String>> entry : fileMapping.entrySet()) {
+                    List<String> students = entry.getValue();
+                    if (students != null && students.contains(userEmail)) {
+                        assignedUrls.add(entry.getKey());
+                    }
+                }
+            }
+
+            if (assignedUrls.isEmpty()) {
+                // If no mapping exists for this student, return a query that yields no results.
+                query = query.whereEqualTo("url", "NON_EXISTENT_MAPPING");
+            } else {
+                // Display only the files assigned to the student, limited to 1.
+                query = query.whereIn("url", assignedUrls).limit(1);
+            }
+        }
 
         FirestoreRecyclerOptions<MusicFile> options = new FirestoreRecyclerOptions.Builder<MusicFile>()
                 .setQuery(query, MusicFile.class)
@@ -139,7 +162,8 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
         adapter = new MusicXmlAdapter(options, false);
         adapter.setOnItemClickListener(selectedFile -> {
             Intent intent = new Intent(this, SMPlayerActivity.class);
-            intent.putExtra("readOnly", true);
+            intent.putExtra("isLive", false);
+            intent.putExtra("canControlPlayback", true);
             if (selectedFile.getUri() != null) {
                 // fileUri contains the path to the musicFile in Firebase Cloud Storage.
                 intent.putExtra("fileUri", selectedFile.getUri().toString());
@@ -193,8 +217,8 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
             tvStatusMessage.setVisibility(View.VISIBLE);
         }
 
-        // Set this lesson as PAUSED and mark the class as active
-        firestoreManager.updateLessonStatus(classId, lesson.getId(), Lesson.STATUS_PAUSED);
+        // Set this lesson as live and mark the class as active
+        firestoreManager.updateLessonLiveStatus(classId, lesson.getId(), true);
         firestoreManager.updateClassActivity(classId, true);
         
         // Update local state to prevent multiple clicks if updateClassActivity is slow
@@ -219,7 +243,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
 
     @Override
     public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
-        if (operation == FirestoreManager.DbOperation.UPDATE_LESSON_STATUS) {
+        if (operation == FirestoreManager.DbOperation.UPDATE_LESSON_LIVE_STATUS) {
             runOnUiThread(() -> {
                 btnGoLive.setEnabled(true);
                 if (tvStatusMessage != null) {

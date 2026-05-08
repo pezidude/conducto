@@ -63,6 +63,7 @@ public class FirestoreManager extends FirebaseComm {
         UPDATE_CLASS,
         JOIN_CLASS,
         UPDATE_LESSON_STATUS,
+        UPDATE_LESSON_LIVE_STATUS,
         UPLOAD_MUSIC_FILE,
         RENAME_MUSIC_FILE,
         OTHER
@@ -381,10 +382,25 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    public void updateLessonLiveStatus(String classId, String lessonId, boolean isLive) {
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
+        ref.update("isLive", isLive)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                    }
+                });
+    }
+
     public void listenForLiveLesson(String classID, LiveLessonListener listener) {
         FIRESTORE.collection("classes").document(classID)
                 .collection("lessons")
-                .whereIn("status", java.util.Arrays.asList(Lesson.STATUS_PLAYING, Lesson.STATUS_PAUSED))
+                .whereEqualTo("isLive", true)
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
                         Log.w(TAG, "Listen failed.", e);

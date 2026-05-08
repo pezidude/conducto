@@ -24,6 +24,9 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
 
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
  * It uses a WebView to render the sheet music and provides playback controls via a fragment overlay.
@@ -39,11 +42,17 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isPlaying = false;
     private int currentBPM = 100;
     private FirestoreManager firestoreManager;
+    private ListenerRegistration statusListener;
+    private boolean isLive = false;
+    private boolean canControlPlayback = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
+
+        isLive = getIntent().getBooleanExtra("isLive", false);
+        canControlPlayback = getIntent().getBooleanExtra("canControlPlayback", true);
 
         firestoreManager = new FirestoreManager();
 
@@ -56,6 +65,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         sheetMusicView = findViewById(R.id.sheetMusicView);
         playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
         btnTogglePlayback = findViewById(R.id.btn_toggle_playback);
+
+        if (!canControlPlayback) {
+            btnTogglePlayback.setVisibility(View.GONE);
+        }
 
         btnTogglePlayback.setOnClickListener(v -> {
             if (playbackFragmentContainer.getVisibility() == View.VISIBLE) {
@@ -74,8 +87,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     public void enablePlayback() {
-        btnTogglePlayback.setEnabled(true);
-        btnTogglePlayback.callOnClick(); // show the playback controls
+        if (canControlPlayback) {
+            btnTogglePlayback.setEnabled(true);
+            btnTogglePlayback.callOnClick(); // show the playback controls
+        }
     }
 
     /**
@@ -195,6 +210,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     protected void onPause() {
         super.onPause();
+        stopStatusListener();
         if (sheetMusicView != null) {
             sheetMusicView.pauseTimers(); // Pauses JS timers and background tasks
             sheetMusicView.onPause();     // Pauses WebView rendering
@@ -204,9 +220,76 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     protected void onResume() {
         super.onResume();
+        startStatusListener();
         if (sheetMusicView != null) {
             sheetMusicView.onResume();     // Wakes up WebView rendering
             sheetMusicView.resumeTimers(); // Wakes up JS timers
+        }
+    }
+
+    private void startStatusListener() {
+        User user = DataManager.getUserInstance();
+        com.example.conducto2.data.model.Class cls = DataManager.getCurClass();
+        Lesson lesson = DataManager.getCurLesson();
+
+        // Only listen for status changes in a live lesson
+        if (isLive && user != null && cls != null && lesson != null) {
+            statusListener = FirebaseFirestore.getInstance()
+                    .collection("classes").document(cls.getId())
+                    .collection("lessons").document(lesson.getId())
+                    .addSnapshotListener((snapshot, e) -> {
+                        if (e != null) {
+                            Log.w(TAG, "Listen failed.", e);
+                            return;
+                        }
+
+                        if (snapshot != null && snapshot.exists()) {
+                            String status = snapshot.getString("status");
+                            if (status != null) {
+                                handleStatusChange(status);
+                            }
+                        }
+                    });
+        }
+    }
+
+    private void stopStatusListener() {
+        if (statusListener != null) {
+            statusListener.remove();
+            statusListener = null;
+        }
+    }
+
+    private void handleStatusChange(String status) {
+        PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.playback_fragment_container);
+
+        switch (status) {
+            case Lesson.STATUS_PLAYING:
+                if (!isPlaying) {
+                    isPlaying = true;
+                    sheetMusicView.evaluateJavascript("play();", null);
+                    if (playbackFragment != null) {
+                        playbackFragment.setPlaying(true);
+                    }
+                }
+                break;
+            case Lesson.STATUS_PAUSED:
+                if (isPlaying) {
+                    isPlaying = false;
+                    sheetMusicView.evaluateJavascript("pause();", null);
+                    if (playbackFragment != null) {
+                        playbackFragment.setPlaying(false);
+                    }
+                }
+                break;
+            case Lesson.STATUS_STOPPED:
+                isPlaying = false;
+                sheetMusicView.evaluateJavascript("stop();", null);
+                if (playbackFragment != null) {
+                    playbackFragment.setPlaying(false);
+                }
+                break;
         }
     }
 
@@ -249,7 +332,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
 
-        if (user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null && cls.isActive()) {
+        // Only push status updates in a live lesson (teacher only)
+        if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null && cls.isActive()) {
             firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status);
         }
     }
@@ -261,7 +345,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     public void onResetClicked() {
         sheetMusicView.evaluateJavascript("stop();", null);
         isPlaying = false;
-        updateFirestoreStatus(Lesson.STATUS_PAUSED);
+        updateFirestoreStatus(Lesson.STATUS_STOPPED);
     }
 
     @Override

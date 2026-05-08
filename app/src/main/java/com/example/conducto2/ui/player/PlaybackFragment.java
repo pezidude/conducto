@@ -92,6 +92,13 @@ public class PlaybackFragment extends Fragment {
     /**
      * Updates the play/pause button icon based on the current playback state.
      */
+    public void setPlaying(boolean playing) {
+        this.isPlaying = playing;
+        if (playPauseButton != null) {
+            updatePlayPauseButton();
+        }
+    }
+
     private void updatePlayPauseButton() {
         if (isPlaying) {
             playPauseButton.setImageResource(R.drawable.ic_pause);
