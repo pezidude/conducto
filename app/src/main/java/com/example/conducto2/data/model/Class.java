@@ -15,9 +15,11 @@ public class Class implements Parcelable {
     private ArrayList<String> members;
     private String id;
     private String joinCode;
+    private boolean isActive;
 
     public Class() {
         // Default constructor required for calls to DataSnapshot.getValue(Class.class)
+        this.isActive = false;
     }
 
     public Class(String name, String description, String teacherName, String ownerEmail) {
@@ -27,6 +29,7 @@ public class Class implements Parcelable {
         this.ownerEmail = ownerEmail;
         this.members = new ArrayList<>();
         this.joinCode = generateNewJoinCode();
+        this.isActive = false;
     }
 
     protected Class(Parcel in) {
@@ -37,6 +40,7 @@ public class Class implements Parcelable {
         members = in.createStringArrayList();
         id = in.readString();
         joinCode = in.readString();
+        isActive = in.readByte() != 0;
     }
 
     public static final Creator<Class> CREATOR = new Creator<Class>() {
@@ -133,6 +137,14 @@ public class Class implements Parcelable {
         }
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -147,5 +159,6 @@ public class Class implements Parcelable {
         dest.writeStringList(members);
         dest.writeString(id);
         dest.writeString(joinCode);
+        dest.writeByte((byte) (isActive ? 1 : 0));
     }
 }

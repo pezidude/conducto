@@ -13,10 +13,14 @@ public class Lesson implements Parcelable {
     private String title;
     private String info;
     private Date date;
-    private String ownerEmail;
     private String classId;
     private List<MusicFile> musicXMLFiles; // List of MusicFile objects
     private Map<String, List<String>> fileMapping; // Map of file URL to list of student emails
+    private String status; // "STOPPED", "PAUSED", "PLAYING"
+
+    public static final String STATUS_STOPPED = "STOPPED";
+    public static final String STATUS_PAUSED = "PAUSED";
+    public static final String STATUS_PLAYING = "PLAYING";
 
     private String id;
 
@@ -24,9 +28,9 @@ public class Lesson implements Parcelable {
         this.title = event.title;
         this.info = event.info;
         this.date = event.date;
-        this.ownerEmail = event.ownerEmail;
         this.id = event.id;
         this.classId = event.classId;
+        this.status = event.status != null ? event.status : STATUS_STOPPED;
         this.musicXMLFiles = new ArrayList<>();
         if (event.musicXMLFiles != null) {
             this.musicXMLFiles.addAll(event.musicXMLFiles);
@@ -45,19 +49,12 @@ public class Lesson implements Parcelable {
                 ", date='" + date + '\'' +
                 ", musicXMLFiles=" + musicXMLFiles.toString() +
                 ", fileMapping=" + fileMapping.toString() +
+                ", status='" + status + '\'' +
                 '}';
     }
 
     public void setTitle(String title) {
         this.title = title;
-    }
-
-    public String getOwnerEmail() {
-        return ownerEmail;
-    }
-
-    public void setOwnerEmail(String ownerEmail) {
-        this.ownerEmail = ownerEmail;
     }
 
     public void setInfo(String info) {
@@ -96,17 +93,25 @@ public class Lesson implements Parcelable {
         this.fileMapping = fileMapping;
     }
 
-    public Lesson(String title, String info, Date date, String ownerEmail, String classId) {
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Lesson(String title, String info, Date date, String classId) {
         this.title = title;
         this.info = info;
         this.date = date;
-        this.ownerEmail = ownerEmail;
         this.classId = classId;
+        this.status = STATUS_STOPPED;
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
     }
     public Lesson() {
-        this("", "", new Date(), "", "");
+        this("", "", new Date(), "");
     }
 
     protected Lesson(Parcel in) {
@@ -114,9 +119,9 @@ public class Lesson implements Parcelable {
         info = in.readString();
         long tmpDate = in.readLong();
         date = tmpDate == -1 ? null : new Date(tmpDate);
-        ownerEmail = in.readString();
         id = in.readString();
         classId = in.readString();
+        status = in.readString();
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
         fileMapping = new HashMap<>();
         in.readMap(fileMapping, List.class.getClassLoader());
@@ -142,14 +147,22 @@ public class Lesson implements Parcelable {
         return 0;
     }
 
+    public String getInfo() {
+        return info;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(title);
         dest.writeString(info);
         dest.writeLong(date != null ? date.getTime() : -1);
-        dest.writeString(ownerEmail);
         dest.writeString(id);
         dest.writeString(classId);
+        dest.writeString(status);
         dest.writeTypedList(musicXMLFiles);
         dest.writeMap(fileMapping);
     }

@@ -309,7 +309,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                 Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            currentLesson.setOwnerEmail(FirebaseComm.authUserEmail());
             currentLesson.setClassId(classId);
             firestoreManager.insertLesson(classId, currentLesson);
         }

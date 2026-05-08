@@ -21,7 +21,7 @@ import androidx.viewpager2.widget.ViewPager2;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.data.model.LiveLesson;
+import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.fragments.ScheduledFragment;
 import com.example.conducto2.ui.classes.fragments.LiveFragment;
@@ -134,12 +134,9 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
     }
 
     @Override
-    public void onLiveLessonChanged(LiveLesson liveLesson) {
-        if (liveLesson == null) {
-            return;
-        }
+    public void onLiveLessonChanged(Lesson lesson) {
         runOnUiThread(() -> {
-            isLiveActive = liveLesson.isActive();
+            isLiveActive = (lesson != null);
             applyNavigationStyles();
         });
     }

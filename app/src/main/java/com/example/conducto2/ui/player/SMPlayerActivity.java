@@ -18,6 +18,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
+import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
+import com.example.conducto2.data.model.Class;
+import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.data.model.User;
 
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
@@ -33,11 +38,14 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private ImageButton btnTogglePlayback;
     private boolean isPlaying = false;
     private int currentBPM = 100;
+    private FirestoreManager firestoreManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
+
+        firestoreManager = new FirestoreManager();
 
         initViews();
 
@@ -227,20 +235,33 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      * Starts or stops the playback cursor in the WebView.
      */
     private void handlePlayback() {
-        Toast.makeText(this, "Click!", Toast.LENGTH_SHORT).show();
-        Log.d(TAG, "Click!");
         if (isPlaying) {
             sheetMusicView.evaluateJavascript("play();", null);
         } else {
             sheetMusicView.evaluateJavascript("pause();", null);
         }
+
+        updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED);
     }
+
+    private void updateFirestoreStatus(String status) {
+        User user = DataManager.getUserInstance();
+        Class cls = DataManager.getCurClass();
+        Lesson lesson = DataManager.getCurLesson();
+
+        if (user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null && cls.isActive()) {
+            firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status);
+        }
+    }
+
     /*
      * Called when the functions in PlaybackFragment is clicked.
      */
     @Override
     public void onResetClicked() {
         sheetMusicView.evaluateJavascript("stop();", null);
+        isPlaying = false;
+        updateFirestoreStatus(Lesson.STATUS_PAUSED);
     }
 
     @Override

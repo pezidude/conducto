@@ -17,7 +17,6 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.DynamicAnnotation;
 import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
 
@@ -63,8 +62,7 @@ public class FirestoreManager extends FirebaseComm {
         INSERT_CLASS,
         UPDATE_CLASS,
         JOIN_CLASS,
-        SET_LIVE_LESSON,
-        CHECK_LIVE_LESSON,
+        UPDATE_LESSON_STATUS,
         UPLOAD_MUSIC_FILE,
         RENAME_MUSIC_FILE,
         OTHER
@@ -93,7 +91,7 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     public interface LiveLessonListener {
-        void onLiveLessonChanged(LiveLesson liveLesson);
+        void onLiveLessonChanged(Lesson lesson);
     }
 
     public void setDbResult(DBResult dbr) {
@@ -353,94 +351,54 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    /**
-     * Sets (or overwrites) the live lesson for a class in liveLessons collection
-     * An overwrite happens only if isActive is currently false.
-     * If an active lesson already exists, returns an error message.
-     */
-    public void setLiveLesson(LiveLesson liveLesson) {
-        if (liveLesson.getClassID() == null || liveLesson.getClassID().isEmpty()) {
-            if (dbResult != null) dbResult.displayMessage("Class ID is missing");
-            return;
-        }
-
-        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(liveLesson.getClassID());
-        
-        docRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (documentSnapshot.exists()) {
-                LiveLesson existing = documentSnapshot.toObject(LiveLesson.class);
-                // If there's an active lesson and we are trying to start another active one (or same), block it.
-                // We allow the set if the new liveLesson has isActive = false, to allow stopping it.
-                if (existing != null && existing.isActive() && liveLesson.isActive()) {
+    public void updateClassActivity(String classId, boolean isActive) {
+        FIRESTORE.collection("classes").document(classId)
+                .update("isActive", isActive)
+                .addOnSuccessListener(aVoid -> {
                     if (dbResult != null) {
-                        dbResult.displayMessage("A live lesson is already active for this class");
+                        dbResult.uploadResult(true, DbOperation.UPDATE_CLASS);
                     }
-                    return;
-                }
-            }
-
-            // Perform the set
-            docRef.set(liveLesson)
-                    .addOnSuccessListener(aVoid -> {
-                        if (dbResult != null) {
-                            dbResult.displayMessage("Live lesson status updated");
-                            dbResult.uploadResult(true, DbOperation.SET_LIVE_LESSON);
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        if (dbResult != null) {
-                            dbResult.displayMessage("Failed to set live lesson: " + e.getMessage());
-                            dbResult.uploadResult(false, DbOperation.SET_LIVE_LESSON);
-                        }
-                    });
-
-        }).addOnFailureListener(e -> {
-            if (dbResult != null) {
-                dbResult.displayMessage("Error checking live lesson status: " + e.getMessage());
-                dbResult.uploadResult(false, DbOperation.SET_LIVE_LESSON);
-            }
-        });
-    }
-
-    public void isLiveLessonActive(String classID) {
-        // result is passed in uploadResult as boolean
-        DocumentReference docRef = FIRESTORE.collection("liveLessons").document(classID);
-
-        docRef.get().addOnSuccessListener(documentSnapshot -> {
-            if (dbResult == null) return;
-            if (documentSnapshot.exists()) {
-                LiveLesson liveLesson = documentSnapshot.toObject(LiveLesson.class);
-                dbResult.uploadResult(liveLesson != null && liveLesson.isActive(), DbOperation.CHECK_LIVE_LESSON);
-            } else {
-                dbResult.uploadResult(false, DbOperation.CHECK_LIVE_LESSON);
-            }
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Error checking live lesson", e);
-            if (dbResult != null) dbResult.uploadResult(false, DbOperation.CHECK_LIVE_LESSON);
-        });
-    }
-    public void listenForLiveLesson(String classID, LiveLessonListener listener) {
-        FIRESTORE.collection("liveLessons").whereEqualTo("classID", classID).addSnapshotListener(
-                new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(@Nullable QuerySnapshot snapshot, @Nullable FirebaseFirestoreException e) {
-                        if (e != null) {
-                            Log.w(TAG, "Listen failed.", e);
-                            return;
-                        }
-
-                        if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
-                            // should never be more than one
-                            LiveLesson liveLesson = snapshot.getDocuments().get(0).toObject(LiveLesson.class);
-                            listener.onLiveLessonChanged(liveLesson);
-                        } else {
-                            // got empty query result, lesson seems to be deleted.
-                            listener.onLiveLessonChanged(null);
-                            Log.d(TAG, "Current lesson: null");
-                        }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.UPDATE_CLASS);
                     }
                 });
+    }
 
+    public void updateLessonStatus(String classId, String lessonId, String status) {
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
+        ref.update("status", status)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_STATUS);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_STATUS);
+                    }
+                });
+    }
+
+    public void listenForLiveLesson(String classID, LiveLessonListener listener) {
+        FIRESTORE.collection("classes").document(classID)
+                .collection("lessons")
+                .whereIn("status", java.util.Arrays.asList(Lesson.STATUS_PLAYING, Lesson.STATUS_PAUSED))
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null) {
+                        Log.w(TAG, "Listen failed.", e);
+                        return;
+                    }
+
+                    if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
+                        // should never be more than one playing/paused
+                        Lesson lesson = snapshot.getDocuments().get(0).toObject(Lesson.class);
+                        listener.onLiveLessonChanged(lesson);
+                    } else {
+                        listener.onLiveLessonChanged(null);
+                    }
+                });
     }
 
 

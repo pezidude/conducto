@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -15,7 +16,6 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
@@ -168,18 +168,37 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
     }
 
     /**
-     * Updates the class document in Firestore to set this lesson as the current live lesson.
+     * Updates the class and lesson in Firestore to set this lesson as the current live lesson.
      */
     private void goLive() {
         Lesson lesson = DataManager.getCurLesson();
-        String classId = DataManager.getCurClass().getId();
-        if (classId == null || lesson == null || lesson.getId() == null) {
+        com.example.conducto2.data.model.Class currentClass = DataManager.getCurClass();
+        
+        if (currentClass == null || lesson == null || lesson.getId() == null) {
             Toast.makeText(this, "Error: Missing data to go live.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        LiveLesson liveLesson = new LiveLesson(classId, lesson.getId(), true);
-        firestoreManager.setLiveLesson(liveLesson);
+        if (currentClass.isActive()) {
+            displayMessage("A lesson is already active for this class. Please stop it first.");
+            return;
+        }
+
+        String classId = currentClass.getId();
+
+        btnGoLive.setEnabled(false);
+        if (tvStatusMessage != null) {
+            tvStatusMessage.setText("Going live...");
+            tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            tvStatusMessage.setVisibility(View.VISIBLE);
+        }
+
+        // Set this lesson as PAUSED and mark the class as active
+        firestoreManager.updateLessonStatus(classId, lesson.getId(), Lesson.STATUS_PAUSED);
+        firestoreManager.updateClassActivity(classId, true);
+        
+        // Update local state to prevent multiple clicks if updateClassActivity is slow
+        currentClass.setActive(true);
     }
 
     @Override
@@ -200,7 +219,21 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
 
     @Override
     public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
-        // Handled by FirestoreManager displayMessage if success/fail toast is needed
+        if (operation == FirestoreManager.DbOperation.UPDATE_LESSON_STATUS) {
+            runOnUiThread(() -> {
+                btnGoLive.setEnabled(true);
+                if (tvStatusMessage != null) {
+                    if (success) {
+                        tvStatusMessage.setText("Lesson is now live!");
+                        tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_success));
+                    } else {
+                        tvStatusMessage.setText("Failed to go live. Please try again.");
+                        tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_error));
+                    }
+                    tvStatusMessage.setVisibility(View.VISIBLE);
+                }
+            });
+        }
     }
 
     @Override

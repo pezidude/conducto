@@ -19,7 +19,6 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.lessons.LessonAdapter;
 import com.example.conducto2.ui.lessons.LessonDetailsActivity;
@@ -53,10 +52,6 @@ public class ScheduledFragment extends Fragment {
         setupListeners();
         setupUI();
         setupItemClickListener();
-
-        // delete me
-        // FirestoreManager fbManager = new FirestoreManager();
-        // fbManager.setLiveLesson(new LiveLesson(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), false));
 
         return view;
     }

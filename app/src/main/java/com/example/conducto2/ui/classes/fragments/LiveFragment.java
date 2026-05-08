@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.data.model.LiveLesson;
+import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.ui.classes.ClassActivity;
 
 public class LiveFragment extends Fragment implements FirestoreManager.LiveLessonListener {
@@ -48,8 +48,8 @@ public class LiveFragment extends Fragment implements FirestoreManager.LiveLesso
     }
 
     @Override
-    public void onLiveLessonChanged(LiveLesson liveLesson) {
-        if (liveLesson != null && liveLesson.isActive()) {
+    public void onLiveLessonChanged(Lesson lesson) {
+        if (lesson != null) {
             liveAvailableLayout.setVisibility(View.VISIBLE);
             noLiveLessonLayout.setVisibility(View.GONE);
         } else {

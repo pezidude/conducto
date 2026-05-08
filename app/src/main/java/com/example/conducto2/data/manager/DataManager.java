@@ -3,7 +3,6 @@ package com.example.conducto2.data.manager;
 import androidx.annotation.Nullable;
 
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.LiveLesson;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.data.model.Class;
 
@@ -14,16 +13,6 @@ public class DataManager {
     private static User user;
     private static Lesson curLesson;
     private static Class curClass;
-
-    public static LiveLesson getCurLiveLesson() {
-        return curLiveLesson;
-    }
-
-    public static void setCurLiveLesson(LiveLesson curLiveLesson) {
-        DataManager.curLiveLesson = curLiveLesson;
-    }
-
-    private static LiveLesson curLiveLesson;
 
     public static User getUserInstance(){
         return user;
