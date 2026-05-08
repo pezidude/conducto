@@ -178,12 +178,16 @@
      * Named function to Play.
      */
     window.play = async function() {
+        const startTime = performance.now();
         const ac = playbackManager.ac;
+        let resumed = false;
         if (ac && ac.state === 'suspended') {
             await ac.resume();
+            resumed = true;
         }
         playbackManager.play();
-        console.log("WebView: Playing");
+        const endTime = performance.now();
+        console.log("WebView: play() executed in " + (endTime - startTime).toFixed(2) + "ms. Resumed: " + resumed);
     };
 
     /**
@@ -238,6 +242,29 @@
     window.pauseMusic = function() {
         if (typeof playbackManager !== 'undefined' && playbackManager.state === 'PLAYING') {
             playbackManager.pause();
+        }
+    };
+
+    /**
+     * Cleans up the engine to prevent memory leaks and stop audio.
+     */
+    window.destroyEngine = async function() {
+        console.log("WebView: Destroying engine...");
+        try {
+            if (playbackManager) {
+                playbackManager.stop();
+                if (playbackManager.ac) {
+                    await playbackManager.ac.close();
+                }
+            }
+            if (osmd) {
+                osmd.clear();
+            }
+            playbackManager = null;
+            osmd = null;
+            console.log("WebView: Engine destroyed successfully.");
+        } catch (e) {
+            console.error("WebView: Error during engine destruction: " + e.message);
         }
     };
 

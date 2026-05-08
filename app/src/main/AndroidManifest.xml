@@ -18,6 +18,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Conducto2"
         tools:targetApi="31">
+        
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            android:directBootAware="true"
+            android:exported="false"
+            android:initOrder="100" />
+
         <activity
             android:name=".ui.classes.ClassEditActivity"
             android:exported="false" />

@@ -14,6 +14,7 @@ import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import android.view.WindowManager;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.conducto2.R;
@@ -26,6 +27,13 @@ import com.example.conducto2.data.model.User;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import android.os.Handler;
+import android.os.Looper;
 
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
@@ -43,6 +51,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private int currentBPM = 100;
     private FirestoreManager firestoreManager;
     private ListenerRegistration statusListener;
+    private DatabaseReference syncRef;
+    private ValueEventListener syncListener;
+    private DatabaseReference offsetRef;
+    private ValueEventListener offsetListener;
+    private long serverTimeOffset = 0;
+    private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private boolean isLive = false;
     private boolean canControlPlayback = true;
 
@@ -50,6 +64,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
+        
+        // Keep the screen on while this activity is in the foreground
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         isLive = getIntent().getBooleanExtra("isLive", false);
         canControlPlayback = getIntent().getBooleanExtra("canControlPlayback", true);
@@ -211,6 +228,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onPause() {
         super.onPause();
         stopStatusListener();
+        playbackHandler.removeCallbacksAndMessages(null);
         if (sheetMusicView != null) {
             sheetMusicView.pauseTimers(); // Pauses JS timers and background tasks
             sheetMusicView.onPause();     // Pauses WebView rendering
@@ -221,9 +239,60 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onResume() {
         super.onResume();
         startStatusListener();
+        startOffsetListener();
         if (sheetMusicView != null) {
             sheetMusicView.onResume();     // Wakes up WebView rendering
             sheetMusicView.resumeTimers(); // Wakes up JS timers
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy: Cleaning up resources");
+        
+        // 1. Stop all listeners
+        stopStatusListener();
+        
+        // 2. Clear any pending playback handlers
+        playbackHandler.removeCallbacksAndMessages(null);
+        
+        // 3. Command the JS engine to shut down audio and clear references
+        if (sheetMusicView != null) {
+            sheetMusicView.evaluateJavascript("destroyEngine();", null);
+            
+            // 4. Properly dismantle the WebView
+            sheetMusicView.removeJavascriptInterface("AndroidInterface");
+            sheetMusicView.stopLoading();
+            sheetMusicView.setWebViewClient(null);
+            sheetMusicView.clearHistory();
+            sheetMusicView.removeAllViews();
+            sheetMusicView.destroy();
+            sheetMusicView = null;
+        }
+        
+        super.onDestroy();
+    }
+
+    private void startOffsetListener() {
+        if (offsetRef == null) {
+            offsetRef = FirebaseDatabase.getInstance().getReference(".info/serverTimeOffset");
+        }
+        if (offsetListener == null) {
+            offsetListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.getValue() != null) {
+                        serverTimeOffset = snapshot.getValue(Long.class);
+                        Log.d(TAG, "Server time offset updated: " + serverTimeOffset);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.w(TAG, "Offset listener cancelled", error.toException());
+                }
+            };
+            offsetRef.addValueEventListener(offsetListener);
         }
     }
 
@@ -234,6 +303,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         // Only listen for status changes in a live lesson
         if (isLive && user != null && cls != null && lesson != null) {
+            // Keep Firestore listener for background/state sync if needed, 
+            // but rely on RTDB for high-precision playback sync.
             statusListener = FirebaseFirestore.getInstance()
                     .collection("classes").document(cls.getId())
                     .collection("lessons").document(lesson.getId())
@@ -245,11 +316,28 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
                         if (snapshot != null && snapshot.exists()) {
                             String status = snapshot.getString("status");
-                            if (status != null) {
-                                handleStatusChange(status);
-                            }
+                            // Firestore status can be used for UI updates that don't need sub-second precision
                         }
                     });
+
+            // Add RTDB listener for high-precision sync
+            syncRef = FirebaseDatabase.getInstance().getReference("playback_sync").child(lesson.getId());
+            syncListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        String status = snapshot.child("status").getValue(String.class);
+                        Long targetTime = snapshot.child("targetTime").getValue(Long.class);
+                        handleSyncChange(status, targetTime);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError error) {
+                    Log.w(TAG, "Sync listener cancelled", error.toException());
+                }
+            };
+            syncRef.addValueEventListener(syncListener);
         }
     }
 
@@ -258,39 +346,63 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             statusListener.remove();
             statusListener = null;
         }
+        if (syncRef != null && syncListener != null) {
+            syncRef.removeEventListener(syncListener);
+            syncListener = null;
+        }
+        if (offsetRef != null && offsetListener != null) {
+            offsetRef.removeEventListener(offsetListener);
+            offsetListener = null;
+        }
     }
 
-    private void handleStatusChange(String status) {
+    private void handleSyncChange(String status, Long targetTime) {
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
 
-        switch (status) {
-            case Lesson.STATUS_PLAYING:
-                if (!isPlaying) {
-                    isPlaying = true;
-                    sheetMusicView.evaluateJavascript("play();", null);
-                    if (playbackFragment != null) {
-                        playbackFragment.setPlaying(true);
-                    }
-                }
-                break;
-            case Lesson.STATUS_PAUSED:
-                if (isPlaying) {
-                    isPlaying = false;
-                    sheetMusicView.evaluateJavascript("pause();", null);
-                    if (playbackFragment != null) {
-                        playbackFragment.setPlaying(false);
-                    }
-                }
-                break;
-            case Lesson.STATUS_STOPPED:
-                isPlaying = false;
-                sheetMusicView.evaluateJavascript("stop();", null);
-                if (playbackFragment != null) {
-                    playbackFragment.setPlaying(false);
-                }
-                break;
+        // Cancel any pending playback commands
+        playbackHandler.removeCallbacksAndMessages(null);
+
+        if (Lesson.STATUS_PLAYING.equals(status) && targetTime != null) {
+            long currentTime = System.currentTimeMillis() + serverTimeOffset;
+            long delay = targetTime - currentTime;
+
+            if (delay > 0) {
+                playbackHandler.postDelayed(() -> {
+                    executePlay();
+                    if (playbackFragment != null) playbackFragment.setPlaying(true);
+                }, delay);
+            } else {
+                executePlay();
+                if (playbackFragment != null) playbackFragment.setPlaying(true);
+            }
+        } else if (Lesson.STATUS_PAUSED.equals(status)) {
+            executePause();
+            if (playbackFragment != null) playbackFragment.setPlaying(false);
+        } else if (Lesson.STATUS_STOPPED.equals(status)) {
+            executeStop();
+            if (playbackFragment != null) playbackFragment.setPlaying(false);
         }
+    }
+
+    private void executePlay() {
+        isPlaying = true;
+        sheetMusicView.evaluateJavascript("play();", null);
+    }
+
+    private void executePause() {
+        isPlaying = false;
+        sheetMusicView.evaluateJavascript("pause();", null);
+    }
+
+    private void executeStop() {
+        isPlaying = false;
+        sheetMusicView.evaluateJavascript("stop();", null);
+    }
+
+    private void handleStatusChange(String status) {
+        // This method is now secondary to handleSyncChange for live lessons.
+        // It can be kept for non-RTDB scenarios if necessary.
     }
 
     /**
@@ -300,17 +412,15 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @SuppressLint("ClickableViewAccessibility") // silence android onTouch warning
     public void onPlayPauseClicked() {
         isPlaying = !isPlaying;
-        if (isPlaying) {
-            sheetMusicView.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    // This prevents the user from manually scrolling the webview.
-                    return (event.getAction() == MotionEvent.ACTION_MOVE);
-                }
-            });
-        } else {
-            sheetMusicView.setOnTouchListener(null); // re-enable scrolling and touching
+        
+        // Pre-warm AudioContext for teachers when they press Play
+        if (isPlaying && isLive) {
+            User user = DataManager.getUserInstance();
+            if (user != null && "teacher".equals(user.getUserType())) {
+                sheetMusicView.evaluateJavascript("if(playbackManager && playbackManager.ac) playbackManager.ac.resume();", null);
+            }
         }
+        
         handlePlayback();
     }
 
@@ -318,13 +428,40 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      * Starts or stops the playback cursor in the WebView.
      */
     private void handlePlayback() {
-        if (isPlaying) {
-            sheetMusicView.evaluateJavascript("play();", null);
-        } else {
-            sheetMusicView.evaluateJavascript("pause();", null);
+        String status = isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED;
+        User user = DataManager.getUserInstance();
+
+        if (isLive && user != null && "teacher".equals(user.getUserType())) {
+            // Teacher initiates sync via RTDB
+            updateRTDBStatus(status);
+        } else if (!isLive) {
+            // Local playback for non-live sessions
+            if (isPlaying) {
+                executePlay();
+            } else {
+                executePause();
+            }
         }
 
-        updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED);
+        // Move Firestore update to background to not block the main thread
+        // during critical playback timing.
+        new Thread(() -> updateFirestoreStatus(status)).start();
+    }
+
+    private void updateRTDBStatus(String status) {
+        if (syncRef != null && isLive) {
+            long targetTime = 0;
+            if (Lesson.STATUS_PLAYING.equals(status)) {
+                // Agree on a future start time (1500ms delay to allow network/JS/Audio buffer)
+                targetTime = System.currentTimeMillis() + serverTimeOffset + 1500;
+            }
+
+            java.util.Map<String, Object> syncData = new java.util.HashMap<>();
+            syncData.put("status", status);
+            syncData.put("targetTime", targetTime);
+            
+            syncRef.setValue(syncData);
+        }
     }
 
     private void updateFirestoreStatus(String status) {
@@ -332,9 +469,17 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
 
+        Log.d(TAG, "updateFirestoreStatus: status=" + status + ", isLive=" + isLive + ", userType=" + (user != null ? user.getUserType() : "null"));
+
+        if (cls == null) Log.d(TAG, "updateFirestoreStatus: Class is null");
+        if (lesson == null) Log.d(TAG, "updateFirestoreStatus: Lesson is null");
+
         // Only push status updates in a live lesson (teacher only)
-        if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null && cls.isActive()) {
+        if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null) {
+            Log.d(TAG, "updateFirestoreStatus: Updating Firestore. ClassID=" + cls.getId() + ", LessonID=" + lesson.getId());
             firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status);
+        } else {
+            Log.d(TAG, "updateFirestoreStatus: Conditions not met for update.");
         }
     }
 
@@ -343,9 +488,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
      */
     @Override
     public void onResetClicked() {
-        sheetMusicView.evaluateJavascript("stop();", null);
         isPlaying = false;
-        updateFirestoreStatus(Lesson.STATUS_STOPPED);
+        User user = DataManager.getUserInstance();
+
+        if (isLive && user != null && "teacher".equals(user.getUserType())) {
+            updateRTDBStatus(Lesson.STATUS_STOPPED);
+        } else if (!isLive) {
+            executeStop();
+        }
+        
+        new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED)).start();
     }
 
     @Override

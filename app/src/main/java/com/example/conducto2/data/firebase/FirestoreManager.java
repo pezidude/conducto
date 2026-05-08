@@ -368,14 +368,21 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     public void updateLessonStatus(String classId, String lessonId, String status) {
+        Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status);
+        if (classId == null || lessonId == null) {
+            Log.e(TAG, "updateLessonStatus: FAILED due to null ID(s)");
+            return;
+        }
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
         ref.update("status", status)
                 .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "updateLessonStatus: SUCCESS");
                     if (dbResult != null) {
                         dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_STATUS);
                     }
                 })
                 .addOnFailureListener(e -> {
+                    Log.e(TAG, "updateLessonStatus: FAILURE", e);
                     if (dbResult != null) {
                         dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_STATUS);
                     }
