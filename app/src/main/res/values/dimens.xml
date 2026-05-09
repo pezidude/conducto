@@ -162,6 +162,7 @@
     <dimen name="avatar_size_md">@dimen/avatar_medium</dimen>
     <dimen name="stat_card_height">100dp</dimen>
     <dimen name="card_padding_sm">@dimen/card_padding</dimen>
+    <dimen name="card_padding_md">@dimen/spacing_16</dimen>
     <dimen name="divider_height">@dimen/divider_thickness</dimen>
     <dimen name="badge_height">20dp</dimen>
     <dimen name="avatar_size_xl">@dimen/avatar_large</dimen>

@@ -67,6 +67,12 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         firestoreManager.listenForLiveLesson(currentClass.getId(), this);
         Log.d(TAG, "Listening for live lesson for class: " + currentClass.getId());
 
+        // Check for specific target tab
+        if (getIntent().hasExtra("target_tab")) {
+            int targetTab = getIntent().getIntExtra("target_tab", 0);
+            viewPager.setCurrentItem(targetTab, false);
+            // bottomNavigationView selection will be updated by the page change callback
+        }
     }
 
     private void initViews() {
