@@ -122,6 +122,32 @@
     let osmd;
     let playbackManager;
 
+    const mixerState = {
+        volumes: [], // index -> 0-1
+        mutes: [],   // index -> bool
+        solos: []    // index -> bool
+    };
+
+    function applyMixer() {
+        if (!playbackManager || !playbackManager.scoreInstruments) return;
+        
+        const hasSolo = mixerState.solos.some(s => s);
+        
+        playbackManager.scoreInstruments.forEach((instrument, i) => {
+            let finalVolume = mixerState.volumes[i] !== undefined ? mixerState.volumes[i] : 1.0;
+            
+            if (hasSolo) {
+                if (!mixerState.solos[i]) finalVolume = 0;
+            } else if (mixerState.mutes[i]) {
+                finalVolume = 0;
+            }
+            
+            instrument.Voices.forEach(voice => {
+                voice.Volume = finalVolume;
+            });
+        });
+    }
+
     // Initialize OSMD Visual Engine
     osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmd-container", {
         autoResize: true,
@@ -159,6 +185,11 @@
             await waitForDOMUpdate();
 
             await playbackManager.loadScore(osmd);
+
+            // Initialize mixer state arrays
+            mixerState.volumes = playbackManager.scoreInstruments.map(() => 1.0);
+            mixerState.mutes = playbackManager.scoreInstruments.map(() => false);
+            mixerState.solos = playbackManager.scoreInstruments.map(() => false);
 
             enableClickToSeek(playbackManager, osmd);
 
@@ -279,6 +310,39 @@
         console.log("WebView: Cursor synced manually.");
     }
 };
+
+    /**
+     * Advanced mixer control for a specific part.
+     * @param partIndex The 0-based index of the instrument.
+     * @param volume Final volume (0.0 to 1.0).
+     * @param mute Boolean, true to mute this track.
+     * @param solo Boolean, true to solo this track (mutes all non-soloed tracks).
+     */
+    window.setPartMix = function(partIndex, volume, mute, solo) {
+        if (mixerState.volumes[partIndex] === undefined) {
+            console.error(`WebView: Part index ${partIndex} out of bounds.`);
+            return;
+        }
+        
+        mixerState.volumes[partIndex] = volume;
+        mixerState.mutes[partIndex] = mute;
+        mixerState.solos[partIndex] = solo;
+        
+        applyMixer();
+        console.log(`WebView: Updated Mix for part ${partIndex} -> Vol: ${volume}, Mute: ${mute}, Solo: ${solo}`);
+    };
+
+    /**
+     * Mute or unmute a specific part (instrument) by its index.
+     * Simplified helper that keeps current volume/solo state.
+     */
+    window.setPartMute = function(partIndex, mute) {
+        if (mixerState.mutes[partIndex] !== undefined) {
+            mixerState.mutes[partIndex] = mute;
+            applyMixer();
+        }
+    };
+
     window.addEventListener('resize', () => {
     // When Android resizes the WebView, tell OSMD to catch up
     osmd.render();
@@ -320,6 +384,19 @@
   Use this to switch between different MusicXML files dynamically.
    1 String scoreUrl = "https://example.com/my_song.xml";
    2 webView.evaluateJavascript("loadScore('" + scoreUrl + "');", null);
+
+  6. Mute/Unmute a Part
+  Pass the part index (0-based) and the mute state (true/false).
+   1 int partIndex = 0; // First instrument
+   2 boolean mute = true;
+   3 webView.evaluateJavascript("setPartMute(" + partIndex + ", " + mute + ");", null);
+
+  7. Full Mixer Control
+  Set volume, mute, and solo for a part simultaneously.
+   1 float volume = 0.8f;
+   2 boolean mute = false;
+   3 boolean solo = true;
+   4 webView.evaluateJavascript("setPartMix(0, " + volume + ", " + mute + ", " + solo + ");", null);
     -->
 </body>
 </html>
