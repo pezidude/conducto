@@ -45,12 +45,14 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isPlaying = false;
     private boolean isScoreLoaded = false;
     private String pendingStatus = null;
+    private long pendingTargetTimestamp = 0;
     private int currentBPM = 100;
     private FirestoreManager firestoreManager;
     private ListenerRegistration statusListener;
     private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private boolean isLive = false;
     private boolean canControlPlayback = true;
+    private long serverTimeOffset = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +66,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         canControlPlayback = getIntent().getBooleanExtra("canControlPlayback", true);
 
         firestoreManager = new FirestoreManager();
+        firestoreManager.calculateServerTimeOffset(offset -> {
+            serverTimeOffset = offset;
+            Log.d(TAG, "Server time offset: " + serverTimeOffset + "ms");
+        });
 
         initViews();
 
@@ -132,8 +138,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
                 if (pendingStatus != null) {
                     Log.d(TAG, "onLoadScoreFinished: Handling deferred status: " + pendingStatus);
-                    handleStatusChange(pendingStatus);
+                    handleStatusChange(pendingStatus, pendingTargetTimestamp);
                     pendingStatus = null;
+                    pendingTargetTimestamp = 0;
                 }
             });
         }
@@ -289,7 +296,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
                         if (snapshot != null && snapshot.exists()) {
                             String status = snapshot.getString("status");
-                            handleStatusChange(status);
+                            Long targetTimestamp = snapshot.getLong("targetTimestamp");
+                            handleStatusChange(status, targetTimestamp != null ? targetTimestamp : 0);
                         }
                     });
         }
@@ -302,9 +310,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
-    private void handleStatusChange(String status) {
+    private void handleStatusChange(String status, long targetTimestamp) {
         if (!isScoreLoaded) {
             pendingStatus = status;
+            pendingTargetTimestamp = targetTimestamp;
             Log.d(TAG, "handleStatusChange: Score not loaded yet, deferring status: " + status);
             return;
         }
@@ -316,7 +325,18 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         playbackHandler.removeCallbacksAndMessages(null);
 
         if (Lesson.STATUS_PLAYING.equals(status)) {
-            executePlay();
+            if (isLive && targetTimestamp > 0) {
+                long currentServerTime = System.currentTimeMillis() + serverTimeOffset;
+                long delay = 1000 - (currentServerTime - targetTimestamp);
+                Log.d(TAG, "handleStatusChange: Syncing playback. Delay: " + delay + "ms");
+                if (delay > 0) {
+                    playbackHandler.postDelayed(this::executePlay, delay);
+                } else {
+                    executePlay();
+                }
+            } else {
+                executePlay();
+            }
             if (playbackFragment != null) playbackFragment.setPlaying(true);
         } else if (Lesson.STATUS_PAUSED.equals(status)) {
             executePause();
@@ -368,34 +388,33 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         String status = isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED;
         User user = DataManager.getUserInstance();
 
-        // Local execution for immediate feedback
-        if (isPlaying) {
-            executePlay();
+        if (isLive && "teacher".equals(user.getUserType()) && isPlaying) {
+            // Synchronized start for teacher and students
+            long targetTimestamp = System.currentTimeMillis() + serverTimeOffset;
+            new Thread(() -> updateFirestoreStatus(status, targetTimestamp)).start();
+            // Local execution will be handled by handleStatusChange when the Firestore update cycles back
         } else {
-            executePause();
+            // Local execution for immediate feedback
+            if (isPlaying) {
+                executePlay();
+            } else {
+                executePause();
+            }
+            new Thread(() -> updateFirestoreStatus(status, 0)).start();
         }
-
-        // Move Firestore update to background to not block the main thread
-        // during critical playback timing.
-        new Thread(() -> updateFirestoreStatus(status)).start();
     }
 
-    private void updateFirestoreStatus(String status) {
+    private void updateFirestoreStatus(String status, long targetTimestamp) {
         User user = DataManager.getUserInstance();
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
 
         Log.d(TAG, "updateFirestoreStatus: status=" + status + ", isLive=" + isLive + ", userType=" + (user != null ? user.getUserType() : "null"));
 
-        if (cls == null) Log.d(TAG, "updateFirestoreStatus: Class is null");
-        if (lesson == null) Log.d(TAG, "updateFirestoreStatus: Lesson is null");
-
         // Only push status updates in a live lesson (teacher only)
         if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null) {
             Log.d(TAG, "updateFirestoreStatus: Updating Firestore. ClassID=" + cls.getId() + ", LessonID=" + lesson.getId());
-            firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status);
-        } else {
-            Log.d(TAG, "updateFirestoreStatus: Conditions not met for update.");
+            firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status, targetTimestamp);
         }
     }
 
@@ -405,11 +424,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     public void onResetClicked() {
         isPlaying = false;
-        User user = DataManager.getUserInstance();
-
         executeStop();
-        
-        new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED)).start();
+        new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED, 0)).start();
     }
 
     @Override

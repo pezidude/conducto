@@ -20,6 +20,7 @@ public class Lesson implements Parcelable {
     private Map<String, List<String>> fileMapping; // Map of file URL to list of student emails
     private String status; // "STOPPED", "PAUSED", "PLAYING"
     private boolean isLive;
+    private long targetTimestamp;
 
     public static final String STATUS_STOPPED = "STOPPED";
     public static final String STATUS_PAUSED = "PAUSED";
@@ -35,6 +36,7 @@ public class Lesson implements Parcelable {
         this.classId = event.classId;
         this.status = event.status != null ? event.status : STATUS_STOPPED;
         this.isLive = event.isLive;
+        this.targetTimestamp = event.targetTimestamp;
         this.musicXMLFiles = new ArrayList<>();
         if (event.musicXMLFiles != null) {
             this.musicXMLFiles.addAll(event.musicXMLFiles);
@@ -55,6 +57,7 @@ public class Lesson implements Parcelable {
                 ", fileMapping=" + fileMapping.toString() +
                 ", status='" + status + '\'' +
                 ", isLive=" + isLive +
+                ", targetTimestamp=" + targetTimestamp +
                 '}';
     }
 
@@ -114,6 +117,14 @@ public class Lesson implements Parcelable {
         isLive = live;
     }
 
+    public long getTargetTimestamp() {
+        return targetTimestamp;
+    }
+
+    public void setTargetTimestamp(long targetTimestamp) {
+        this.targetTimestamp = targetTimestamp;
+    }
+
     public Lesson(String title, String info, Date date, String classId) {
         this.title = title;
         this.info = info;
@@ -121,6 +132,7 @@ public class Lesson implements Parcelable {
         this.classId = classId;
         this.status = STATUS_STOPPED;
         this.isLive = false;
+        this.targetTimestamp = 0;
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
     }
@@ -137,6 +149,7 @@ public class Lesson implements Parcelable {
         classId = in.readString();
         status = in.readString();
         isLive = in.readByte() != 0;
+        targetTimestamp = in.readLong();
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
         fileMapping = new HashMap<>();
         in.readMap(fileMapping, List.class.getClassLoader());
@@ -179,6 +192,7 @@ public class Lesson implements Parcelable {
         dest.writeString(classId);
         dest.writeString(status);
         dest.writeByte((byte) (isLive ? 1 : 0));
+        dest.writeLong(targetTimestamp);
         dest.writeTypedList(musicXMLFiles);
         dest.writeMap(fileMapping);
     }

@@ -367,14 +367,18 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    public void updateLessonStatus(String classId, String lessonId, String status) {
-        Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status);
+    public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp) {
+        Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status + ", targetTimestamp=" + targetTimestamp);
         if (classId == null || lessonId == null) {
             Log.e(TAG, "updateLessonStatus: FAILED due to null ID(s)");
             return;
         }
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
-        ref.update("status", status)
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", status);
+        updates.put("targetTimestamp", targetTimestamp);
+
+        ref.update(updates)
                 .addOnSuccessListener(aVoid -> {
                     Log.d(TAG, "updateLessonStatus: SUCCESS");
                     if (dbResult != null) {
@@ -387,6 +391,32 @@ public class FirestoreManager extends FirebaseComm {
                         dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_STATUS);
                     }
                 });
+    }
+
+    public void updateLessonStatus(String classId, String lessonId, String status) {
+        updateLessonStatus(classId, lessonId, status, 0);
+    }
+
+    /**
+     * Calculates the offset between the local device time and the Firebase server time.
+     * This is used for synchronizing playback across multiple devices.
+     */
+    public void calculateServerTimeOffset(OnSuccessListener<Long> listener) {
+        DocumentReference ref = FIRESTORE.collection("server_time").document("sync_temp");
+        Map<String, Object> data = new HashMap<>();
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        long localBefore = System.currentTimeMillis();
+        ref.set(data).addOnSuccessListener(aVoid -> ref.get().addOnSuccessListener(snapshot -> {
+            com.google.firebase.Timestamp serverTimestamp = snapshot.getTimestamp("timestamp");
+            if (serverTimestamp != null) {
+                long serverTime = serverTimestamp.toDate().getTime();
+                long localAfter = System.currentTimeMillis();
+                long localMid = (localBefore + localAfter) / 2;
+                long offset = serverTime - localMid;
+                listener.onSuccess(offset);
+            }
+        }));
     }
 
     public void updateLessonLiveStatus(String classId, String lessonId, boolean isLive) {
