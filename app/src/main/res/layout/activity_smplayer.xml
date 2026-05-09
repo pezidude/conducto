@@ -1,50 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_app">
 
-    <!-- Sheet music view (fills entire screen) -->
-    <com.example.conducto2.ui.player.widget.InteractiveWebView
-        android:id="@+id/sheetMusicView"
+    <!-- Main Content -->
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/white" />
+        android:layout_height="match_parent">
 
-    <!-- Overlay for playback controls at the bottom -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:orientation="vertical"
-        android:clickable="false"
-        android:focusable="false">
+        <!-- Sheet music view (fills entire screen) -->
+        <com.example.conducto2.ui.player.widget.InteractiveWebView
+            android:id="@+id/sheetMusicView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white" />
 
-        <!-- Small arrow for toggling visibility -->
-        <ImageButton
-            android:id="@+id/btn_toggle_playback"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_gravity="end"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="4dp"
-            android:background="@drawable/bg_circle_highlight"
-            android:src="@drawable/ic_play_arrow"
-            android:rotation="90"
-            android:padding="6dp"
-            android:scaleType="fitCenter"
-            app:tint="@color/white"
-            android:contentDescription="Toggle playback controls" />
-
-        <!-- Playback fragment container that partially covers the WebView -->
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/playback_fragment_container"
-            android:name="com.example.conducto2.ui.player.PlaybackFragment"
+        <!-- Overlay for playback controls at the bottom -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:elevation="8dp"
-            android:visibility="gone" />
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:clickable="false"
+            android:focusable="false">
+
+            <!-- Small arrow for toggling visibility -->
+            <ImageButton
+                android:id="@+id/btn_toggle_playback"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/bg_circle_highlight"
+                android:src="@drawable/ic_play_arrow"
+                android:rotation="90"
+                android:padding="6dp"
+                android:scaleType="fitCenter"
+                app:tint="@color/white"
+                android:contentDescription="Toggle playback controls" />
+
+            <!-- Playback fragment container that partially covers the WebView -->
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/playback_fragment_container"
+                android:name="com.example.conducto2.ui.player.PlaybackFragment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:elevation="8dp"
+                android:visibility="gone" />
+        </LinearLayout>
+        
+        <!-- Button to open mixer (only for teacher) -->
+        <ImageButton
+            android:id="@+id/btn_open_mixer"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="end|center_vertical"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_circle_highlight"
+            android:src="@drawable/baseline_headphones_24"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            app:tint="@color/white"
+            android:visibility="gone"
+            android:contentDescription="Open Mixer" />
+
+    </FrameLayout>
+
+    <!-- Mixer Drawer -->
+    <LinearLayout
+        android:id="@+id/mixer_drawer"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/white"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Instrument Mixer"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="16dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mixer_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+            
     </LinearLayout>
 
-</FrameLayout>
+</androidx.drawerlayout.widget.DrawerLayout>

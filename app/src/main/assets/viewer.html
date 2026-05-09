@@ -191,12 +191,14 @@
             mixerState.mutes = playbackManager.scoreInstruments.map(() => false);
             mixerState.solos = playbackManager.scoreInstruments.map(() => false);
 
+            const instrumentNames = playbackManager.scoreInstruments.map(inst => inst.NameLabel.text);
+
             enableClickToSeek(playbackManager, osmd);
 
             osmd.cursor.show();
             console.log("WebView: Ready");
             if (window.AndroidInterface) {
-                window.AndroidInterface.onLoadScoreFinished();
+                window.AndroidInterface.onLoadScoreFinished(JSON.stringify(instrumentNames));
             }
             return "SUCCESS";
         } catch (e) {
@@ -341,6 +343,21 @@
             mixerState.mutes[partIndex] = mute;
             applyMixer();
         }
+    };
+
+    /**
+     * Completely mutes or unmutes the entire playback engine.
+     * Useful for students in a live session.
+     */
+    window.setGlobalMute = function(mute) {
+        if (!playbackManager) return;
+        
+        playbackManager.scoreInstruments.forEach((instrument) => {
+            instrument.Voices.forEach(voice => {
+                voice.Volume = mute ? 0 : 1.0;
+            });
+        });
+        console.log("WebView: Global Mute set to " + mute);
     };
 
     window.addEventListener('resize', () => {

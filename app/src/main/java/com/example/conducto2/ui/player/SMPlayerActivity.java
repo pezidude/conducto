@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
@@ -13,9 +12,15 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.Toast;
-
 import android.view.WindowManager;
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
@@ -27,8 +32,11 @@ import com.example.conducto2.data.model.User;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import android.os.Handler;
-import android.os.Looper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
@@ -42,6 +50,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private WebView sheetMusicView;
     private View playbackFragmentContainer;
     private ImageButton btnTogglePlayback;
+    private ImageButton btnOpenMixer;
+    private DrawerLayout drawerLayout;
+    private RecyclerView mixerRecyclerView;
+    private MixerAdapter mixerAdapter;
+
     private boolean isPlaying = false;
     private boolean isScoreLoaded = false;
     private String pendingStatus = null;
@@ -80,6 +93,21 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         sheetMusicView = findViewById(R.id.sheetMusicView);
         playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
         btnTogglePlayback = findViewById(R.id.btn_toggle_playback);
+        btnOpenMixer = findViewById(R.id.btn_open_mixer);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        mixerRecyclerView = findViewById(R.id.mixer_recycler_view);
+
+        User user = DataManager.getUserInstance();
+        if (user != null && "teacher".equals(user.getUserType())) {
+            btnOpenMixer.setVisibility(View.VISIBLE);
+            btnOpenMixer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
+            
+            mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        } else {
+            btnOpenMixer.setVisibility(View.GONE);
+            // Disable drawer for students
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        }
 
         if (!canControlPlayback) {
             btnTogglePlayback.setVisibility(View.GONE);
@@ -128,12 +156,24 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
 
         @JavascriptInterface
-        public void onLoadScoreFinished() {
+        public void onLoadScoreFinished(String instrumentNamesJson) {
             runOnUiThread(() -> {
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "File loaded.");
                 isScoreLoaded = true;
                 sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
+                
+                User user = DataManager.getUserInstance();
+                if (isLive && user != null) {
+                    if ("student".equals(user.getUserType())) {
+                        // Mute students in live sessions
+                        sheetMusicView.evaluateJavascript("setGlobalMute(true);", null);
+                    } else if ("teacher".equals(user.getUserType())) {
+                        // Setup mixer for teacher
+                        setupMixer(instrumentNamesJson);
+                    }
+                }
+
                 enablePlayback();
 
                 if (pendingStatus != null) {
@@ -151,6 +191,23 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 Toast.makeText(SMPlayerActivity.this, "Selected step: " + exactTargetStep, Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "Selected step: " + exactTargetStep);
             });
+        }
+    }
+
+    private void setupMixer(String instrumentNamesJson) {
+        try {
+            JSONArray array = new JSONArray(instrumentNamesJson);
+            List<String> instrumentNames = new ArrayList<>();
+            for (int i = 0; i < array.length(); i++) {
+                instrumentNames.add(array.getString(i));
+            }
+
+            mixerAdapter = new MixerAdapter(instrumentNames, (index, volume, mute, solo) -> {
+                sheetMusicView.evaluateJavascript("setPartMix(" + index + ", " + volume + ", " + mute + ", " + solo + ");", null);
+            });
+            mixerRecyclerView.setAdapter(mixerAdapter);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing instrument names", e);
         }
     }
 
