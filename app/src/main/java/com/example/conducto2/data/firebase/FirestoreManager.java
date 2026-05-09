@@ -367,8 +367,8 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp) {
-        Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status + ", targetTimestamp=" + targetTimestamp);
+    public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp, int currentMeasure, int bpm) {
+        Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status + ", targetTimestamp=" + targetTimestamp + ", currentMeasure=" + currentMeasure + ", bpm=" + bpm);
         if (classId == null || lessonId == null) {
             Log.e(TAG, "updateLessonStatus: FAILED due to null ID(s)");
             return;
@@ -377,6 +377,8 @@ public class FirestoreManager extends FirebaseComm {
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", status);
         updates.put("targetTimestamp", targetTimestamp);
+        updates.put("currentMeasure", currentMeasure);
+        updates.put("bpm", bpm);
 
         ref.update(updates)
                 .addOnSuccessListener(aVoid -> {
@@ -393,8 +395,12 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp) {
+        updateLessonStatus(classId, lessonId, status, targetTimestamp, -1, -1);
+    }
+
     public void updateLessonStatus(String classId, String lessonId, String status) {
-        updateLessonStatus(classId, lessonId, status, 0);
+        updateLessonStatus(classId, lessonId, status, 0, -1, -1);
     }
 
     /**

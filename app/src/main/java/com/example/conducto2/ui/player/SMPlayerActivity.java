@@ -10,12 +10,14 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Toast;
 import android.view.WindowManager;
 import android.os.Handler;
 import android.os.Looper;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -51,6 +53,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private View playbackFragmentContainer;
     private ImageButton btnTogglePlayback;
     private ImageButton btnOpenMixer;
+    private Button btnEndLiveLesson;
     private DrawerLayout drawerLayout;
     private RecyclerView mixerRecyclerView;
     private MixerAdapter mixerAdapter;
@@ -59,6 +62,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isScoreLoaded = false;
     private String pendingStatus = null;
     private long pendingTargetTimestamp = 0;
+    private int pendingMeasure = -1;
+    private int pendingBpm = -1;
     private int currentBPM = 100;
     private FirestoreManager firestoreManager;
     private ListenerRegistration statusListener;
@@ -94,6 +99,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
         btnTogglePlayback = findViewById(R.id.btn_toggle_playback);
         btnOpenMixer = findViewById(R.id.btn_open_mixer);
+        btnEndLiveLesson = findViewById(R.id.btn_end_live_lesson);
         drawerLayout = findViewById(R.id.drawer_layout);
         mixerRecyclerView = findViewById(R.id.mixer_recycler_view);
 
@@ -103,6 +109,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             btnOpenMixer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
             
             mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+            if (isLive) {
+                btnEndLiveLesson.setVisibility(View.VISIBLE);
+                btnEndLiveLesson.setOnClickListener(v -> showEndLiveLessonConfirmation());
+            }
         } else {
             btnOpenMixer.setVisibility(View.GONE);
             // Disable drawer for students
@@ -178,18 +189,24 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
                 if (pendingStatus != null) {
                     Log.d(TAG, "onLoadScoreFinished: Handling deferred status: " + pendingStatus);
-                    handleStatusChange(pendingStatus, pendingTargetTimestamp);
+                    handleStatusChange(pendingStatus, pendingTargetTimestamp, pendingMeasure, pendingBpm);
                     pendingStatus = null;
                     pendingTargetTimestamp = 0;
+                    pendingMeasure = -1;
+                    pendingBpm = -1;
                 }
             });
         }
 
         @JavascriptInterface
-        public void onStepSelected(int exactTargetStep) {
+        public void onMeasureSelected(int measureIndex) {
             runOnUiThread(() -> {
-                Toast.makeText(SMPlayerActivity.this, "Selected step: " + exactTargetStep, Toast.LENGTH_SHORT).show();
-                Log.d(TAG, "Selected step: " + exactTargetStep);
+                Log.d(TAG, "onMeasureSelected: " + measureIndex);
+                User user = DataManager.getUserInstance();
+                if (isLive && user != null && "teacher".equals(user.getUserType())) {
+                    // Update Firestore with the new measure.
+                    new Thread(() -> updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED, 0, measureIndex, currentBPM)).start();
+                }
             });
         }
     }
@@ -208,6 +225,30 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             mixerRecyclerView.setAdapter(mixerAdapter);
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing instrument names", e);
+        }
+    }
+
+    private void showEndLiveLessonConfirmation() {
+        new AlertDialog.Builder(this)
+                .setTitle("End Live Lesson")
+                .setMessage("Are you sure you want to end this live lesson for all students?")
+                .setPositiveButton("End Lesson", (dialog, which) -> endLiveLesson())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void endLiveLesson() {
+        Class cls = DataManager.getCurClass();
+        Lesson lesson = DataManager.getCurLesson();
+
+        if (cls != null && lesson != null) {
+            // 1. Set isLive to false in the lesson
+            firestoreManager.updateLessonLiveStatus(cls.getId(), lesson.getId(), false);
+            // 2. Set isActive to false in the class
+            firestoreManager.updateClassActivity(cls.getId(), false);
+
+            Toast.makeText(this, "Live lesson ended", Toast.LENGTH_SHORT).show();
+            finish();
         }
     }
 
@@ -352,12 +393,37 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                         }
 
                         if (snapshot != null && snapshot.exists()) {
+                            // Check if the lesson is still live
+                            Boolean live = snapshot.getBoolean("isLive");
+                            if (live != null && !live && isLive) {
+                                // Lesson was live but is no longer live
+                                showLessonEndedDialog();
+                                return;
+                            }
+
                             String status = snapshot.getString("status");
                             Long targetTimestamp = snapshot.getLong("targetTimestamp");
-                            handleStatusChange(status, targetTimestamp != null ? targetTimestamp : 0);
+                            Long currentMeasure = snapshot.getLong("currentMeasure");
+                            Long bpm = snapshot.getLong("bpm");
+                            
+                            handleStatusChange(status, 
+                                    targetTimestamp != null ? targetTimestamp : 0,
+                                    currentMeasure != null ? currentMeasure.intValue() : -1,
+                                    bpm != null ? bpm.intValue() : -1);
                         }
                     });
         }
+    }
+
+    private void showLessonEndedDialog() {
+        if (isFinishing()) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle("Lesson Ended")
+                .setMessage("The teacher has ended this live lesson for everyone.")
+                .setCancelable(false)
+                .setPositiveButton("OK", (dialog, which) -> finish())
+                .show();
     }
 
     private void stopStatusListener() {
@@ -367,10 +433,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
-    private void handleStatusChange(String status, long targetTimestamp) {
+    private void handleStatusChange(String status, long targetTimestamp, int currentMeasure, int bpm) {
         if (!isScoreLoaded) {
             pendingStatus = status;
             pendingTargetTimestamp = targetTimestamp;
+            pendingMeasure = currentMeasure;
+            pendingBpm = bpm;
             Log.d(TAG, "handleStatusChange: Score not loaded yet, deferring status: " + status);
             return;
         }
@@ -380,6 +448,18 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         // Cancel any pending playback commands
         playbackHandler.removeCallbacksAndMessages(null);
+
+        // Sync BPM if provided
+        if (bpm > 0 && bpm != currentBPM) {
+            currentBPM = bpm;
+            sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
+            if (playbackFragment != null) playbackFragment.updateBpmUI(currentBPM);
+        }
+
+        // Sync playback measure if provided
+        if (currentMeasure >= 0) {
+            sheetMusicView.evaluateJavascript("jumpToMeasure(" + currentMeasure + ");", null);
+        }
 
         if (Lesson.STATUS_PLAYING.equals(status)) {
             if (isLive && targetTimestamp > 0) {
@@ -445,11 +525,28 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         String status = isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED;
         User user = DataManager.getUserInstance();
 
-        if (isLive && "teacher".equals(user.getUserType()) && isPlaying) {
-            // Synchronized start for teacher and students
-            long targetTimestamp = System.currentTimeMillis() + serverTimeOffset;
-            new Thread(() -> updateFirestoreStatus(status, targetTimestamp)).start();
-            // Local execution will be handled by handleStatusChange when the Firestore update cycles back
+        if (isLive && "teacher".equals(user.getUserType())) {
+            if (isPlaying) {
+                // Synchronized start for teacher and students
+                long targetTimestamp = System.currentTimeMillis() + serverTimeOffset;
+                updateFirestoreStatus(status, targetTimestamp, -1, currentBPM);
+                // Local execution will be handled by handleStatusChange when the Firestore update cycles back
+            } else {
+                // Pause - get current measure first to resync students
+                sheetMusicView.evaluateJavascript("getCurrentMeasure();", value -> {
+                    int measure = -1;
+                    try {
+                        if (value != null && !value.equals("null")) {
+                            measure = Integer.parseInt(value);
+                        }
+                    } catch (NumberFormatException e) {
+                        Log.e(TAG, "Error parsing measure: " + value);
+                    }
+                    final int finalMeasure = measure;
+                    executePause();
+                    new Thread(() -> updateFirestoreStatus(Lesson.STATUS_PAUSED, 0, finalMeasure, currentBPM)).start();
+                });
+            }
         } else {
             // Local execution for immediate feedback
             if (isPlaying) {
@@ -457,11 +554,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             } else {
                 executePause();
             }
-            new Thread(() -> updateFirestoreStatus(status, 0)).start();
+            new Thread(() -> updateFirestoreStatus(status, 0, -1, currentBPM)).start();
         }
     }
 
-    private void updateFirestoreStatus(String status, long targetTimestamp) {
+    private void updateFirestoreStatus(String status, long targetTimestamp, int currentMeasure, int bpm) {
         User user = DataManager.getUserInstance();
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
@@ -471,7 +568,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         // Only push status updates in a live lesson (teacher only)
         if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null) {
             Log.d(TAG, "updateFirestoreStatus: Updating Firestore. ClassID=" + cls.getId() + ", LessonID=" + lesson.getId());
-            firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status, targetTimestamp);
+            firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status, targetTimestamp, currentMeasure, bpm);
         }
     }
 
@@ -482,14 +579,20 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     public void onResetClicked() {
         isPlaying = false;
         executeStop();
-        new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED, 0)).start();
+        new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED, 0, 0, currentBPM)).start();
     }
 
     @Override
     public void onSpeedChanged(int bpmValue) {
         currentBPM = bpmValue;
+        
+        User user = DataManager.getUserInstance();
+        if (isLive && user != null && "teacher".equals(user.getUserType())) {
+            new Thread(() -> updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED, 0, -1, currentBPM)).start();
+        }
+
+        sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
         if (isPlaying) {
-            sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
             handlePlayback(); // restart interval with new speed
         }
     }

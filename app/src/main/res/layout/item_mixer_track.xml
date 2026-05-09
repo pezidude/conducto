@@ -38,7 +38,7 @@
             android:textOn="M"
             android:textOff="M"
             android:checked="false"
-            android:background="@drawable/bg_circle_highlight"
+            android:background="@drawable/bg_mixer_mute_selector"
             android:textColor="@color/white"
             android:textSize="12sp"
             android:layout_marginStart="8dp" />
@@ -50,7 +50,7 @@
             android:textOn="S"
             android:textOff="S"
             android:checked="false"
-            android:background="@drawable/bg_circle_highlight"
+            android:background="@drawable/bg_mixer_solo_selector"
             android:textColor="@color/white"
             android:textSize="12sp"
             android:layout_marginStart="8dp" />

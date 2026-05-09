@@ -88,10 +88,11 @@
 
         // 4. Trigger the jump if we found a valid step
         if (exactTargetStep !== -1) {
-            console.log(`Jumping to precise step #${exactTargetStep}`);
+            const measureIndex = stepToMeasureMap[exactTargetStep];
+            console.log(`Jumping to measure ${measureIndex} (based on clicked step ${exactTargetStep})`);
 
-            if (window.AndroidInterface && window.AndroidInterface.onStepSelected) {
-                window.AndroidInterface.onStepSelected(exactTargetStep);
+            if (window.AndroidInterface && window.AndroidInterface.onMeasureSelected) {
+                window.AndroidInterface.onMeasureSelected(measureIndex);
             }
 
             const wasPlaying = playbackManager.state === "PLAYING";
@@ -101,12 +102,8 @@
                 if (typeof playbackManager.clearTimeouts === 'function') playbackManager.clearTimeouts();
             }
 
-            playbackManager.jumpToStep(exactTargetStep);
-
-            if (playbackManager.cursor && playbackManager.iterator) {
-                playbackManager.cursor.Iterator = playbackManager.iterator;
-                playbackManager.cursor.update();
-            }
+            // Snap to the start of the measure
+            window.jumpToMeasure(measureIndex);
 
             if (wasPlaying) {
                 setTimeout(() => playbackManager.play(), 50);
@@ -121,6 +118,7 @@
 
     let osmd;
     let playbackManager;
+    let stepToMeasureMap = []; // Maps playback steps to measure indices
 
     const mixerState = {
         volumes: [], // index -> 0-1
@@ -162,6 +160,32 @@
     // Initialize Audio Timing Engine
     playbackManager = new OsmdAudioPlayer();
 
+    // HACK: Fix staccato notes playing when muted (bug in SoundfontPlayer.applyDynamics)
+    // Since we cannot modify the library's minified source, we monkey-patch the player at runtime.
+    (function(engine) {
+        // Access the internal player (usually instrumentPlayer or minified to a single letter)
+        const player = engine.instrumentPlayer || engine.p; 
+        if (player && player.schedule) {
+            const originalSchedule = player.schedule;
+            player.schedule = function(midiId, time, notes) {
+                if (notes && Array.isArray(notes)) {
+                    notes.forEach(note => {
+                        if (note.gain === 0) {
+                            // Lock the gain at 0 so internal applyDynamics boost is ignored
+                            let g = 0;
+                            Object.defineProperty(note, 'gain', {
+                                get: () => g,
+                                set: () => {}, // Prevent boosting
+                                configurable: true
+                            });
+                        }
+                    });
+                }
+                return originalSchedule.apply(this, arguments);
+            };
+        }
+    })(playbackManager);
+
 
     function waitForDOMUpdate() {
     return new Promise(resolve => {
@@ -185,6 +209,15 @@
             await waitForDOMUpdate();
 
             await playbackManager.loadScore(osmd);
+
+            // Build step to measure map for accurate snapping
+            stepToMeasureMap = [];
+            osmd.cursor.reset();
+            while (!osmd.cursor.iterator.EndReached) {
+                stepToMeasureMap.push(osmd.cursor.iterator.CurrentMeasureIndex);
+                osmd.cursor.next();
+            }
+            osmd.cursor.reset();
 
             // Initialize mixer state arrays
             mixerState.volumes = playbackManager.scoreInstruments.map(() => 1.0);
@@ -221,10 +254,15 @@
 
     /**
      * Named function to Pause.
+     * Snaps back to the start of the current measure.
      */
     window.pause = function() {
         playbackManager.pause();
-        console.log("WebView: Paused");
+        if (osmd && osmd.cursor && osmd.cursor.iterator) {
+            const measureIndex = osmd.cursor.iterator.CurrentMeasureIndex;
+            window.jumpToMeasure(measureIndex);
+            console.log("WebView: Paused and snapped to measure " + measureIndex);
+        }
     };
 
     /**
@@ -247,6 +285,38 @@
     window.setBpm = function(bpm) {
         playbackManager.setBpm(parseInt(bpm));
         console.log("WebView: BPM set to " + bpm);
+    };
+
+    /**
+     * Named function to get current measure number.
+     */
+    window.getCurrentMeasure = function() {
+        if (osmd && osmd.cursor && osmd.cursor.iterator) {
+            // iterator.currentMeasure.MeasureNumber is the 1-based number from the XML
+            // We'll use the 0-based index if possible, or just the number.
+            return osmd.cursor.iterator.CurrentMeasureIndex;
+        }
+        return 0;
+    };
+
+    /**
+     * Named function to jump to a specific measure.
+     */
+    window.jumpToMeasure = function(measureIndex) {
+        if (playbackManager && osmd) {
+            // Find the first step of the target measure in our map
+            const step = stepToMeasureMap.indexOf(parseInt(measureIndex));
+            if (step !== -1) {
+                playbackManager.jumpToStep(step);
+                if (playbackManager.cursor && playbackManager.iterator) {
+                    playbackManager.cursor.Iterator = playbackManager.iterator;
+                    playbackManager.cursor.update();
+                }
+                console.log("WebView: Jumped to measure index " + measureIndex + " (step " + step + ")");
+            } else {
+                console.warn("WebView: Could not find step for measure " + measureIndex);
+            }
+        }
     };
 
     window.wakeUpAudio = async function() {

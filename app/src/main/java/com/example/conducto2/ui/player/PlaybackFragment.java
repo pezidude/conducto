@@ -68,9 +68,8 @@ public class PlaybackFragment extends Fragment {
 
         Slider speedSlider = view.findViewById(R.id.speed_slider);
         speedSlider.addOnChangeListener((slider, value, fromUser) -> {
-            int speedPercentage = (int) value;
-            if (mListener != null) {
-                mListener.onSpeedChanged(speedPercentage);
+            if (fromUser && mListener != null) {
+                mListener.onSpeedChanged((int) value);
             }
         });
 
@@ -104,6 +103,21 @@ public class PlaybackFragment extends Fragment {
             playPauseButton.setImageResource(R.drawable.ic_pause);
         } else {
             playPauseButton.setImageResource(R.drawable.ic_play_arrow);
+        }
+    }
+
+    /**
+     * Updates the BPM slider to reflect the synchronized BPM from the teacher.
+     */
+    public void updateBpmUI(int bpm) {
+        View view = getView();
+        if (view != null) {
+            Slider speedSlider = view.findViewById(R.id.speed_slider);
+            if (speedSlider != null) {
+                // Ensure the value is within the slider's range (50-200)
+                float value = Math.max(50.0f, Math.min(200.0f, (float) bpm));
+                speedSlider.setValue(value);
+            }
         }
     }
 }

@@ -2,7 +2,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_scheduled"
-        android:icon="@drawable/ic_music_note"
+        android:icon="@android:drawable/ic_menu_today"
         android:title="Scheduled" />
     <item
         android:id="@+id/nav_people"
@@ -14,6 +14,6 @@
         android:title="Live" />
     <item
         android:id="@+id/nav_upcoming"
-        android:icon="@drawable/ic_lessons"
+        android:icon="@android:drawable/ic_menu_recent_history"
         android:title="Upcoming" />
 </menu>

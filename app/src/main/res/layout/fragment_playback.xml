@@ -6,11 +6,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/surface_card"
+    android:background="@color/player_background"
     android:paddingStart="@dimen/screen_horizontal_margin"
     android:paddingEnd="@dimen/screen_horizontal_margin"
-    android:paddingTop="@dimen/spacing_sm"
-    android:paddingBottom="@dimen/spacing_sm"
+    android:paddingTop="@dimen/spacing_md"
+    android:paddingBottom="@dimen/spacing_md"
     tools:context=".ui.player.PlaybackFragment">
 
     <!-- Single Main Row -->
@@ -25,18 +25,19 @@
             android:id="@+id/reset_button"
             android:layout_width="@dimen/playback_control_size"
             android:layout_height="@dimen/playback_control_size"
-            android:background="@drawable/bg_card_rounded"
+            android:background="@drawable/bg_playback_control_secondary"
             android:src="@drawable/skip_previous_24px"
+            app:tint="@color/white"
             android:contentDescription="@string/reset_playback"
             android:padding="@dimen/spacing_sm"
-            android:scaleType="fitCenter"/>
+            android:scaleType="centerInside"/>
 
         <!-- Play / Pause (primary) -->
         <FrameLayout
             android:layout_width="@dimen/playback_control_size_primary"
             android:layout_height="@dimen/playback_control_size_primary"
-            android:layout_marginStart="@dimen/spacing_sm"
-            android:layout_marginEnd="@dimen/spacing_sm"
+            android:layout_marginStart="@dimen/spacing_md"
+            android:layout_marginEnd="@dimen/spacing_md"
             android:background="@drawable/bg_avatar_circle">
 
             <ImageButton
@@ -44,7 +45,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@null"
-                android:src="@drawable/play_pause_24px"
+                android:src="@drawable/ic_play_arrow"
+                app:tint="@color/white"
                 android:contentDescription="@string/play_pause"
                 android:padding="@dimen/spacing_md"/>
 
@@ -62,9 +64,9 @@
             android:stepSize="25.0"
             android:value="100.0"
             app:labelBehavior="gone"
-            app:thumbColor="@color/accent"
-            app:trackColorActive="@color/accent"
-            app:trackColorInactive="@color/progress_track"
+            app:thumbColor="@color/brand_accent"
+            app:trackColorActive="@color/brand_accent"
+            app:trackColorInactive="@color/navy_700"
             app:trackHeight="@dimen/progress_height"/>
 
     </LinearLayout>
@@ -75,8 +77,8 @@
         style="@style/Widget.Conducto.ProgressBar"
         android:layout_width="match_parent"
         android:layout_height="@dimen/progress_height"
-        android:layout_marginTop="@dimen/spacing_xs"
+        android:layout_marginTop="@dimen/spacing_sm"
         android:max="100"
-        android:progress="38"
+        android:progress="0"
         android:progressDrawable="@drawable/bg_progress_bar"/>
 </LinearLayout>

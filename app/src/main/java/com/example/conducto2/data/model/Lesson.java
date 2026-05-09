@@ -21,6 +21,8 @@ public class Lesson implements Parcelable {
     private String status; // "STOPPED", "PAUSED", "PLAYING"
     private boolean isLive;
     private long targetTimestamp;
+    private int currentMeasure;
+    private int bpm;
 
     public static final String STATUS_STOPPED = "STOPPED";
     public static final String STATUS_PAUSED = "PAUSED";
@@ -125,6 +127,22 @@ public class Lesson implements Parcelable {
         this.targetTimestamp = targetTimestamp;
     }
 
+    public int getCurrentMeasure() {
+        return currentMeasure;
+    }
+
+    public void setCurrentMeasure(int currentMeasure) {
+        this.currentMeasure = currentMeasure;
+    }
+
+    public int getBpm() {
+        return bpm;
+    }
+
+    public void setBpm(int bpm) {
+        this.bpm = bpm;
+    }
+
     public Lesson(String title, String info, Date date, String classId) {
         this.title = title;
         this.info = info;
@@ -133,6 +151,8 @@ public class Lesson implements Parcelable {
         this.status = STATUS_STOPPED;
         this.isLive = false;
         this.targetTimestamp = 0;
+        this.currentMeasure = 0;
+        this.bpm = 100;
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
     }
@@ -150,6 +170,8 @@ public class Lesson implements Parcelable {
         status = in.readString();
         isLive = in.readByte() != 0;
         targetTimestamp = in.readLong();
+        currentMeasure = in.readInt();
+        bpm = in.readInt();
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
         fileMapping = new HashMap<>();
         in.readMap(fileMapping, List.class.getClassLoader());
@@ -193,6 +215,8 @@ public class Lesson implements Parcelable {
         dest.writeString(status);
         dest.writeByte((byte) (isLive ? 1 : 0));
         dest.writeLong(targetTimestamp);
+        dest.writeInt(currentMeasure);
+        dest.writeInt(bpm);
         dest.writeTypedList(musicXMLFiles);
         dest.writeMap(fileMapping);
     }
