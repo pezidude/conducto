@@ -27,11 +27,6 @@ import com.example.conducto2.data.model.User;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -48,14 +43,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private View playbackFragmentContainer;
     private ImageButton btnTogglePlayback;
     private boolean isPlaying = false;
+    private boolean isScoreLoaded = false;
+    private String pendingStatus = null;
     private int currentBPM = 100;
     private FirestoreManager firestoreManager;
     private ListenerRegistration statusListener;
-    private DatabaseReference syncRef;
-    private ValueEventListener syncListener;
-    private DatabaseReference offsetRef;
-    private ValueEventListener offsetListener;
-    private long serverTimeOffset = 0;
     private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private boolean isLive = false;
     private boolean canControlPlayback = true;
@@ -134,8 +126,15 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             runOnUiThread(() -> {
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "File loaded.");
+                isScoreLoaded = true;
                 sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
                 enablePlayback();
+
+                if (pendingStatus != null) {
+                    Log.d(TAG, "onLoadScoreFinished: Handling deferred status: " + pendingStatus);
+                    handleStatusChange(pendingStatus);
+                    pendingStatus = null;
+                }
             });
         }
 
@@ -239,7 +238,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onResume() {
         super.onResume();
         startStatusListener();
-        startOffsetListener();
         if (sheetMusicView != null) {
             sheetMusicView.onResume();     // Wakes up WebView rendering
             sheetMusicView.resumeTimers(); // Wakes up JS timers
@@ -273,29 +271,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         super.onDestroy();
     }
 
-    private void startOffsetListener() {
-        if (offsetRef == null) {
-            offsetRef = FirebaseDatabase.getInstance().getReference(".info/serverTimeOffset");
-        }
-        if (offsetListener == null) {
-            offsetListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.getValue() != null) {
-                        serverTimeOffset = snapshot.getValue(Long.class);
-                        Log.d(TAG, "Server time offset updated: " + serverTimeOffset);
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Log.w(TAG, "Offset listener cancelled", error.toException());
-                }
-            };
-            offsetRef.addValueEventListener(offsetListener);
-        }
-    }
-
     private void startStatusListener() {
         User user = DataManager.getUserInstance();
         com.example.conducto2.data.model.Class cls = DataManager.getCurClass();
@@ -303,8 +278,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         // Only listen for status changes in a live lesson
         if (isLive && user != null && cls != null && lesson != null) {
-            // Keep Firestore listener for background/state sync if needed, 
-            // but rely on RTDB for high-precision playback sync.
             statusListener = FirebaseFirestore.getInstance()
                     .collection("classes").document(cls.getId())
                     .collection("lessons").document(lesson.getId())
@@ -316,28 +289,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
                         if (snapshot != null && snapshot.exists()) {
                             String status = snapshot.getString("status");
-                            // Firestore status can be used for UI updates that don't need sub-second precision
+                            handleStatusChange(status);
                         }
                     });
-
-            // Add RTDB listener for high-precision sync
-            syncRef = FirebaseDatabase.getInstance().getReference("playback_sync").child(lesson.getId());
-            syncListener = new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        String status = snapshot.child("status").getValue(String.class);
-                        Long targetTime = snapshot.child("targetTime").getValue(Long.class);
-                        handleSyncChange(status, targetTime);
-                    }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError error) {
-                    Log.w(TAG, "Sync listener cancelled", error.toException());
-                }
-            };
-            syncRef.addValueEventListener(syncListener);
         }
     }
 
@@ -346,36 +300,24 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             statusListener.remove();
             statusListener = null;
         }
-        if (syncRef != null && syncListener != null) {
-            syncRef.removeEventListener(syncListener);
-            syncListener = null;
-        }
-        if (offsetRef != null && offsetListener != null) {
-            offsetRef.removeEventListener(offsetListener);
-            offsetListener = null;
-        }
     }
 
-    private void handleSyncChange(String status, Long targetTime) {
+    private void handleStatusChange(String status) {
+        if (!isScoreLoaded) {
+            pendingStatus = status;
+            Log.d(TAG, "handleStatusChange: Score not loaded yet, deferring status: " + status);
+            return;
+        }
+
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
 
         // Cancel any pending playback commands
         playbackHandler.removeCallbacksAndMessages(null);
 
-        if (Lesson.STATUS_PLAYING.equals(status) && targetTime != null) {
-            long currentTime = System.currentTimeMillis() + serverTimeOffset;
-            long delay = targetTime - currentTime;
-
-            if (delay > 0) {
-                playbackHandler.postDelayed(() -> {
-                    executePlay();
-                    if (playbackFragment != null) playbackFragment.setPlaying(true);
-                }, delay);
-            } else {
-                executePlay();
-                if (playbackFragment != null) playbackFragment.setPlaying(true);
-            }
+        if (Lesson.STATUS_PLAYING.equals(status)) {
+            executePlay();
+            if (playbackFragment != null) playbackFragment.setPlaying(true);
         } else if (Lesson.STATUS_PAUSED.equals(status)) {
             executePause();
             if (playbackFragment != null) playbackFragment.setPlaying(false);
@@ -398,11 +340,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private void executeStop() {
         isPlaying = false;
         sheetMusicView.evaluateJavascript("stop();", null);
-    }
-
-    private void handleStatusChange(String status) {
-        // This method is now secondary to handleSyncChange for live lessons.
-        // It can be kept for non-RTDB scenarios if necessary.
     }
 
     /**
@@ -431,37 +368,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         String status = isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED;
         User user = DataManager.getUserInstance();
 
-        if (isLive && user != null && "teacher".equals(user.getUserType())) {
-            // Teacher initiates sync via RTDB
-            updateRTDBStatus(status);
-        } else if (!isLive) {
-            // Local playback for non-live sessions
-            if (isPlaying) {
-                executePlay();
-            } else {
-                executePause();
-            }
+        // Local execution for immediate feedback
+        if (isPlaying) {
+            executePlay();
+        } else {
+            executePause();
         }
 
         // Move Firestore update to background to not block the main thread
         // during critical playback timing.
         new Thread(() -> updateFirestoreStatus(status)).start();
-    }
-
-    private void updateRTDBStatus(String status) {
-        if (syncRef != null && isLive) {
-            long targetTime = 0;
-            if (Lesson.STATUS_PLAYING.equals(status)) {
-                // Agree on a future start time (1500ms delay to allow network/JS/Audio buffer)
-                targetTime = System.currentTimeMillis() + serverTimeOffset + 1500;
-            }
-
-            java.util.Map<String, Object> syncData = new java.util.HashMap<>();
-            syncData.put("status", status);
-            syncData.put("targetTime", targetTime);
-            
-            syncRef.setValue(syncData);
-        }
     }
 
     private void updateFirestoreStatus(String status) {
@@ -491,11 +407,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         isPlaying = false;
         User user = DataManager.getUserInstance();
 
-        if (isLive && user != null && "teacher".equals(user.getUserType())) {
-            updateRTDBStatus(Lesson.STATUS_STOPPED);
-        } else if (!isLive) {
-            executeStop();
-        }
+        executeStop();
         
         new Thread(() -> updateFirestoreStatus(Lesson.STATUS_STOPPED)).start();
     }
