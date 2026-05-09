@@ -38,6 +38,12 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
         super(options);
         this.listener = listener;
         this.nameListener = nameListener;
+        setHasStableIds(true);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return getSnapshots().getSnapshot(position).getId().hashCode();
     }
 
     @NonNull
@@ -51,13 +57,21 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
     protected void onBindViewHolder(@NonNull RoleViewHolder holder, int position, @NonNull Role role) {
         String docId = getSnapshots().getSnapshot(position).getId();
         
-        // Remove existing text watcher to avoid loops or incorrect updates
+        // No more TextWatcher for auto-updating Firestore
         if (holder.nameWatcher != null) {
             holder.etRoleName.removeTextChangedListener(holder.nameWatcher);
         }
 
-        holder.etRoleName.setText(role.getName());
+        holder.currentDocId = docId;
+        String remoteName = role.getName() != null ? role.getName() : "";
         
+        // Sync with remote data only if not focused
+        if (!holder.etRoleName.isFocused()) {
+            if (!holder.etRoleName.getText().toString().equals(remoteName)) {
+                holder.etRoleName.setText(remoteName);
+            }
+        }
+
         StringBuilder sb = new StringBuilder();
         if (role.getSelectedVoicesPerPart() != null) {
             for (Map.Entry<String, List<String>> entry : role.getSelectedVoicesPerPart().entrySet()) {
@@ -68,28 +82,24 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
 
         holder.btnSelectVoices.setOnClickListener(v -> listener.onSelectVoicesClick(role, docId));
 
-        holder.nameWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
+        // Update Firestore only when focus is lost
+        holder.etRoleName.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                String newName = holder.etRoleName.getText().toString();
                 if (nameListener != null) {
-                    nameListener.onRoleNameChanged(docId, s.toString());
+                    nameListener.onRoleNameChanged(docId, newName);
                 }
             }
-        };
-        holder.etRoleName.addTextChangedListener(holder.nameWatcher);
+        });
     }
 
     static class RoleViewHolder extends RecyclerView.ViewHolder {
         EditText etRoleName;
         TextView tvSelectedVoices;
         Button btnSelectVoices;
-        TextWatcher nameWatcher;
+        TextWatcher nameWatcher; // Kept for class compatibility if needed elsewhere
+        String currentDocId;
+        Runnable updateRunnable;
 
         public RoleViewHolder(@NonNull View itemView) {
             super(itemView);
