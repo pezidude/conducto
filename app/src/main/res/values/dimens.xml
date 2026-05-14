@@ -165,7 +165,7 @@
     <dimen name="card_padding_md">@dimen/spacing_16</dimen>
     <dimen name="divider_height">@dimen/divider_thickness</dimen>
     <dimen name="badge_height">20dp</dimen>
-    <dimen name="avatar_size_xl">@dimen/avatar_large</dimen>
+    <dimen name="avatar_size_xl">120dp</dimen>
     <dimen name="avatar_size_lg">@dimen/avatar_large</dimen>
     <dimen name="button_height_sm">@dimen/btn_height_small</dimen>
     <dimen name="icon_tile_size_md">@dimen/list_item_icon_size</dimen>

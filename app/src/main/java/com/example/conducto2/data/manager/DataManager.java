@@ -18,7 +18,7 @@ public class DataManager {
         return user;
     }
     public  static void setUser(User other){
-        user = new User(other.getEmail(), other.getFname(), other.getLname(), other.getUserType());
+        user = new User(other.getEmail(), other.getFname(), other.getLname(), other.getUserType(), other.getProfilePictureBase64());
     }
 
     public static  Lesson getCurLesson(){return curLesson;}

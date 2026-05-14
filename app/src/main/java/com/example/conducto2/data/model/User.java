@@ -11,6 +11,7 @@ public class User {
     private String lname;
     private String email;
     private String userType;
+    private String profilePictureBase64;
 
     public User(String email, String fname, String lname) {
         this.fname = fname;
@@ -26,6 +27,14 @@ public class User {
         this.userType = userType;
     }
 
+    public User(String email, String fname, String lname, String userType, String profilePictureBase64) {
+        this.fname = fname;
+        this.lname = lname;
+        this.email = email;
+        this.userType = userType;
+        this.profilePictureBase64 = profilePictureBase64;
+    }
+
     public User() {} // needed for firestore
 
     @Override
@@ -35,6 +44,7 @@ public class User {
                 ", lname='" + lname + '\'' +
                 ", email='" + email + '\'' +
                 ", userType='" + userType + '\'' +
+                ", profilePictureBase64='" + (profilePictureBase64 != null ? "exists" : "null") + '\'' +
                 '}';
     }
 
@@ -49,6 +59,9 @@ public class User {
     }
     public void setUserType(String userType) {
         this.userType = userType;
+    }
+    public void setProfilePictureBase64(String profilePictureBase64) {
+        this.profilePictureBase64 = profilePictureBase64;
     }
 
     public String getFname() {
@@ -65,5 +78,8 @@ public class User {
     }
     public String getUserId() {
         return userId;
+    }
+    public String getProfilePictureBase64() {
+        return profilePictureBase64;
     }
 }

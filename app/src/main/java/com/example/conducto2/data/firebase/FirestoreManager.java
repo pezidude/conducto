@@ -141,6 +141,23 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    public void updateUserProfilePicture(String email, String base64Image) {
+        DocumentReference ref = FIRESTORE.collection("users").document(email);
+        ref.update("profilePictureBase64", base64Image)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d(TAG, "onSuccess: profile picture updated successfully ");
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.OTHER);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "onFailure: profile picture update failed", e);
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.OTHER);
+                    }
+                });
+    }
+
 
     public void getUser(UserFetchListener listener) {
         String email = authUserEmail();

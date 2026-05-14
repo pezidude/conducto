@@ -1,7 +1,10 @@
 package com.example.conducto2.ui;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -112,10 +115,41 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         TextView name = headerView.findViewById(R.id.nav_user_name);
         TextView email = headerView.findViewById(R.id.nav_user_email);
         ImageView image = headerView.findViewById(R.id.nav_user_image);
+        TextView tvInitials = headerView.findViewById(R.id.nav_avatar_initials);
 
         if (status != null) status.setText(user.getUserType() != null ? user.getUserType() : "Student");
         if (name != null) name.setText(user.getFname() + " " + user.getLname());
         if (email != null) email.setText(user.getEmail());
+
+        if (tvInitials != null) {
+            String initials = "";
+            if (user.getFname() != null && !user.getFname().isEmpty()) {
+                initials += user.getFname().substring(0, 1).toUpperCase();
+            }
+            if (user.getLname() != null && !user.getLname().isEmpty()) {
+                initials += user.getLname().substring(0, 1).toUpperCase();
+            }
+            tvInitials.setText(initials);
+        }
+
+        if (image != null) {
+            String base64Image = user.getProfilePictureBase64();
+            if (base64Image != null && !base64Image.isEmpty()) {
+                try {
+                    byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);
+                    Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+                    image.setImageBitmap(decodedByte);
+                    image.setVisibility(View.VISIBLE);
+                    if (tvInitials != null) tvInitials.setVisibility(View.GONE);
+                } catch (Exception e) {
+                    image.setVisibility(View.GONE);
+                    if (tvInitials != null) tvInitials.setVisibility(View.VISIBLE);
+                }
+            } else {
+                image.setVisibility(View.GONE);
+                if (tvInitials != null) tvInitials.setVisibility(View.VISIBLE);
+            }
+        }
 
         headerView.setOnClickListener(v -> {
             startActivity(new Intent(BaseDrawerActivity.this, ProfileActivity.class));
