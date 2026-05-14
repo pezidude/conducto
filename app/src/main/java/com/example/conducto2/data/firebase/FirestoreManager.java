@@ -1,15 +1,12 @@
 package com.example.conducto2.data.firebase;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.util.Log;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Annotation;
@@ -18,6 +15,7 @@ import com.example.conducto2.data.model.DynamicAnnotation;
 import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
+import com.example.conducto2.data.model.Role;
 import com.example.conducto2.data.model.User;
 
 import com.google.android.gms.tasks.Continuation;
@@ -28,10 +26,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -546,7 +542,7 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    public void addDraftRole(String classId, String lessonId, com.example.conducto2.ui.lessons.Role role) {
+    public void addDraftRole(String classId, String lessonId, Role role) {
         FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
                 .collection("draftRoles")

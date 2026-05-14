@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.firebase.FirestoreManager;
-import com.example.conducto2.data.model.MusicFile;
+import com.example.conducto2.data.model.Role;
 import com.example.conducto2.utils.MusicXmlParser;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.firebase.firestore.Query;
@@ -33,7 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
