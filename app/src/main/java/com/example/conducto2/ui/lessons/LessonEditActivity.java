@@ -50,15 +50,12 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     private EditText lessonTitleInput;
     private EditText lessonInfoInput;
-    private Button lessonDatePicker;
-    private Button lessonTimePicker;
+    private android.widget.ImageButton lessonDateTimePicker;
     private TextView dateTextView;
     private TextView timeTextView;
     private Button saveLessonButton;
     private Button uploadMusicXmlButton;
     private Button groupVoicesPickerButton;
-    private Button archiveLessonButton;
-    private Button deleteLessonButton;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
     private LinearProgressIndicator loadingProgress;
@@ -116,8 +113,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
             }
-            archiveLessonButton.setVisibility(View.VISIBLE);
-            deleteLessonButton.setVisibility(View.VISIBLE);
             populateLessonData();
             saveLessonButton.setText(R.string.btn_save);
         } else {
@@ -180,13 +175,10 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void setupUI() {
         lessonTitleInput = findViewById(R.id.lesson_title_input);
         lessonInfoInput = findViewById(R.id.lesson_info_input);
-        lessonDatePicker = findViewById(R.id.lesson_date_picker);
-        lessonTimePicker = findViewById(R.id.lesson_time_picker);
+        lessonDateTimePicker = findViewById(R.id.lesson_date_time_picker);
         dateTextView = findViewById(R.id.date_text_view);
         timeTextView = findViewById(R.id.time_text_view);
         saveLessonButton = findViewById(R.id.save_lesson_button);
-        archiveLessonButton = findViewById(R.id.archive_lesson_button);
-        deleteLessonButton = findViewById(R.id.delete_lesson_button);
         uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
         groupVoicesPickerButton = findViewById(R.id.btn_group_voices_picker);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
@@ -218,13 +210,10 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     }
 
     private void setupListeners() {
-        lessonDatePicker.setOnClickListener(v -> showDatePickerDialog());
-        lessonTimePicker.setOnClickListener(v -> showTimePickerDialog());
+        lessonDateTimePicker.setOnClickListener(v -> showDatePickerDialog());
         uploadMusicXmlButton.setOnClickListener(v -> openFilePicker(musicXmlLauncher));
         groupVoicesPickerButton.setOnClickListener(v -> openFilePicker(groupVoicesLauncher));
         saveLessonButton.setOnClickListener(v -> saveLesson());
-        archiveLessonButton.setOnClickListener(v -> archiveLesson());
-        deleteLessonButton.setOnClickListener(v -> showDeleteConfirmationDialog());
     }
 
     private void archiveLesson() {
@@ -233,20 +222,10 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         
         // Staged update: only update local object and UI
         currentLesson.setArchived(newArchiveStatus);
-        updateArchiveButtonText();
+        invalidateOptionsMenu();
         
         String message = newArchiveStatus ? "Lesson will be archived on save" : "Lesson will be restored on save";
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
-    }
-
-    private void updateArchiveButtonText() {
-        if (currentLesson != null && archiveLessonButton != null) {
-            if (currentLesson.isArchived()) {
-                archiveLessonButton.setText("Restore Lesson");
-            } else {
-                archiveLessonButton.setText("Archive Lesson");
-            }
-        }
     }
 
     private void showDeleteConfirmationDialog() {
@@ -300,7 +279,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
                     calendar.set(Calendar.YEAR, year);
                     calendar.set(Calendar.MONTH, month);
                     calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                    updateDateAndTimeViews();
+                    showTimePickerDialog();
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -322,14 +301,52 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     }
 
     private void updateDateAndTimeViews() {
-        dateTextView.setText(getString(R.string.label_lesson_date) + ": " + DateFormat.getDateInstance().format(calendar.getTime()));
-        timeTextView.setText(getString(R.string.label_lesson_time) + ": " + DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
+        dateTextView.setText(DateFormat.getDateInstance().format(calendar.getTime()));
+        timeTextView.setText(DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
     }
 
     private void populateLessonData() {
         lessonTitleInput.setText(currentLesson.getTitle());
         lessonInfoInput.setText(currentLesson.getInfo());
-        updateArchiveButtonText();
+        invalidateOptionsMenu();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        if (isEditMode) {
+            getMenuInflater().inflate(R.menu.menu_lesson_edit, menu);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(android.view.Menu menu) {
+        if (isEditMode) {
+            android.view.MenuItem archiveItem = menu.findItem(R.id.action_archive);
+            if (archiveItem != null && currentLesson != null) {
+                if (currentLesson.isArchived()) {
+                    archiveItem.setIcon(R.drawable.unarchive_24px);
+                    archiveItem.setTitle("Restore");
+                } else {
+                    archiveItem.setIcon(R.drawable.archive_24px);
+                    archiveItem.setTitle("Archive");
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@androidx.annotation.NonNull android.view.MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_archive) {
+            archiveLesson();
+            return true;
+        } else if (id == R.id.action_delete) {
+            showDeleteConfirmationDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void saveLesson() {

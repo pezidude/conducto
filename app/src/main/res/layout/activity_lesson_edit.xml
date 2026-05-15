@@ -103,85 +103,56 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Date & time section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/label_lesson_date"
-                style="@style/TextAppearance.Conducto.Label"
-                android:layout_marginTop="@dimen/spacing_base"
-                android:layout_marginBottom="@dimen/spacing_sm"/>
-
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.Conducto.Card.Flat"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="@dimen/spacing_base"
+                android:layout_marginBottom="@dimen/spacing_sm">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/card_padding">
+                    android:text="@string/label_lesson_date"
+                    style="@style/TextAppearance.Conducto.Label"
+                    android:layout_marginEnd="@dimen/spacing_sm"/>
 
-                    <!-- Date row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/date_text_view"
+                    style="@style/TextAppearance.Conducto.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"/>
+                
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+                    
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Time:"
+                    style="@style/TextAppearance.Conducto.Label"
+                    android:layout_marginEnd="@dimen/spacing_sm"/>
 
-                        <TextView
-                            android:id="@+id/date_text_view"
-                            style="@style/TextAppearance.Conducto.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Selected Date: —"/>
+                <TextView
+                    android:id="@+id/time_text_view"
+                    style="@style/TextAppearance.Conducto.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:layout_marginEnd="@dimen/spacing_sm"/>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/lesson_date_picker"
-                            style="@style/Widget.Conducto.Button.Text"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/btn_edit"
-                            android:textSize="@dimen/text_body_sm"/>
-
-                    </LinearLayout>
-
-                    <!-- Divider -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/divider_height"
-                        android:background="@color/divider"
-                        android:layout_marginVertical="@dimen/spacing_sm"/>
-
-                    <!-- Time row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:id="@+id/time_text_view"
-                            style="@style/TextAppearance.Conducto.Body"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Selected Time: —"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/lesson_time_picker"
-                            style="@style/Widget.Conducto.Button.Text"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/btn_edit"
-                            android:textSize="@dimen/text_body_sm"/>
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
+                <ImageButton
+                    android:id="@+id/lesson_date_time_picker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Select Date and Time"/>
+            </LinearLayout>
 
             <!-- Upload MusicXML -->
             <com.google.android.material.button.MaterialButton
@@ -220,28 +191,6 @@
                 android:layout_height="@dimen/button_height"
                 android:text="@string/btn_save_lesson"
                 android:layout_marginTop="@dimen/spacing_lg"/>
-
-            <!-- Archive/Restore button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/archive_lesson_button"
-                style="@style/Widget.Conducto.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height"
-                android:text="Archive Lesson"
-                android:visibility="gone"
-                android:layout_marginTop="@dimen/spacing_sm"/>
-
-            <!-- Delete button -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/delete_lesson_button"
-                style="@style/Widget.Conducto.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/button_height"
-                android:text="@string/btn_delete"
-                app:strokeColor="@color/error"
-                android:textColor="@color/error"
-                android:visibility="gone"
-                android:layout_marginTop="@dimen/spacing_sm"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
