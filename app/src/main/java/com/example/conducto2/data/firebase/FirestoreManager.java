@@ -93,6 +93,10 @@ public class FirestoreManager extends FirebaseComm {
         void onLiveLessonChanged(Lesson lesson);
     }
 
+    public interface RecentLessonsFetchListener {
+        void onRecentLessonsFetched(List<Lesson> recentLessons);
+    }
+
     public void setDbResult(DBResult dbr) {
         this.dbResult = dbr;
     }
@@ -581,6 +585,99 @@ public class FirestoreManager extends FirebaseComm {
                             .add(musicFile);
                 }))
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
+    }
+
+    public void logLessonAccess(String userId, String classId, String lessonId, String title) {
+        if (userId == null || lessonId == null) return;
+        DocumentReference ref = FIRESTORE.collection("users").document(userId)
+                .collection("recent_lessons").document(lessonId);
+
+        Map<String, Object> log = new HashMap<>();
+        log.put("classId", classId);
+        log.put("lessonId", lessonId);
+        log.put("title", title);
+        log.put("accessedAt", FieldValue.serverTimestamp());
+
+        ref.set(log, com.google.firebase.firestore.SetOptions.merge());
+    }
+
+    public void deleteRecentLessonLog(String userId, String lessonId) {
+        if (userId == null || lessonId == null) return;
+        FIRESTORE.collection("users").document(userId)
+                .collection("recent_lessons").document(lessonId)
+                .delete();
+    }
+
+    public void getRecentLessons(String userId, RecentLessonsFetchListener listener) {
+        if (userId == null) {
+            if (listener != null) listener.onRecentLessonsFetched(new ArrayList<>());
+            return;
+        }
+        FIRESTORE.collection("users").document(userId)
+                .collection("recent_lessons")
+                .orderBy("accessedAt", Query.Direction.DESCENDING)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    List<Lesson> recentLessons = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Lesson lesson = new Lesson();
+                        lesson.setId(document.getString("lessonId"));
+                        lesson.setClassId(document.getString("classId"));
+                        lesson.setTitle(document.getString("title"));
+                        recentLessons.add(lesson);
+                    }
+                    if (listener != null) {
+                        listener.onRecentLessonsFetched(recentLessons);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching recent lessons", e);
+                    if (listener != null) {
+                        listener.onRecentLessonsFetched(new ArrayList<>());
+                    }
+                });
+    }
+
+    public void getLesson(String classId, String lessonId, OnSuccessListener<Lesson> listener) {
+        if (classId == null || lessonId == null) {
+            if (listener != null) listener.onSuccess(null);
+            return;
+        }
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        listener.onSuccess(documentSnapshot.toObject(Lesson.class));
+                    } else {
+                        listener.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error getting lesson", e);
+                    if (listener != null) listener.onSuccess(null);
+                });
+    }
+
+    public void getClassById(String classId, OnSuccessListener<Class> listener) {
+        if (classId == null) {
+            if (listener != null) listener.onSuccess(null);
+            return;
+        }
+        FIRESTORE.collection("classes").document(classId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        listener.onSuccess(documentSnapshot.toObject(Class.class));
+                    } else {
+                        listener.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error getting class", e);
+                    if (listener != null) listener.onSuccess(null);
+                });
     }
 
     // DELETE ME

@@ -92,6 +92,13 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         initViews();
 
         setupWebView();
+
+        // Log this access for the "Recent Lessons" feature
+        Lesson curLesson = DataManager.getCurLesson();
+        if (curLesson != null) {
+            String email = firestoreManager.authUserEmail();
+            firestoreManager.logLessonAccess(email, curLesson.getClassId(), curLesson.getId(), curLesson.getTitle());
+        }
     }
 
     public void initViews() {

@@ -114,13 +114,18 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                style="@style/Widget.Conducto.TextInput.ExposedDropdownMenu"
                 android:hint="Select Genre">
 
                 <AutoCompleteTextView
                     android:id="@+id/genre_autocomplete"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="@dimen/input_height"
+                    android:paddingStart="@dimen/spacing_md"
+                    android:paddingEnd="@dimen/spacing_md"
+                    android:textSize="@dimen/text_body"
+                    android:textColor="@color/text_primary"
+                    android:popupBackground="@color/background_surface"
                     android:inputType="none" />
 
             </com.google.android.material.textfield.TextInputLayout>

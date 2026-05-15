@@ -50,7 +50,7 @@
             android:id="@+id/iv_no_live"
             android:layout_width="120dp"
             android:layout_height="120dp"
-            android:src="@drawable/ic_music_note"
+            android:src="@drawable/music_cast_24px"
             app:tint="@color/navy_100"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"

@@ -221,7 +221,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
         // Setup genre selector
         String[] genres = {"General", "Classical", "Jazz", "Pop"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, genres);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, genres);
         genreSelector.setAdapter(adapter);
     }
 

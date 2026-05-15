@@ -3,7 +3,12 @@ package com.example.conducto2.ui;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import com.example.conducto2.R;
@@ -22,12 +28,16 @@ import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
+import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassListActivity;
 import com.example.conducto2.ui.classes.fragments.HistoryFragment;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.ui.classes.ClassActivity;
+import com.example.conducto2.ui.lessons.LessonDetailsActivity;
 import com.google.android.material.navigation.NavigationView;
+
+import java.util.List;
 
 /**
  * Base activity for screens that include a navigation drawer.
@@ -43,6 +53,8 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     protected FirestoreManager firestoreManager;
     /** A unique ID for the dynamically created class menu items. */
     private static final int DYNAMIC_CLASSES_GROUP_ID = 12345;
+    /** A unique ID for the dynamically created recent lesson menu items. */
+    private static final int DYNAMIC_RECENT_LESSONS_GROUP_ID = 12346;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +77,9 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         drawerLayout = fullView.findViewById(R.id.drawer_layout);
         navigationView = fullView.findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+        
+        // Disable default tinting to allow manual colorization of dynamic items
+        navigationView.setItemIconTintList(null);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) {
@@ -76,7 +91,6 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         }
 
         setupDrawerHeader();
-        setupDrawerMenu();
     }
 
     /**
@@ -194,6 +208,95 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                 }
             }
         });
+
+        setupRecentLessonsMenu();
+    }
+
+    /**
+     * Fetches and displays the most recently accessed lessons in the navigation drawer.
+     * Includes lazy cleanup for deleted lessons.
+     */
+    private void setupRecentLessonsMenu() {
+        if (!FirebaseComm.isUserSignedIn()) return;
+        String email = FirebaseComm.authUserEmail();
+
+        firestoreManager.getRecentLessons(email, recentLessons -> {
+            if (recentLessons == null || recentLessons.isEmpty()) {
+                runOnUiThread(() -> navigationView.getMenu().removeGroup(DYNAMIC_RECENT_LESSONS_GROUP_ID));
+                return;
+            }
+
+            final List<Lesson> validLessons = new java.util.ArrayList<>();
+            final int total = recentLessons.size();
+            final java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger(0);
+
+            for (Lesson lessonLog : recentLessons) {
+                firestoreManager.getLesson(lessonLog.getClassId(), lessonLog.getId(), actualLesson -> {
+                    if (actualLesson != null) {
+                        synchronized (validLessons) {
+                            validLessons.add(Lesson.fromBase(actualLesson));
+                        }
+                    } else {
+                        // Ghost entry detected, perform lazy cleanup
+                        firestoreManager.deleteRecentLessonLog(email, lessonLog.getId());
+                    }
+
+                    if (count.incrementAndGet() == total) {
+                        // All checks done, update menu on UI thread
+                        runOnUiThread(() -> {
+                            Menu menu = navigationView.getMenu();
+                            menu.removeGroup(DYNAMIC_RECENT_LESSONS_GROUP_ID);
+                            
+                            // Re-sort to match the order of the original fetch (most recent first)
+                            synchronized (validLessons) {
+                                for (Lesson log : recentLessons) {
+                                    for (Lesson valid : validLessons) {
+                                        if (valid.getId().equals(log.getId())) {
+                                            addRecentLessonToMenu(menu, valid);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
+    private void addRecentLessonToMenu(Menu menu, Lesson lesson) {
+        String genreLabel = lesson.getGenreLabel();
+        String fullTitle = "[" + genreLabel + "] " + lesson.getTitle();
+        int color = ContextCompat.getColor(this, lesson.getRecentLessonTintResId());
+
+        SpannableString spannableTitle = new SpannableString(fullTitle);
+        // Color and Bold the "[Genre]" prefix
+        int prefixEnd = genreLabel.length() + 2;
+        spannableTitle.setSpan(new ForegroundColorSpan(color), 0, prefixEnd, 0);
+        spannableTitle.setSpan(new StyleSpan(Typeface.BOLD), 0, prefixEnd, 0);
+
+        MenuItem item = menu.add(DYNAMIC_RECENT_LESSONS_GROUP_ID, Menu.NONE, Menu.NONE, spannableTitle)
+                .setIcon(lesson.getGenreIconResId());
+        
+        // Apply polymorphic tint to the icon
+        Drawable icon = item.getIcon();
+        if (icon != null) {
+            icon.setTint(color);
+        }
+
+        item.setOnMenuItemClickListener(menuItem -> {
+            DataManager.setCurLesson(lesson);
+                    firestoreManager.getClassById(lesson.getClassId(), cls -> {
+                        if (cls != null) {
+                            DataManager.setCurClass(cls);
+                        }
+                        Intent intent = new Intent(BaseDrawerActivity.this, LessonDetailsActivity.class);
+                        startActivity(intent);
+                        drawerLayout.closeDrawer(GravityCompat.START);
+                    });
+                    return true;
+                });
     }
 
     /**

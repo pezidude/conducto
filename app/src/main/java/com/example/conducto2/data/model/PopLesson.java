@@ -20,11 +20,16 @@ public class PopLesson extends Lesson {
 
     @Override
     public int getGenreIconResId() {
-        return R.drawable.ic_music_note;
+        return R.drawable.baseline_headphones_24;
     }
 
     @Override
     public String getGenreLabel() {
         return "Pop";
+    }
+
+    @Override
+    public int getRecentLessonTintResId() {
+        return R.color.success;
     }
 }

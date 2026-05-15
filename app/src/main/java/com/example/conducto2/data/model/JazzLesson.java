@@ -20,11 +20,16 @@ public class JazzLesson extends Lesson {
 
     @Override
     public int getGenreIconResId() {
-        return R.drawable.ic_music_note; // Could use a different icon if available
+        return R.drawable.speaker_24px;
     }
 
     @Override
     public String getGenreLabel() {
         return "Jazz";
+    }
+
+    @Override
+    public int getRecentLessonTintResId() {
+        return R.color.brand_accent;
     }
 }

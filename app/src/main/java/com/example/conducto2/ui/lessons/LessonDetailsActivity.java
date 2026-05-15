@@ -95,6 +95,10 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
             return;
         }
 
+        // Log this access for the "Recent Lessons" feature
+        String email = firestoreManager.authUserEmail();
+        firestoreManager.logLessonAccess(email, lesson.getClassId(), lesson.getId(), lesson.getTitle());
+
         lessonTitle.setText(lesson.getTitle());
         if (lesson.getDate() != null) {
             SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());

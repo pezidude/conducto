@@ -83,6 +83,13 @@ public class Lesson implements Parcelable {
         return genre != null ? genre : "General";
     }
 
+    /**
+     * Polymorphic method to get the tint color for recent lesson menu items.
+     */
+    public int getRecentLessonTintResId() {
+        return getGenreColorResId();
+    }
+
     @Override
     public String toString() {
         return "Lesson{" +

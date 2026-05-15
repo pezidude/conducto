@@ -27,4 +27,9 @@ public class ClassicalLesson extends Lesson {
     public String getGenreLabel() {
         return "Classical";
     }
+
+    @Override
+    public int getRecentLessonTintResId() {
+        return R.color.info;
+    }
 }
