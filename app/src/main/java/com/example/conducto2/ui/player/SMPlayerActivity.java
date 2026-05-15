@@ -244,7 +244,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         if (cls != null && lesson != null) {
             // 1. Set isLive to false in the lesson
             firestoreManager.updateLessonLiveStatus(cls.getId(), lesson.getId(), false);
-            // 2. Set isActive to false in the class
+            // 2. Set isArchived to true in the lesson
+            firestoreManager.updateLessonArchivedStatus(cls.getId(), lesson.getId(), true);
+            // 3. Set isActive to false in the class
             firestoreManager.updateClassActivity(cls.getId(), false);
 
             Toast.makeText(this, "Live lesson ended", Toast.LENGTH_SHORT).show();

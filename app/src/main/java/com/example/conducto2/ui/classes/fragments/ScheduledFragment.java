@@ -49,11 +49,55 @@ public class ScheduledFragment extends Fragment {
 
         initViews(view);
         setupRecyclerView(buildQuery());
+        setupSwipe();
         setupListeners();
         setupUI();
         setupItemClickListener();
 
         return view;
+    }
+
+    private void setupSwipe() {
+        SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
+            @Override
+            public void onSwipeLeft(int position) {
+                showArchiveConfirmation(position);
+            }
+
+            @Override
+            public void onSwipeRight(int position) {
+                editLesson(position);
+            }
+        });
+
+        swipeHelper.setLeftAction(R.drawable.archive_24px, R.color.navy_400);
+        swipeHelper.setRightAction(R.drawable.ic_edit, R.color.brand_primary);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(swipeHelper);
+        itemTouchHelper.attachToRecyclerView(lessonsRecyclerView);
+    }
+
+    private void showArchiveConfirmation(int position) {
+        lessonAdapter.notifyDataSetChanged();
+        new AlertDialog.Builder(getContext())
+                .setTitle("Archive Lesson")
+                .setMessage("Are you sure you want to archive this lesson?")
+                .setPositiveButton("Archive", (dialog, which) -> {
+                    Lesson lesson = lessonAdapter.getItem(position);
+                    new FirestoreManager().updateLessonArchivedStatus(DataManager.getCurClass().getId(), lesson.getId(), true);
+                    lessonAdapter.notifyDataSetChanged();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> lessonAdapter.notifyDataSetChanged())
+                .setOnCancelListener(dialog -> lessonAdapter.notifyDataSetChanged())
+                .show();
+    }
+
+    private void editLesson(int position) {
+        Lesson lesson = lessonAdapter.getItem(position);
+        DataManager.setCurLesson(lesson);
+        Intent intent = new Intent(getContext(), LessonEditActivity.class);
+        startActivity(intent);
+        lessonAdapter.notifyDataSetChanged();
     }
 
     private void initViews(View view) {
@@ -70,7 +114,6 @@ public class ScheduledFragment extends Fragment {
         User user = DataManager.getUserInstance();
         if (user != null && "teacher".equals(user.getUserType())) {
             addLessonFab.setVisibility(View.VISIBLE);
-            setupTeacherSwipe();
         } else {
             addLessonFab.setVisibility(View.GONE);
         }
@@ -112,33 +155,23 @@ public class ScheduledFragment extends Fragment {
         lessonsRecyclerView.setAdapter(lessonAdapter);
     }
 
-    private void setupTeacherSwipe() {
-        SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
-            @Override
-            public void onSwipeLeft(int position) {
-                Intent intent = new Intent(getContext(), LessonEditActivity.class);
-                DataManager.setCurLesson(lessonAdapter.getItem(position));
-                startActivity(intent);
-                lessonAdapter.notifyItemChanged(position);
+    @Override
+    public void setMenuVisibility(boolean isVisibleToUser) {
+        super.setMenuVisibility(isVisibleToUser);
+        if (lessonAdapter != null) {
+            if (isVisibleToUser) {
+                lessonAdapter.startListening();
+                lessonAdapter.notifyDataSetChanged();
+            } else {
+                lessonAdapter.stopListening();
             }
-
-            @Override
-            public void onSwipeRight(int position) {
-                new AlertDialog.Builder(getContext())
-                        .setMessage("Are you sure you want to delete this lesson?")
-                        .setPositiveButton("Yes", (dialog, which) -> lessonAdapter.getSnapshots().getSnapshot(position).getReference().delete())
-                        .setNegativeButton("No", (dialog, which) -> lessonAdapter.notifyItemChanged(position))
-                        .setOnCancelListener(dialog -> lessonAdapter.notifyItemChanged(position))
-                        .create()
-                        .show();
-            }
-        });
-        new ItemTouchHelper(swipeHelper).attachToRecyclerView(lessonsRecyclerView);
+        }
     }
 
     private Query buildQuery() {
         Query query = FirebaseFirestore.getInstance().collection("classes")
-                .document(DataManager.getCurClass().getId()).collection("lessons");
+                .document(DataManager.getCurClass().getId()).collection("lessons")
+                .whereEqualTo("isArchived", false);
         if (isFilteredByUser) {
             // TODO: add filter query
         }
@@ -161,6 +194,7 @@ public class ScheduledFragment extends Fragment {
         super.onResume();
         if (lessonAdapter != null) {
             lessonAdapter.startListening();
+            lessonAdapter.notifyDataSetChanged();
         }
     }
 

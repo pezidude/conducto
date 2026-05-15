@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.firebase.firestore.DocumentId;
+import com.google.firebase.firestore.PropertyName;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,6 +21,7 @@ public class Lesson implements Parcelable {
     private Map<String, List<String>> fileMapping; // Map of file URL to list of student emails
     private String status; // "STOPPED", "PAUSED", "PLAYING"
     private boolean isLive;
+    private boolean isArchived;
     private long targetTimestamp;
     private int currentMeasure;
     private int bpm;
@@ -38,6 +40,7 @@ public class Lesson implements Parcelable {
         this.classId = event.classId;
         this.status = event.status != null ? event.status : STATUS_STOPPED;
         this.isLive = event.isLive;
+        this.isArchived = event.isArchived;
         this.targetTimestamp = event.targetTimestamp;
         this.musicXMLFiles = new ArrayList<>();
         if (event.musicXMLFiles != null) {
@@ -59,6 +62,7 @@ public class Lesson implements Parcelable {
                 ", fileMapping=" + fileMapping.toString() +
                 ", status='" + status + '\'' +
                 ", isLive=" + isLive +
+                ", isArchived=" + isArchived +
                 ", targetTimestamp=" + targetTimestamp +
                 '}';
     }
@@ -111,12 +115,25 @@ public class Lesson implements Parcelable {
         this.status = status;
     }
 
+    @PropertyName("isLive")
     public boolean isLive() {
         return isLive;
     }
 
+    @PropertyName("isLive")
     public void setLive(boolean live) {
         isLive = live;
+    }
+
+    // without this annotation firebase calls it "archived" by stripping the is prefix.
+    @PropertyName("isArchived")
+    public boolean isArchived() {
+        return isArchived;
+    }
+
+    @PropertyName("isArchived")
+    public void setArchived(boolean archived) {
+        isArchived = archived;
     }
 
     public long getTargetTimestamp() {
@@ -150,6 +167,7 @@ public class Lesson implements Parcelable {
         this.classId = classId;
         this.status = STATUS_STOPPED;
         this.isLive = false;
+        this.isArchived = false;
         this.targetTimestamp = 0;
         this.currentMeasure = 0;
         this.bpm = 100;
@@ -169,6 +187,7 @@ public class Lesson implements Parcelable {
         classId = in.readString();
         status = in.readString();
         isLive = in.readByte() != 0;
+        isArchived = in.readByte() != 0;
         targetTimestamp = in.readLong();
         currentMeasure = in.readInt();
         bpm = in.readInt();
@@ -214,6 +233,7 @@ public class Lesson implements Parcelable {
         dest.writeString(classId);
         dest.writeString(status);
         dest.writeByte((byte) (isLive ? 1 : 0));
+        dest.writeByte((byte) (isArchived ? 1 : 0));
         dest.writeLong(targetTimestamp);
         dest.writeInt(currentMeasure);
         dest.writeInt(bpm);

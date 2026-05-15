@@ -55,11 +55,13 @@ public class FirestoreManager extends FirebaseComm {
         INSERT_USER,
         INSERT_LESSON,
         UPDATE_LESSON,
+        DELETE_LESSON,
         INSERT_CLASS,
         UPDATE_CLASS,
         JOIN_CLASS,
         UPDATE_LESSON_STATUS,
         UPDATE_LESSON_LIVE_STATUS,
+        UPDATE_LESSON_ARCHIVED_STATUS,
         UPLOAD_MUSIC_FILE,
         RENAME_MUSIC_FILE,
         OTHER
@@ -115,28 +117,43 @@ public class FirestoreManager extends FirebaseComm {
         // add the photo to the firebase storage
         // hold the reference for the storage
         DocumentReference ref = FIRESTORE.collection("users").document(user.getEmail());
+    }
 
-        // update the storage reference in the post entry
-        //Post post = new Post(title, body, path, firebaseUser.getEmail());
-        // upload to storage and then to firestore
-        ref.set(user)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Log.d(TAG, "onSuccess: user loaded successfully ");
-                        if (dbResult != null) {
-                            dbResult.displayMessage("post uploaded successfuly");
-                            dbResult.uploadResult(true, DbOperation.INSERT_USER);
-                        }
-
+    public void insertLesson(String classId, Lesson lesson) {
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document();
+        lesson.setId(ref.getId());
+        ref.set(lesson)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Lesson added successfully");
+                        dbResult.uploadResult(true, DbOperation.INSERT_LESSON);
                     }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        if (dbResult != null) {
-                            dbResult.displayMessage("upload failed " + e.getMessage());
-                            dbResult.uploadResult(false, DbOperation.INSERT_USER);
-                        }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Failed to add lesson: " + e.getMessage());
+                        dbResult.uploadResult(false, DbOperation.INSERT_LESSON);
+                    }
+                });
+    }
+
+    public void updateLesson(String classId, Lesson lesson) {
+        if (lesson.getId() == null) {
+            if (dbResult != null) dbResult.displayMessage("Error: Lesson ID is null");
+            return;
+        }
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lesson.getId());
+        ref.set(lesson)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Lesson updated successfully");
+                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Failed to update lesson: " + e.getMessage());
+                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON);
                     }
                 });
     }
@@ -145,15 +162,32 @@ public class FirestoreManager extends FirebaseComm {
         DocumentReference ref = FIRESTORE.collection("users").document(email);
         ref.update("profilePictureBase64", base64Image)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "onSuccess: profile picture updated successfully ");
                     if (dbResult != null) {
-                        dbResult.uploadResult(true, DbOperation.OTHER);
+                        dbResult.uploadResult(true, DbOperation.DELETE_LESSON);
+                    }
+                });
+    }
+    public void deleteLesson(String classId, String lessonId) {
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
+        ref.delete()
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.DELETE_LESSON);
+                    }
+                });
+    }
+
+    public void updateLessonArchivedStatus(String classId, String lessonId, boolean isArchived) {
+        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
+        ref.update("isArchived", isArchived)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_ARCHIVED_STATUS);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "onFailure: profile picture update failed", e);
                     if (dbResult != null) {
-                        dbResult.uploadResult(false, DbOperation.OTHER);
+                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_ARCHIVED_STATUS);
                     }
                 });
     }
@@ -209,63 +243,8 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error fetching classes", e);
-                    if (listener != null) {
-                        listener.onClassesFetched(new ArrayList<>()); // return empty on failure
-                    }
-                });
-    }
-
-    public void insertLesson(String classId, Lesson lesson) {
-        firebaseUser = getAuth().getCurrentUser();
-        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document();
-        lesson.setId(ref.getId());
-        lesson.setClassId(classId);
-
-        ref.set(lesson)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "onSuccess: lesson loaded successfully ");
                     if (dbResult != null) {
-                        dbResult.displayMessage("lesson uploaded successfully");
-                        dbResult.uploadResult(true, DbOperation.INSERT_LESSON);
-                    }
-                }).addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("lesson upload failed " + e.getMessage());
-                        dbResult.uploadResult(false, DbOperation.INSERT_LESSON);
-                    }
-                });
-    }
-
-    public void updateLesson(String classId, Lesson lesson) {
-        if (lesson.getId() == null || lesson.getId().isEmpty()) {
-            if (dbResult != null) {
-                dbResult.displayMessage("Lesson ID is missing, cannot update.");
-                dbResult.uploadResult(false, DbOperation.UPDATE_LESSON);
-            }
-            return;
-        }
-
-        DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lesson.getId());
-
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("title", lesson.getTitle());
-        updates.put("info", lesson.getInfo());
-        updates.put("date", lesson.getDate());
-        updates.put("musicXMLFiles", lesson.getMusicXMLFiles());
-        updates.put("fileMapping", lesson.getFileMapping());
-
-        ref.update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "onSuccess: lesson updated successfully ");
-                    if (dbResult != null) {
-                        dbResult.displayMessage("lesson updated successfully");
-                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON);
-                    }
-                }).addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("lesson update failed " + e.getMessage());
-                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON);
+                        dbResult.uploadResult(false, DbOperation.DELETE_LESSON);
                     }
                 });
     }

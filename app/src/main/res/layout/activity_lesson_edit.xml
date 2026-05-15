@@ -221,6 +221,28 @@
                 android:text="@string/btn_save_lesson"
                 android:layout_marginTop="@dimen/spacing_lg"/>
 
+            <!-- Archive/Restore button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/archive_lesson_button"
+                style="@style/Widget.Conducto.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:text="Archive Lesson"
+                android:visibility="gone"
+                android:layout_marginTop="@dimen/spacing_sm"/>
+
+            <!-- Delete button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/delete_lesson_button"
+                style="@style/Widget.Conducto.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:text="@string/btn_delete"
+                app:strokeColor="@color/error"
+                android:textColor="@color/error"
+                android:visibility="gone"
+                android:layout_marginTop="@dimen/spacing_sm"/>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

@@ -57,6 +57,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private Button saveLessonButton;
     private Button uploadMusicXmlButton;
     private Button groupVoicesPickerButton;
+    private Button archiveLessonButton;
+    private Button deleteLessonButton;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
     private LinearProgressIndicator loadingProgress;
@@ -114,6 +116,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
             }
+            archiveLessonButton.setVisibility(View.VISIBLE);
+            deleteLessonButton.setVisibility(View.VISIBLE);
             populateLessonData();
             saveLessonButton.setText(R.string.btn_save);
         } else {
@@ -181,6 +185,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         dateTextView = findViewById(R.id.date_text_view);
         timeTextView = findViewById(R.id.time_text_view);
         saveLessonButton = findViewById(R.id.save_lesson_button);
+        archiveLessonButton = findViewById(R.id.archive_lesson_button);
+        deleteLessonButton = findViewById(R.id.delete_lesson_button);
         uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
         groupVoicesPickerButton = findViewById(R.id.btn_group_voices_picker);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
@@ -217,6 +223,56 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         uploadMusicXmlButton.setOnClickListener(v -> openFilePicker(musicXmlLauncher));
         groupVoicesPickerButton.setOnClickListener(v -> openFilePicker(groupVoicesLauncher));
         saveLessonButton.setOnClickListener(v -> saveLesson());
+        archiveLessonButton.setOnClickListener(v -> archiveLesson());
+        deleteLessonButton.setOnClickListener(v -> showDeleteConfirmationDialog());
+    }
+
+    private void archiveLesson() {
+        if (currentLesson == null) return;
+        boolean newArchiveStatus = !currentLesson.isArchived();
+        
+        // Staged update: only update local object and UI
+        currentLesson.setArchived(newArchiveStatus);
+        updateArchiveButtonText();
+        
+        String message = newArchiveStatus ? "Lesson will be archived on save" : "Lesson will be restored on save";
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
+    }
+
+    private void updateArchiveButtonText() {
+        if (currentLesson != null && archiveLessonButton != null) {
+            if (currentLesson.isArchived()) {
+                archiveLessonButton.setText("Restore Lesson");
+            } else {
+                archiveLessonButton.setText("Archive Lesson");
+            }
+        }
+    }
+
+    private void showDeleteConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.dialog_delete_title)
+                .setMessage(R.string.dialog_delete_message)
+                .setPositiveButton(R.string.btn_delete, (dialog, which) -> deleteLesson())
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show();
+    }
+
+    private void deleteLesson() {
+        if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
+        startTask(getString(R.string.status_deleting));
+        FirebaseFirestore.getInstance().collection("classes")
+                .document(classId).collection("lessons")
+                .document(currentLesson.getId()).delete()
+                .addOnSuccessListener(aVoid -> {
+                    displayMessage("Lesson deleted");
+                    shouldFinishOnTasksEnd = true;
+                    endTask();
+                })
+                .addOnFailureListener(e -> {
+                    displayMessage("Failed to delete lesson");
+                    endTask();
+                });
     }
 
     private void openFilePicker(ActivityResultLauncher<Intent> launcher) {
@@ -273,6 +329,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void populateLessonData() {
         lessonTitleInput.setText(currentLesson.getTitle());
         lessonInfoInput.setText(currentLesson.getInfo());
+        updateArchiveButtonText();
     }
 
     private void saveLesson() {
@@ -300,6 +357,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         startTask(getString(R.string.status_saving));
         
         performPendingDeletions();
+
+        Toast.makeText(this, "DEBUG: Saving Lesson. isArchived=" + currentLesson.isArchived(), Toast.LENGTH_SHORT).show();
 
         if (isEditMode) {
             firestoreManager.updateLesson(classId, currentLesson);

@@ -47,7 +47,7 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && listener != null) {
+                if (position != RecyclerView.NO_POSITION && listener != null && position < getSnapshots().size()) {
                     listener.onItemClick(getSnapshots().getSnapshot(position));
                 }
             });
@@ -58,6 +58,13 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             lessonInfo.setText(lesson.getInfo());
             SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());
             lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
+
+            // Gray out if archived
+            if (lesson.isArchived()) {
+                itemView.setAlpha(0.5f);
+            } else {
+                itemView.setAlpha(1.0f);
+            }
         }
     }
 
