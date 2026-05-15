@@ -65,9 +65,9 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
         public void bind(Lesson lesson) {
             lessonTitle.setText(lesson.getTitle());
             
-            // Show genre label if it's not the default
+            // Show genre label if it's not empty
             String infoText = lesson.getInfo();
-            if (!"General".equals(lesson.getGenreLabel())) {
+            if (!lesson.getGenreLabel().isEmpty()) {
                 infoText = "[" + lesson.getGenreLabel() + "] " + infoText;
             }
             lessonInfo.setText(infoText);

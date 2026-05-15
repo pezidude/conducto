@@ -80,7 +80,7 @@ public class Lesson implements Parcelable {
      * Polymorphic method to get the display label for this lesson type.
      */
     public String getGenreLabel() {
-        return genre != null ? genre : "General";
+        return genre != null ? genre : "";
     }
 
     /**
@@ -210,7 +210,7 @@ public class Lesson implements Parcelable {
         this.targetTimestamp = 0;
         this.currentMeasure = 0;
         this.bpm = 100;
-        this.genre = "General";
+        this.genre = null;
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
     }

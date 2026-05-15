@@ -191,7 +191,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                                     startActivity(intent);
                                     drawerLayout.closeDrawer(GravityCompat.START);
                                     return true;
-                                }).setIcon(R.drawable.ic_launcher_foreground);
+                                }).setIcon(R.drawable.ic_lessons);
                     }
                 }
             }

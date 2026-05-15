@@ -220,7 +220,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         saveLessonButton.setOnClickListener(v -> saveLesson());
 
         // Setup genre selector
-        String[] genres = {"General", "Classical", "Jazz", "Pop"};
+        String[] genres = {"Classical", "Jazz", "Pop"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, genres);
         genreSelector.setAdapter(adapter);
     }
@@ -364,8 +364,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         String info = lessonInfoInput.getText().toString().trim();
         String genre = genreSelector.getText().toString().trim();
 
-        if (title.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+        if (title.isEmpty() || genre.isEmpty()) {
+            Toast.makeText(this, "Please fill in all fields (Title and Genre are required)", Toast.LENGTH_SHORT).show();
             return;
         }
 
