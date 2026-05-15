@@ -51,7 +51,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         setupListeners();
 
         // User Dependent logic
-        if ("teacher".equals(DataManager.getUserInstance().getUserType())) {
+        User user = DataManager.getUserInstance();
+        if (user != null && "teacher".equals(user.getUserType())) {
             addClassFab.setOnClickListener(this::showFabMenu);
             addEditDelete();
         } else {

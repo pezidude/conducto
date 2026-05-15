@@ -24,7 +24,7 @@ import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassListActivity;
-import com.example.conducto2.ui.classes.fragments.UpcomingFragment;
+import com.example.conducto2.ui.classes.fragments.HistoryFragment;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.ui.classes.ClassActivity;
 import com.google.android.material.navigation.NavigationView;
@@ -208,7 +208,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             startActivity(new Intent(this, DashboardActivity.class));
         } else if (id == R.id.nav_scheduled) {
             // TODO: THIS CRASHES. Replace fragment with proper alternative
-            startActivity(new Intent(this, UpcomingFragment.class));
+            startActivity(new Intent(this, HistoryFragment.class));
         } else if (id == R.id.nav_my_classes) {
             startActivity(new Intent(this, ClassListActivity.class));
         }

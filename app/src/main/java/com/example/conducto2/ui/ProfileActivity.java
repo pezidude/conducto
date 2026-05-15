@@ -30,8 +30,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 /**
- * This activity displays the user's profile information.
- * It extends {@link BaseDrawerActivity} to include the navigation drawer.
+ * This activity displays the user's profile information and
+ * allows updating information regarding the user.
  */
 public class ProfileActivity extends BaseDrawerActivity {
 
