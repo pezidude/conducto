@@ -15,26 +15,30 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 
 /**
- * A utility class to add swipe-to-edit and swipe-to-delete functionality to a RecyclerView.
+ * A utility class to add swipe actions to a RecyclerView.
  * This class encapsulates the drawing of the swipe background and icons,
  * and delegates the swipe actions to a listener.
  */
 public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
 
     private final SwipeActions swipeActions;
+    private int leftIconResId = R.drawable.ic_edit;
+    private int rightIconResId = R.drawable.ic_delete;
+    private int leftColorResId = R.color.brand_primary;
+    private int rightColorResId = R.color.error;
 
     /**
      * Interface to be implemented by activities or fragments to handle swipe actions.
      */
     public interface SwipeActions {
         /**
-         * Called when an item is swiped to the left (for editing).
+         * Called when an item is swiped to the left.
          * @param position The position of the swiped item.
          */
         void onSwipeLeft(int position);
 
         /**
-         * Called when an item is swiped to the right (for deleting).
+         * Called when an item is swiped to the right.
          * @param position The position of the swiped item.
          */
         void onSwipeRight(int position);
@@ -43,6 +47,16 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
     public SwipeHelper(SwipeActions swipeActions) {
         super(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT);
         this.swipeActions = swipeActions;
+    }
+
+    public void setLeftAction(int iconResId, int colorResId) {
+        this.leftIconResId = iconResId;
+        this.leftColorResId = colorResId;
+    }
+
+    public void setRightAction(int iconResId, int colorResId) {
+        this.rightIconResId = iconResId;
+        this.rightColorResId = colorResId;
     }
 
     @Override
@@ -63,35 +77,60 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
     }
 
     @Override
+    public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+        return 0.2f; // Require only 20% swipe to trigger action for a sleeker feel
+    }
+
+    @Override
+    public float getSwipeEscapeVelocity(float defaultValue) {
+        return defaultValue * 10f; // Make it very hard to swipe off by accident
+    }
+
+    @Override
     public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
         View itemView = viewHolder.itemView;
         Context context = itemView.getContext();
+        
+        // Clamp the distance to 1/4 of the screen width to keep it short and sleek.
+        float maxSwipeDistance = itemView.getWidth() / 4f;
+        float clampedDx = Math.max(-maxSwipeDistance, Math.min(dX, maxSwipeDistance));
+
         Drawable icon;
         ColorDrawable background;
 
-        if (dX > 0) { // Swiping right (delete)
-            icon = ContextCompat.getDrawable(context, R.drawable.ic_delete);
-            background = new ColorDrawable(Color.RED);
+        if (clampedDx > 0) { // Swiping right
+            icon = ContextCompat.getDrawable(context, rightIconResId);
+            background = new ColorDrawable(ContextCompat.getColor(context, rightColorResId));
             int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
             int iconTop = itemView.getTop() + iconMargin;
             int iconBottom = iconTop + icon.getIntrinsicHeight();
             int iconLeft = itemView.getLeft() + iconMargin;
             int iconRight = iconLeft + icon.getIntrinsicWidth();
-            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-            background.setBounds(itemView.getLeft(), itemView.getTop(), itemView.getLeft() + ((int) dX), itemView.getBottom());
-        } else { // Swiping left (edit)
-            icon = ContextCompat.getDrawable(context, R.drawable.ic_edit);
-            background = new ColorDrawable(Color.BLUE);
+            
+            // Only draw if we have swiped enough to show the icon
+            if (clampedDx > iconMargin) {
+                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                background.setBounds(itemView.getLeft(), itemView.getTop(), itemView.getLeft() + ((int) clampedDx), itemView.getBottom());
+                background.draw(c);
+                icon.draw(c);
+            }
+        } else if (clampedDx < 0) { // Swiping left
+            icon = ContextCompat.getDrawable(context, leftIconResId);
+            background = new ColorDrawable(ContextCompat.getColor(context, leftColorResId));
             int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
             int iconTop = itemView.getTop() + iconMargin;
             int iconBottom = iconTop + icon.getIntrinsicHeight();
             int iconRight = itemView.getRight() - iconMargin;
             int iconLeft = iconRight - icon.getIntrinsicWidth();
-            icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
-            background.setBounds(itemView.getRight() + ((int) dX), itemView.getTop(), itemView.getRight(), itemView.getBottom());
+
+            if (Math.abs(clampedDx) > iconMargin) {
+                icon.setBounds(iconLeft, iconTop, iconRight, iconBottom);
+                background.setBounds(itemView.getRight() + ((int) clampedDx), itemView.getTop(), itemView.getRight(), itemView.getBottom());
+                background.draw(c);
+                icon.draw(c);
+            }
         }
-        background.draw(c);
-        icon.draw(c);
+
+        super.onChildDraw(c, recyclerView, viewHolder, clampedDx, dY, actionState, isCurrentlyActive);
     }
 }
