@@ -31,7 +31,6 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.classes.ClassListActivity;
-import com.example.conducto2.ui.classes.fragments.HistoryFragment;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.ui.classes.ClassActivity;
 import com.example.conducto2.ui.lessons.LessonDetailsActivity;
@@ -106,7 +105,6 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
 
     /**
      * Sets up the navigation drawer header with the current user's information, including name, email, and status.
-     * It also adjusts the "Homework" menu item text based on the user type (teacher or student).
      */
     private void setupDrawerHeader() {
         if (!FirebaseComm.isUserSignedIn()) return;
@@ -169,16 +167,6 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             startActivity(new Intent(BaseDrawerActivity.this, ProfileActivity.class));
             drawerLayout.closeDrawer(GravityCompat.START);
         });
-
-        MenuItem homeworkItem = navigationView.getMenu().findItem(R.id.nav_scheduled);
-        if (homeworkItem != null) {
-            // User Dependent logic
-            if ("teacher".equals(user.getUserType())) {
-                homeworkItem.setTitle("Homework Review");
-            } else {
-                homeworkItem.setTitle("Homework");
-            }
-        }
     }
 
     /**
@@ -309,9 +297,6 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         int id = item.getItemId();
         if (id == R.id.nav_dashboard) {
             startActivity(new Intent(this, DashboardActivity.class));
-        } else if (id == R.id.nav_scheduled) {
-            // TODO: THIS CRASHES. Replace fragment with proper alternative
-            startActivity(new Intent(this, HistoryFragment.class));
         } else if (id == R.id.nav_my_classes) {
             startActivity(new Intent(this, ClassListActivity.class));
         }
