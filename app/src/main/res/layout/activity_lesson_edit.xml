@@ -102,6 +102,29 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Genre Selector -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Genre"
+                style="@style/TextAppearance.Conducto.Label"
+                android:layout_marginTop="@dimen/spacing_base"
+                android:layout_marginBottom="@dimen/spacing_xs"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:hint="Select Genre">
+
+                <AutoCompleteTextView
+                    android:id="@+id/genre_autocomplete"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Date & time section -->
             <LinearLayout
                 android:layout_width="match_parent"

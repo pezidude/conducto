@@ -3,8 +3,11 @@ package com.example.conducto2.ui.lessons;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.Lesson;
@@ -24,7 +27,9 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
 
     @Override
     protected void onBindViewHolder(@NonNull LessonViewHolder holder, int position, @NonNull Lesson model) {
-        holder.bind(model);
+        // Use polymorphism to get specific behavior
+        Lesson polymorphicLesson = Lesson.fromBase(model);
+        holder.bind(polymorphicLesson);
     }
 
     @NonNull
@@ -38,12 +43,16 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
         private TextView lessonTitle;
         private TextView lessonInfo;
         private TextView lessonDate;
+        private View iconTile;
+        private ImageView iconView;
 
         public LessonViewHolder(@NonNull View itemView) {
             super(itemView);
             lessonTitle = itemView.findViewById(R.id.lesson_title);
             lessonInfo = itemView.findViewById(R.id.lesson_info);
             lessonDate = itemView.findViewById(R.id.lesson_date);
+            iconTile = itemView.findViewById(R.id.lesson_icon_tile);
+            iconView = itemView.findViewById(R.id.lesson_icon);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -55,9 +64,22 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
 
         public void bind(Lesson lesson) {
             lessonTitle.setText(lesson.getTitle());
-            lessonInfo.setText(lesson.getInfo());
+            
+            // Show genre label if it's not the default
+            String infoText = lesson.getInfo();
+            if (!"General".equals(lesson.getGenreLabel())) {
+                infoText = "[" + lesson.getGenreLabel() + "] " + infoText;
+            }
+            lessonInfo.setText(infoText);
+            
             SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());
             lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
+
+            // Apply polymorphic styling
+            int color = ContextCompat.getColor(itemView.getContext(), lesson.getGenreColorResId());
+            iconTile.getBackground().setTint(color);
+            iconView.setImageResource(lesson.getGenreIconResId());
+            iconView.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.white));
 
             // Gray out if archived
             if (lesson.isArchived()) {

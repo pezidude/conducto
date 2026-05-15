@@ -25,6 +25,7 @@ public class Lesson implements Parcelable {
     private long targetTimestamp;
     private int currentMeasure;
     private int bpm;
+    private String genre; // "Classical", "Jazz", "Pop", etc.
 
     public static final String STATUS_STOPPED = "STOPPED";
     public static final String STATUS_PAUSED = "PAUSED";
@@ -42,6 +43,7 @@ public class Lesson implements Parcelable {
         this.isLive = event.isLive;
         this.isArchived = event.isArchived;
         this.targetTimestamp = event.targetTimestamp;
+        this.genre = event.genre;
         this.musicXMLFiles = new ArrayList<>();
         if (event.musicXMLFiles != null) {
             this.musicXMLFiles.addAll(event.musicXMLFiles);
@@ -52,12 +54,42 @@ public class Lesson implements Parcelable {
         }
     }
 
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    /**
+     * Polymorphic method to get the theme color for this lesson type.
+     */
+    public int getGenreColorResId() {
+        return com.example.conducto2.R.color.brand_accent;
+    }
+
+    /**
+     * Polymorphic method to get the icon for this lesson type.
+     */
+    public int getGenreIconResId() {
+        return com.example.conducto2.R.drawable.ic_music_note;
+    }
+
+    /**
+     * Polymorphic method to get the display label for this lesson type.
+     */
+    public String getGenreLabel() {
+        return genre != null ? genre : "General";
+    }
+
     @Override
     public String toString() {
         return "Lesson{" +
                 "title='" + title + '\'' +
                 ", info='" + info + '\'' +
                 ", date='" + date + '\'' +
+                ", genre='" + genre + '\'' +
                 ", musicXMLFiles=" + musicXMLFiles.toString() +
                 ", fileMapping=" + fileMapping.toString() +
                 ", status='" + status + '\'' +
@@ -171,6 +203,7 @@ public class Lesson implements Parcelable {
         this.targetTimestamp = 0;
         this.currentMeasure = 0;
         this.bpm = 100;
+        this.genre = "General";
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
     }
@@ -191,9 +224,28 @@ public class Lesson implements Parcelable {
         targetTimestamp = in.readLong();
         currentMeasure = in.readInt();
         bpm = in.readInt();
+        genre = in.readString();
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
         fileMapping = new HashMap<>();
         in.readMap(fileMapping, List.class.getClassLoader());
+    }
+
+    /**
+     * Factory method to create the appropriate subclass based on the genre field.
+     */
+    public static Lesson fromBase(Lesson base) {
+        if (base == null || base.getGenre() == null) return base;
+        
+        switch (base.getGenre()) {
+            case "Classical":
+                return new ClassicalLesson(base);
+            case "Jazz":
+                return new JazzLesson(base);
+            case "Pop":
+                return new PopLesson(base);
+            default:
+                return base;
+        }
     }
 
     public static final Creator<Lesson> CREATOR = new Creator<Lesson>() {
@@ -237,6 +289,7 @@ public class Lesson implements Parcelable {
         dest.writeLong(targetTimestamp);
         dest.writeInt(currentMeasure);
         dest.writeInt(bpm);
+        dest.writeString(genre);
         dest.writeTypedList(musicXMLFiles);
         dest.writeMap(fileMapping);
     }

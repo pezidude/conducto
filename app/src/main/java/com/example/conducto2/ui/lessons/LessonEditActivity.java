@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AutoCompleteTextView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -50,6 +52,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
 
     private EditText lessonTitleInput;
     private EditText lessonInfoInput;
+    private AutoCompleteTextView genreSelector;
     private android.widget.ImageButton lessonDateTimePicker;
     private TextView dateTextView;
     private TextView timeTextView;
@@ -175,6 +178,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void setupUI() {
         lessonTitleInput = findViewById(R.id.lesson_title_input);
         lessonInfoInput = findViewById(R.id.lesson_info_input);
+        genreSelector = findViewById(R.id.genre_autocomplete);
         lessonDateTimePicker = findViewById(R.id.lesson_date_time_picker);
         dateTextView = findViewById(R.id.date_text_view);
         timeTextView = findViewById(R.id.time_text_view);
@@ -214,6 +218,11 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         uploadMusicXmlButton.setOnClickListener(v -> openFilePicker(musicXmlLauncher));
         groupVoicesPickerButton.setOnClickListener(v -> openFilePicker(groupVoicesLauncher));
         saveLessonButton.setOnClickListener(v -> saveLesson());
+
+        // Setup genre selector
+        String[] genres = {"General", "Classical", "Jazz", "Pop"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, genres);
+        genreSelector.setAdapter(adapter);
     }
 
     private void archiveLesson() {
@@ -308,6 +317,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void populateLessonData() {
         lessonTitleInput.setText(currentLesson.getTitle());
         lessonInfoInput.setText(currentLesson.getInfo());
+        genreSelector.setText(currentLesson.getGenreLabel(), false);
         invalidateOptionsMenu();
     }
 
@@ -352,6 +362,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
     private void saveLesson() {
         String title = lessonTitleInput.getText().toString().trim();
         String info = lessonInfoInput.getText().toString().trim();
+        String genre = genreSelector.getText().toString().trim();
 
         if (title.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
@@ -361,6 +372,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
         currentLesson.setTitle(title);
         currentLesson.setInfo(info);
         currentLesson.setDate(calendar.getTime());
+        currentLesson.setGenre(genre);
 
         // Remove assignments for files pending deletion
         Map<String, List<String>> fileMapping = currentLesson.getFileMapping();
