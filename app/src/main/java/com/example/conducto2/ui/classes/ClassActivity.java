@@ -26,7 +26,7 @@ import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.fragments.ScheduledFragment;
 import com.example.conducto2.ui.classes.fragments.LiveFragment;
 import com.example.conducto2.ui.classes.fragments.PeopleFragment;
-import com.example.conducto2.ui.classes.fragments.UpcomingFragment;
+import com.example.conducto2.ui.classes.fragments.HistoryFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import com.example.conducto2.data.model.Class;
@@ -109,8 +109,8 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
                     case 0: itemId = R.id.nav_scheduled; break;
                     case 1: itemId = R.id.nav_people; break;
                     case 2: itemId = R.id.nav_live; break;
-                    case 3: itemId = R.id.nav_upcoming; break;
-                    default: itemId = R.id.nav_upcoming; break;
+                    case 3: itemId = R.id.nav_history; break;
+                    default: itemId = R.id.nav_history; break;
                 }
                 if (bottomNavigationView.getSelectedItemId() != itemId) {
                     bottomNavigationView.setSelectedItemId(itemId);
@@ -130,7 +130,7 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
                 if (viewPager.getCurrentItem() != 1) viewPager.setCurrentItem(1);
             } else if (itemId == R.id.nav_live) {
                 if (viewPager.getCurrentItem() != 2) viewPager.setCurrentItem(2);
-            } else if (itemId == R.id.nav_upcoming) {
+            } else if (itemId == R.id.nav_history) {
                 if (viewPager.getCurrentItem() != 3) viewPager.setCurrentItem(3);
             }
 
@@ -163,8 +163,8 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
                 case 0: return new ScheduledFragment();
                 case 1: return new PeopleFragment();
                 case 2: return new LiveFragment();
-                case 3: return new UpcomingFragment();
-                default: return new UpcomingFragment();
+                case 3: return new HistoryFragment();
+                default: return new HistoryFragment();
             }
         }
 

@@ -13,7 +13,7 @@
         android:icon="@drawable/ic_live_dot"
         android:title="Live" />
     <item
-        android:id="@+id/nav_upcoming"
+        android:id="@+id/nav_history"
         android:icon="@android:drawable/ic_menu_recent_history"
-        android:title="Upcoming" />
+        android:title="History" />
 </menu>
