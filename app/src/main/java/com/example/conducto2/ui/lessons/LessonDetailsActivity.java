@@ -19,6 +19,7 @@ import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
+import com.example.conducto2.ui.classes.ClassActivity;
 import com.example.conducto2.ui.player.SMPlayerActivity;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.button.MaterialButton;
@@ -183,13 +184,32 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
 
 
     /**
-     * Sets up the "Go Live" button's visibility and action based on the user type.
+     * Sets up the "Go Live" button's visibility and action based on the user type and lesson status.
      */
     private void setupGoLiveButton() {
         User user = DataManager.getUserInstance();
-        if (user != null && "teacher".equals(user.getUserType())) {
+        Lesson lesson = DataManager.getCurLesson();
+        
+        boolean isTeacher = user != null && "teacher".equals(user.getUserType());
+        boolean isLive = lesson != null && lesson.isLive();
+        
+        if (isTeacher || isLive) {
             btnGoLive.setVisibility(View.VISIBLE);
-            btnGoLive.setOnClickListener(v -> goLive());
+            if (isLive) {
+                btnGoLive.setText("Live");
+                btnGoLive.setEnabled(true);
+                btnGoLive.setOnClickListener(v -> {
+                    Intent intent = new Intent(this, ClassActivity.class);
+                    intent.putExtra("target_tab", 2); // Index of LiveFragment in ClassActivity
+                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                });
+            } else {
+                // Only teacher reaches here when isLive is false
+                btnGoLive.setText("Go Live");
+                btnGoLive.setEnabled(true);
+                btnGoLive.setOnClickListener(v -> goLive());
+            }
         } else {
             btnGoLive.setVisibility(View.GONE);
         }
@@ -249,16 +269,24 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
     public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
         if (operation == FirestoreManager.DbOperation.UPDATE_LESSON_LIVE_STATUS) {
             runOnUiThread(() -> {
-                btnGoLive.setEnabled(true);
-                if (tvStatusMessage != null) {
-                    if (success) {
+                if (success) {
+                    Lesson lesson = DataManager.getCurLesson();
+                    if (lesson != null) {
+                        lesson.setLive(true);
+                    }
+                    setupGoLiveButton();
+                    if (tvStatusMessage != null) {
                         tvStatusMessage.setText("Lesson is now live!");
                         tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_success));
-                    } else {
+                        tvStatusMessage.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    btnGoLive.setEnabled(true);
+                    if (tvStatusMessage != null) {
                         tvStatusMessage.setText("Failed to go live. Please try again.");
                         tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_error));
+                        tvStatusMessage.setVisibility(View.VISIBLE);
                     }
-                    tvStatusMessage.setVisibility(View.VISIBLE);
                 }
             });
         }

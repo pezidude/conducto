@@ -131,6 +131,7 @@
 
     <!-- ── Live Lesson ── -->
     <string name="live_no_active_lesson">There is no live lesson active for this class</string>
+    <string name="live_lesson_is_active">A live lesson is currently active</string>
     <string name="live_main_content_todo">TODO: Implement main live lesson interface</string>
     <string name="btn_join_lesson">Join Lesson</string>
 

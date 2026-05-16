@@ -64,6 +64,11 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
 
         public void bind(Lesson lesson) {
             lessonTitle.setText(lesson.getTitle());
+            if (lesson.isLive()) {
+                lessonTitle.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red_600));
+            } else {
+                lessonTitle.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.text_primary));
+            }
             
             // Show genre label if it's not empty
             String infoText = lesson.getInfo();
@@ -76,9 +81,15 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
 
             // Apply polymorphic styling
-            int color = ContextCompat.getColor(itemView.getContext(), lesson.getGenreColorResId());
+            int color = ContextCompat.getColor(itemView.getContext(), 
+                lesson.isLive() ? R.color.red_600 : lesson.getGenreColorResId());
             iconTile.getBackground().setTint(color);
-            iconView.setImageResource(lesson.getGenreIconResId());
+            
+            if (lesson.isLive()) {
+                iconView.setImageResource(R.drawable.ic_live_dot);
+            } else {
+                iconView.setImageResource(lesson.getGenreIconResId());
+            }
             iconView.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.white));
 
             // Gray out if archived
