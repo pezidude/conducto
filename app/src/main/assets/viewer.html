@@ -305,6 +305,19 @@
     };
 
     /**
+     * Returns the current playback progress as a JSON string.
+     */
+    window.getPlaybackProgress = function() {
+        if (osmd && osmd.cursor && osmd.cursor.iterator && osmd.Sheet) {
+            return JSON.stringify({
+                currentMeasure: osmd.cursor.iterator.CurrentMeasureIndex,
+                totalMeasures: osmd.Sheet.SourceMeasures.length
+            });
+        }
+        return JSON.stringify({currentMeasure: 0, totalMeasures: 1});
+    };
+
+    /**
      * Named function to jump to a specific measure.
      */
     window.jumpToMeasure = function(measureIndex) {

@@ -84,6 +84,39 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isFirstSync = true;
     private long serverTimeOffset = 0;
 
+    private final Runnable progressPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (sheetMusicView != null && isPlaying) {
+                sheetMusicView.evaluateJavascript("getPlaybackProgress();", value -> {
+                    try {
+                        if (value != null && !value.equals("null")) {
+                            // value is a JSON string, e.g., "\"{\\\"currentMeasure\\\":0,\\\"totalMeasures\\\":1}\""
+                            // evaluateJavascript returns the result as a JSON-encoded string
+                            String jsonStr = value.substring(1, value.length() - 1).replace("\\\"", "\"");
+                            org.json.JSONObject json = new org.json.JSONObject(jsonStr);
+                            int current = json.getInt("currentMeasure");
+                            int total = json.getInt("totalMeasures");
+                            
+                            updateProgressBar(current, total);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing progress: " + value, e);
+                    }
+                });
+                playbackHandler.postDelayed(this, 500); // Poll every 500ms
+            }
+        }
+    };
+
+    private void updateProgressBar(int current, int total) {
+        PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.playback_fragment_container);
+        if (playbackFragment != null) {
+            playbackFragment.updateProgress(current, total);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -652,6 +685,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         // Sync playback measure if provided
         if (currentMeasure >= 0) {
             sheetMusicView.evaluateJavascript("jumpToMeasure(" + currentMeasure + ");", null);
+            // Update progress bar immediately on measure change
+            sheetMusicView.evaluateJavascript("getPlaybackProgress();", value -> {
+                try {
+                    if (value != null && !value.equals("null")) {
+                        String jsonStr = value.substring(1, value.length() - 1).replace("\\\"", "\"");
+                        org.json.JSONObject json = new org.json.JSONObject(jsonStr);
+                        updateProgressBar(json.getInt("currentMeasure"), json.getInt("totalMeasures"));
+                    }
+                } catch (Exception ignored) {}
+            });
         }
 
         if (Lesson.STATUS_PLAYING.equals(status)) {
@@ -693,11 +736,13 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         startCountdown(() -> {
             sheetMusicView.evaluateJavascript("play();", null);
+            playbackHandler.post(progressPollRunnable);
         });
     }
 
     private void executePause() {
         isPlaying = false;
+        playbackHandler.removeCallbacks(progressPollRunnable);
         cancelCountdown();
         if (canControlPlayback) {
             sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
@@ -713,11 +758,14 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     private void executeStop() {
         isPlaying = false;
+        playbackHandler.removeCallbacks(progressPollRunnable);
         cancelCountdown();
         if (canControlPlayback) {
             sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
         }
         sheetMusicView.evaluateJavascript("stop();", null);
+        // Reset progress bar
+        updateProgressBar(0, 1);
 
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);

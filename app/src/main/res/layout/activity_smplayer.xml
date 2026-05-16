@@ -62,7 +62,7 @@
             android:layout_marginEnd="8dp"
             android:layout_marginTop="8dp"
             android:background="@drawable/bg_playback_control_secondary"
-            android:src="@drawable/baseline_headphones_24"
+            android:src="@drawable/instant_mix_24px"
             android:padding="10dp"
             android:scaleType="fitCenter"
             app:tint="@color/white"

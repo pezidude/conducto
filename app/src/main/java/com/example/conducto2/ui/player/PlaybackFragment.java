@@ -39,6 +39,7 @@ public class PlaybackFragment extends Fragment {
     private PlaybackControlsListener mListener;
     private ImageButton playPauseButton;
     private Slider speedSlider;
+    private android.widget.ProgressBar playbackProgressBar;
     private boolean isPlaying = false;
 
     public PlaybackFragment() {
@@ -74,6 +75,8 @@ public class PlaybackFragment extends Fragment {
             }
         });
 
+        playbackProgressBar = view.findViewById(R.id.playback_progress_bar);
+
         return view;
     }
 
@@ -87,6 +90,16 @@ public class PlaybackFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    /**
+     * Updates the progress bar with the current and total measures.
+     */
+    public void updateProgress(int current, int total) {
+        if (playbackProgressBar != null) {
+            playbackProgressBar.setMax(total);
+            playbackProgressBar.setProgress(current);
+        }
     }
 
     /**
