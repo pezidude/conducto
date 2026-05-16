@@ -67,7 +67,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private boolean isCountdownActive = false;
     private String lastStatus = null;
     private int lastMeasure = -1;
-    private int lastBpm = -1;
 
     private boolean isPlaying = false;
     private boolean isScoreLoaded = false;
@@ -87,7 +86,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private final Runnable progressPollRunnable = new Runnable() {
         @Override
         public void run() {
-            if (sheetMusicView != null && isPlaying) {
+            if (sheetMusicView != null && isPlaying && !isFinishing() && !isDestroyed()) {
                 sheetMusicView.evaluateJavascript("getPlaybackProgress();", value -> {
                     try {
                         if (value != null && !value.equals("null")) {
@@ -123,7 +122,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         setContentView(R.layout.activity_smplayer);
         
         // Lock screen orientation to portrait
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         
         // Keep the screen on while this activity is in the foreground
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -320,8 +319,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         @JavascriptInterface
         public void onEngineReady() {
             runOnUiThread(() -> {
+                // in case of user exiting the web view before the JS engine is ready
+                if (isFinishing() || isDestroyed() || sheetMusicView == null) return;
+                
                 // now that all JS has executed, it's safe to load the file.
-                Toast.makeText(SMPlayerActivity.this, "OSMD Engine Ready", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "OSMD Engine Ready");
                 Intent intent = getIntent();
                 if (intent.hasExtra("fileUri")) {
@@ -335,6 +336,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         @JavascriptInterface
         public void onLoadScoreFinished(String instrumentNamesJson) {
             runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed() || sheetMusicView == null) return;
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "File loaded.");
                 isScoreLoaded = true;
@@ -435,6 +437,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             firestoreManager.updateLessonArchivedStatus(cls.getId(), lesson.getId(), true);
             // 3. Set isActive to false in the class
             firestoreManager.updateClassActivity(cls.getId(), false);
+            
+            // Update local state in DataManager to ensure consistency when returning to LessonDetailsActivity
+            cls.setActive(false);
+            lesson.setLive(false);
+            lesson.setArchived(true);
 
             Toast.makeText(this, "Live lesson ended", Toast.LENGTH_SHORT).show();
             finish();
@@ -475,7 +482,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         double zoomLevel = 0.75;
         // basic attempt of preventing XSS. TODO: improve for production.
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
-        sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`, " + zoomLevel + ");", null);
+        if (sheetMusicView != null ) {
+            sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`, " + zoomLevel + ");", null);
+        }
     }
 
     /**
@@ -500,18 +509,30 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
                         loadXmlInWebView(xmlContent);
                     } else {
-                        Toast.makeText(this, "File format not recognized.", Toast.LENGTH_LONG).show();
+                        showErrorDialog("File Not Recognized", "The selected file does not appear to be a valid MusicXML file.");
                         Log.d(TAG, "File format not recognized.");
                     }
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Error reading file", e);
                 runOnUiThread(() -> {
-                        Toast.makeText(this, "Failed to load file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "Failed to load file: " + e.getMessage());
+                    if (isFinishing() || isDestroyed()) return;
+                    showErrorDialog("Failed to Load File", "An error occurred while reading the file: " + e.getMessage());
+                    Log.d(TAG, "Failed to load file: " + e.getMessage());
                 });
             }
         }).start();
+    }
+
+    private void showErrorDialog(String title, String message) {
+        if (isFinishing() || isDestroyed()) return;
+
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setCancelable(false)
+                .setPositiveButton("OK", (dialog, which) -> finish())
+                .show();
     }
 
     @Override
@@ -549,17 +570,22 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onDestroy() {
         Log.d(TAG, "onDestroy: Cleaning up resources");
         
-        // 1. Stop all listeners
+        // stop all listeners
         stopStatusListener();
         
-        // 2. Clear any pending playback handlers
+        // clear any pending playback handlers
         playbackHandler.removeCallbacksAndMessages(null);
         
-        // 3. Command the JS engine to shut down audio and clear references
         if (sheetMusicView != null) {
+            // First, remove it from the view hierarchy to prevent drawing issues during destruction
+            if (sheetMusicView.getParent() instanceof android.view.ViewGroup) {
+                ((android.view.ViewGroup) sheetMusicView.getParent()).removeView(sheetMusicView);
+            }
+
+            // hint the JS engine to shut down audio and clear references
             sheetMusicView.evaluateJavascript("destroyEngine();", null);
             
-            // 4. Properly dismantle the WebView
+            // 4. Properly destroy the WebView
             sheetMusicView.removeJavascriptInterface("AndroidInterface");
             sheetMusicView.stopLoading();
             sheetMusicView.setWebViewClient(null);
@@ -783,6 +809,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         long beatDuration = 60000 / Math.max(1, currentBPM);
 
+        // nested calls for countdown
         playbackHandler.postDelayed(() -> {
             if (!isCountdownActive) return;
             tvCountdown.setText("3");
