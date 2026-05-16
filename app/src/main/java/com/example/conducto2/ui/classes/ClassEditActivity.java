@@ -16,7 +16,7 @@ import com.example.conducto2.data.model.Class;
 
 import java.util.ArrayList;
 
-public class ClassEditActivity extends AppCompatActivity implements FirestoreManager.DBResult {
+public class ClassEditActivity extends AppCompatActivity implements FirebaseComm.DBResult {
 
     private EditText classNameEditText;
     private EditText classDescriptionEditText;
@@ -96,7 +96,7 @@ public class ClassEditActivity extends AppCompatActivity implements FirestoreMan
     }
 
     @Override
-    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
+    public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
         if (success) {
             finish();
         }

@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
+import com.example.conducto2.data.firebase.FileStorage;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Role;
@@ -58,6 +59,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
     private Map<String, MusicXmlParser.PartInfo> partInfoMap;
     private RoleAdapter roleAdapter;
     private FirestoreManager firestoreManager;
+    private FileStorage fileStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +67,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_role_grouping);
 
         firestoreManager = new FirestoreManager();
+        fileStorage = new FileStorage();
         findViews();
         parseIntent();
         
@@ -312,6 +315,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
     }
 
     private void uploadRoleFile(String roleName, String content) {
-        firestoreManager.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content, DataManager.getUserInstance().getEmail());
+        fileStorage.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content, DataManager.getUserInstance().getEmail());
     }
 }

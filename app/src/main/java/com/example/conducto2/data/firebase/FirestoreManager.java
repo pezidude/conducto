@@ -31,9 +31,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -49,29 +46,6 @@ public class FirestoreManager extends FirebaseComm {
     private FirebaseUser firebaseUser;
     //   private QueryResult postQueryResult;
 
-    private DBResult dbResult;
-
-    public enum DbOperation {
-        INSERT_USER,
-        INSERT_LESSON,
-        UPDATE_LESSON,
-        DELETE_LESSON,
-        INSERT_CLASS,
-        UPDATE_CLASS,
-        JOIN_CLASS,
-        UPDATE_LESSON_STATUS,
-        UPDATE_LESSON_LIVE_STATUS,
-        UPDATE_LESSON_ARCHIVED_STATUS,
-        UPLOAD_MUSIC_FILE,
-        RENAME_MUSIC_FILE,
-        OTHER
-    }
-
-    public interface DBResult {
-        void uploadResult(boolean success, DbOperation operation);
-
-        void displayMessage(String message);
-    }
 
     public interface UserFetchListener {
         void onUserFetched(User user);
@@ -118,9 +92,18 @@ public class FirestoreManager extends FirebaseComm {
 
     public void insertUser(User user) {
         firebaseUser = getAuth().getCurrentUser();
-        // add the photo to the firebase storage
-        // hold the reference for the storage
         DocumentReference ref = FIRESTORE.collection("users").document(user.getEmail());
+        ref.set(user)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.INSERT_USER);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.INSERT_USER);
+                    }
+                });
     }
 
     public void insertLesson(String classId, Lesson lesson) {
@@ -167,7 +150,7 @@ public class FirestoreManager extends FirebaseComm {
         ref.update("profilePictureBase64", base64Image)
                 .addOnSuccessListener(aVoid -> {
                     if (dbResult != null) {
-                        dbResult.uploadResult(true, DbOperation.DELETE_LESSON);
+                        dbResult.uploadResult(true, DbOperation.UPDATE_USER);
                     }
                 });
     }
@@ -177,6 +160,11 @@ public class FirestoreManager extends FirebaseComm {
                 .addOnSuccessListener(aVoid -> {
                     if (dbResult != null) {
                         dbResult.uploadResult(true, DbOperation.DELETE_LESSON);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.DELETE_LESSON);
                     }
                 });
     }
@@ -248,7 +236,7 @@ public class FirestoreManager extends FirebaseComm {
                 })
                 .addOnFailureListener(e -> {
                     if (dbResult != null) {
-                        dbResult.uploadResult(false, DbOperation.DELETE_LESSON);
+                        dbResult.uploadResult(false, DbOperation.FETCH_CLASSES);
                     }
                 });
     }
@@ -490,58 +478,6 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-    public void uploadMusicFile(String classId, String lessonId, Uri fileUri, String title, String extension) {
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String fileName = "musicresource_" + java.util.UUID.randomUUID().toString() + "." + extension;
-        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
-
-        fileRef.putFile(fileUri)
-                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    MusicFile musicFile = new MusicFile(title, uri);
-                    FIRESTORE.collection("classes").document(classId)
-                            .collection("lessons").document(lessonId)
-                            .collection("musicFiles")
-                            .add(musicFile)
-                            .addOnSuccessListener(aVoid -> {
-                                if (dbResult != null) {
-                                    dbResult.displayMessage("File uploaded and saved.");
-                                    dbResult.uploadResult(true, DbOperation.UPLOAD_MUSIC_FILE);
-                                }
-                            })
-                            .addOnFailureListener(e -> {
-                                if (dbResult != null) {
-                                    dbResult.displayMessage("Failed to save file URL: " + e.getMessage());
-                                    dbResult.uploadResult(false, DbOperation.UPLOAD_MUSIC_FILE);
-                                }
-                            });
-                }))
-                .addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("Upload failed: " + e.getMessage());
-                        dbResult.uploadResult(false, DbOperation.UPLOAD_MUSIC_FILE);
-                    }
-                });
-    }
-
-    public void renameMusicFile(String classId, String lessonId, String fileDocId, String newTitle) {
-        FIRESTORE.collection("classes").document(classId)
-                .collection("lessons").document(lessonId)
-                .collection("musicFiles").document(fileDocId)
-                .update("title", newTitle)
-                .addOnSuccessListener(aVoid -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("File renamed.");
-                        dbResult.uploadResult(true, DbOperation.RENAME_MUSIC_FILE);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("Failed to rename file: " + e.getMessage());
-                        dbResult.uploadResult(false, DbOperation.RENAME_MUSIC_FILE);
-                    }
-                });
-    }
-
     public void addDraftRole(String classId, String lessonId, Role role) {
         FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
@@ -568,50 +504,6 @@ public class FirestoreManager extends FirebaseComm {
                 .collection("lessons").document(lessonId)
                 .collection("draftRoles")
                 .orderBy("name", Query.Direction.ASCENDING);
-    }
-
-    public void uploadRoleMusicFile(String classId, String lessonId, String originalTitle, String roleName, String content, String teacherEmail) {
-        StorageReference storageRef = FirebaseStorage.getInstance().getReference();
-        String fileName = "role_" + roleName.replaceAll("\\s+", "_") + "_" + java.util.UUID.randomUUID().toString() + ".musicxml";
-        StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
-
-        byte[] data = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        fileRef.putBytes(data)
-                .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
-                    String downloadUrl = uri.toString();
-                    MusicFile musicFile = new MusicFile(originalTitle + " - " + roleName, uri);
-                    FIRESTORE.collection("classes").document(classId)
-                            .collection("lessons").document(lessonId)
-                            .collection("musicFiles")
-                            .add(musicFile);
-                    
-                    if (teacherEmail != null && roleName.toLowerCase().contains("partitura")) {
-                        updateLessonMapping(classId, lessonId, downloadUrl, teacherEmail);
-                    }
-                }))
-                .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
-    }
-
-    private void updateLessonMapping(String classId, String lessonId, String fileUrl, String email) {
-        DocumentReference lessonRef = FIRESTORE.collection("classes").document(classId)
-                .collection("lessons").document(lessonId);
-        
-        FIRESTORE.runTransaction(transaction -> {
-            Lesson lesson = transaction.get(lessonRef).toObject(Lesson.class);
-            if (lesson != null) {
-                Map<String, List<String>> mapping = lesson.getFileMapping();
-                if (mapping == null) mapping = new HashMap<>();
-                
-                List<String> students = mapping.get(fileUrl);
-                if (students == null) students = new ArrayList<>();
-                if (!students.contains(email)) {
-                    students.add(email);
-                }
-                mapping.put(fileUrl, students);
-                transaction.update(lessonRef, "fileMapping", mapping);
-            }
-            return null;
-        }).addOnFailureListener(e -> Log.e(TAG, "Failed to update lesson mapping for teacher", e));
     }
 
     public void logLessonAccess(String userId, String classId, String lessonId, String title) {
@@ -705,97 +597,5 @@ public class FirestoreManager extends FirebaseComm {
                     Log.e(TAG, "Error getting class", e);
                     if (listener != null) listener.onSuccess(null);
                 });
-    }
-
-    // DELETE ME
-    public static class FileStorage extends FirebaseComm {
-
-        private static final String LOG_TAG = "FileStorage";
-        private FirebaseStorage firebaseStorage;
-        private StorageResult storageResult;
-
-        public interface StorageResult
-        {
-            void fileResult(byte[] data);
-
-        }
-
-        public FileStorage()
-        {
-            firebaseStorage = FirebaseStorage.getInstance();
-        }
-
-        public void setStorageResult(StorageResult storageResult) {
-            this.storageResult = storageResult;
-        }
-
-        public void saveImageToStorage(Bitmap bitmap, String entryName)
-        {
-            StorageReference storageRef = firebaseStorage.getReference();
-            StorageReference imageRef = storageRef.child(entryName);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-            byte[] data = baos.toByteArray();
-            UploadTask uploadTask = imageRef.putBytes(data);
-            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-                @Override
-                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                    if (!task.isSuccessful()) {
-                        throw task.getException();
-                    }
-                    getFileFromStorage(entryName);
-                    // Continue with the task to get the download URL
-                    return imageRef.getDownloadUrl();
-                }
-            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-                @Override
-                public void onComplete(@NonNull Task<Uri> task) {
-                    if (task.isSuccessful()) {
-                        Uri downloadUri = task.getResult();
-                        Log.d(LOG_TAG, "onSuccess: " + downloadUri);
-                    } else {
-                        // Handle failures
-                        Log.d(LOG_TAG, "onComplete:  failed");
-                    }
-                }
-            });
-
-        }
-
-        public void getFileFromStorage(String name)
-        {
-            StorageReference storageRef = firebaseStorage.getReference();
-            StorageReference fileRef = storageRef.child(name);
-            fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                @Override
-                public void onSuccess(byte[] bytes) {
-                    if(storageResult!=null)
-                        storageResult.fileResult(bytes);
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    // Handle any errors
-                }
-            });
-        }
-
-        public void getImageFromStorage(ImageView ivPostPhoto, String name)
-        {
-            StorageReference storageRef = firebaseStorage.getReference();
-            StorageReference imageRef = storageRef.child(name);
-            imageRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-                @Override
-                public void onSuccess(byte[] bytes) {
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    ivPostPhoto.setImageBitmap(bitmap);
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception exception) {
-                    // Handle any errors
-                }
-            });
-        }
     }
 }

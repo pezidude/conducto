@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
 import com.example.conducto2.data.firebase.FBAuth;
@@ -23,7 +24,7 @@ import com.example.conducto2.data.model.User;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 
-public class SignUpActivity extends AppCompatActivity implements View.OnClickListener,FBAuth.SignInResult, FirestoreManager.DBResult {
+public class SignUpActivity extends AppCompatActivity implements View.OnClickListener,FBAuth.SignInResult, FirebaseComm.DBResult {
 
     FBAuth signUp;
     TextView tvError, tvGoToSignIn;
@@ -142,7 +143,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     }
 
     @Override
-    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
+    public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
         // firestore result function (should be success because of auth step)
         if (success) {
             Intent go = new Intent(SignUpActivity.this, DashboardActivity.class);

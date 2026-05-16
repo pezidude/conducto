@@ -24,10 +24,9 @@ import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.SwipeHelper;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
-public class ClassListActivity extends BaseDrawerActivity implements FirestoreManager.DBResult {
+public class ClassListActivity extends BaseDrawerActivity implements FirebaseComm.DBResult {
 
     private RecyclerView classesRecyclerView;
     private ClassAdapter classAdapter;
@@ -47,7 +46,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         firestoreManager.setDbResult(this);
 
         initViews();
-        setupRecyclerView(buildQuery());
+        setupRecyclerView();
         setupListeners();
 
         // User Dependent logic
@@ -120,15 +119,9 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         builder.create().show();
     }
 
-    private void setupRecyclerView(Query query) {
-        FirestoreRecyclerOptions<Class> options = new FirestoreRecyclerOptions.Builder<Class>()
-                .setQuery(query, Class.class)
-                .build();
-
-        classAdapter = new ClassAdapter(options);
+    private void setupRecyclerView() {
+        classAdapter = new ClassAdapter(getOptions());
         classesRecyclerView.setAdapter(classAdapter);
-
-
     }
 
     private void setupSwipe() {
@@ -173,7 +166,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     }
 
     private Query buildQuery() {
-        Query query = FirebaseFirestore.getInstance().collection("classes");
+        Query query = FirebaseComm.getCollectionReference("classes");
         /* base query */
         query = query.whereArrayContains("members", FirebaseComm.authUserEmail());
         if (isFilteredByUser) {
@@ -188,11 +181,13 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     }
 
     private void updateQuery() {
-        Query query = buildQuery();
-        FirestoreRecyclerOptions<Class> options = new FirestoreRecyclerOptions.Builder<Class>()
-                .setQuery(query, Class.class)
+        classAdapter.updateOptions(getOptions());
+    }
+
+    private FirestoreRecyclerOptions<Class> getOptions() {
+        return new FirestoreRecyclerOptions.Builder<Class>()
+                .setQuery(buildQuery(), Class.class)
                 .build();
-        classAdapter.updateOptions(options);
     }
 
     @Override
@@ -216,8 +211,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     }
 
     @Override
-    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
-        if (success && operation == FirestoreManager.DbOperation.JOIN_CLASS) {
+    public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
+        if (success && operation == FirebaseComm.DbOperation.JOIN_CLASS) {
             Toast.makeText(this, "Joined class successfully", Toast.LENGTH_SHORT).show();
         }
     }

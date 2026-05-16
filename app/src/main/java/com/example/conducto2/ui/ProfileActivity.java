@@ -21,6 +21,7 @@ import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.ContextCompat;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.User;
@@ -132,9 +133,9 @@ public class ProfileActivity extends BaseDrawerActivity {
 
     private void setupFirestore() {
         firestoreManager = new FirestoreManager();
-        firestoreManager.setDbResult(new FirestoreManager.DBResult() {
+        firestoreManager.setDbResult(new FirebaseComm.DBResult() {
             @Override
-            public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
+            public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
                 tvStatusMessage.setVisibility(View.GONE);
                 if (success) {
                     showMessageDialog("Success", "Profile updated successfully.");

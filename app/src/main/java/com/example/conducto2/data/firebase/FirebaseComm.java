@@ -9,6 +9,36 @@ public class FirebaseComm {
     protected static FirebaseFirestore FIRESTORE;
     private static FirebaseAuth AUTH;
 
+    public enum DbOperation {
+        INSERT_USER,
+        UPDATE_USER,
+        INSERT_LESSON,
+        UPDATE_LESSON,
+        DELETE_LESSON,
+        INSERT_CLASS,
+        UPDATE_CLASS,
+        JOIN_CLASS,
+        FETCH_CLASSES,
+        UPDATE_LESSON_STATUS,
+        UPDATE_LESSON_LIVE_STATUS,
+        UPDATE_LESSON_ARCHIVED_STATUS,
+        UPLOAD_MUSIC_FILE,
+        RENAME_MUSIC_FILE,
+        OTHER
+    }
+
+    public interface DBResult {
+        void uploadResult(boolean success, DbOperation operation);
+
+        void displayMessage(String message);
+    }
+
+    protected DBResult dbResult;
+
+    public void setDbResult(DBResult dbr) {
+        this.dbResult = dbr;
+    }
+
 
     // Utility functions
 

@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class FilePickerHelper {
 
-    /*
+    /**
     * This class exposes an API for the activities for the File Picking functionality of android by
     * wrapping the Activity result contract of android.
     * */

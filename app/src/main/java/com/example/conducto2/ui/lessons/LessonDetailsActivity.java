@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
+import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
@@ -36,7 +37,7 @@ import java.util.Map;
  * Activity that displays the details of a specific lesson, including its title, date, notes, and music files.
  * Provides a "Go Live" functionality for teachers to set this lesson as the active live lesson for the class.
  */
-public class LessonDetailsActivity extends BaseDrawerActivity implements FirestoreManager.DBResult {
+public class LessonDetailsActivity extends BaseDrawerActivity implements FirebaseComm.DBResult {
 
     private TextView lessonTitle;
     private TextView lessonDate;
@@ -266,8 +267,8 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firesto
     }
 
     @Override
-    public void uploadResult(boolean success, FirestoreManager.DbOperation operation) {
-        if (operation == FirestoreManager.DbOperation.UPDATE_LESSON_LIVE_STATUS) {
+    public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
+        if (operation == FirebaseComm.DbOperation.UPDATE_LESSON_LIVE_STATUS) {
             runOnUiThread(() -> {
                 if (success) {
                     Lesson lesson = DataManager.getCurLesson();
