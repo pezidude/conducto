@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,6 +17,7 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
+import com.example.conducto2.data.manager.GeminiManager;
 import com.example.conducto2.data.model.Lesson;
 import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.User;
@@ -179,8 +181,56 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             }
         });
 
+        adapter.setOnAiInfoClickListener(this::showAiDescription);
+
         musicXmlFilesRecyclerView.setAdapter(adapter);
         adapter.startListening();
+    }
+
+    /**
+     * Builds a prompt for the music file and uses Gemini to generate a description.
+     * Displays a loading dialog during the process and an AlertDialog with the result.
+     */
+    private void showAiDescription(MusicFile musicFile) {
+        if (musicFile == null || musicFile.getTitle() == null) {
+            Toast.makeText(this, "File information is missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1. Build the prompt
+        String prompt = "Provide a brief and engaging description (2-3 sentences) about the music piece titled: \"" 
+                + musicFile.getTitle() + "\". Focus on its musical style or historical context if known, otherwise give a general description suitable for a student.";
+
+        // 2. Show loading dialog
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+                .setTitle("AI is thinking...")
+                .setMessage("Generating a description for " + musicFile.getTitle() + "...")
+                .setCancelable(false)
+                .create();
+        loadingDialog.show();
+
+        // 3. Call Gemini
+        GeminiManager.getInstance(this).sendMessage(prompt, new GeminiManager.GeminiCallback() {
+            @Override
+            public void onSuccess(String result) {
+                runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    new AlertDialog.Builder(LessonDetailsActivity.this)
+                            .setTitle(musicFile.getTitle())
+                            .setMessage(result)
+                            .setPositiveButton("Close", null)
+                            .show();
+                });
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                runOnUiThread(() -> {
+                    loadingDialog.dismiss();
+                    Toast.makeText(LessonDetailsActivity.this, "AI Error: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
 

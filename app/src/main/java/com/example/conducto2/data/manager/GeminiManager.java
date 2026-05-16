@@ -1,5 +1,6 @@
 package com.example.conducto2.data.manager;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
@@ -11,6 +12,7 @@ import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
+import com.example.conducto2.R;
 import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.java.ChatFutures;
 import com.google.ai.client.generativeai.java.GenerativeModelFutures;
@@ -25,14 +27,16 @@ import java.util.concurrent.Executors;
 
 public class GeminiManager {
 
-    private static final String API_KEY = ""; // Your key
+    private final String apiKey;
 
     // --- 1. Defining the list of fallback models ---
     // The order is important: the system will try the first one, if it fails it will move to the second and so on
     private static final String[] MODEL_FALLBACKS = {
-            "gemini-1.5-flash",      // Preferred model (fast and new)
-            "gemini-1.5-flash-latest", // First backup (fast and cheap)
-            "gemini-pro" // Last backup (stronger, in case the flash models are busy)
+            "gemini-2.5-flash",      // Verified working
+            "gemini-2.5-pro",        // Stronger available model
+            "gemini-2.0-flash",      // Faster available model
+            "gemini-3.1-flash-lite", // Latest available lite model
+            "gemini-3-flash-preview" // Future preview model
     };
 
     public interface GeminiCallback {
@@ -49,17 +53,18 @@ public class GeminiManager {
 
     private final Handler mainHandler;
 
-    private GeminiManager() {
+    private GeminiManager(Context context) {
         // Note: we are no longer creating the model here, because the model changes dynamically
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
+        this.apiKey = context.getString(R.string.gemini_api_key);
     }
 
-    public static GeminiManager getInstance() {
+    public static GeminiManager getInstance(Context context) {
         if (instance == null) {
             synchronized (GeminiManager.class) {
                 if (instance == null) {
-                    instance = new GeminiManager();
+                    instance = new GeminiManager(context.getApplicationContext());
                 }
             }
         }
@@ -121,7 +126,7 @@ public class GeminiManager {
         Log.d("GeminiManager", "Trying model: " + currentModelName);
 
         // Creating the specific model for this attempt
-        GenerativeModel gm = new GenerativeModel(currentModelName, API_KEY);
+        GenerativeModel gm = new GenerativeModel(currentModelName, apiKey);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
 
         ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
@@ -171,7 +176,7 @@ public class GeminiManager {
 
     public void startNewChat() {
         // We will use the main model (the first in the list) for the chat
-        GenerativeModel gm = new GenerativeModel(MODEL_FALLBACKS[0], API_KEY);
+        GenerativeModel gm = new GenerativeModel(MODEL_FALLBACKS[0], apiKey);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
 
         // Creating a new and empty chat session
