@@ -26,6 +26,8 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
     private int rightIconResId = R.drawable.ic_delete;
     private int leftColorResId = R.color.brand_primary;
     private int rightColorResId = R.color.error;
+    private int leftIconTintResId = R.color.white;
+    private int rightIconTintResId = R.color.white;
 
     /**
      * Interface to be implemented by activities or fragments to handle swipe actions.
@@ -54,9 +56,21 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
         this.leftColorResId = colorResId;
     }
 
+    public void setLeftAction(int iconResId, int colorResId, int iconTintResId) {
+        this.leftIconResId = iconResId;
+        this.leftColorResId = colorResId;
+        this.leftIconTintResId = iconTintResId;
+    }
+
     public void setRightAction(int iconResId, int colorResId) {
         this.rightIconResId = iconResId;
         this.rightColorResId = colorResId;
+    }
+
+    public void setRightAction(int iconResId, int colorResId, int iconTintResId) {
+        this.rightIconResId = iconResId;
+        this.rightColorResId = colorResId;
+        this.rightIconTintResId = iconTintResId;
     }
 
     @Override
@@ -100,6 +114,10 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
 
         if (clampedDx > 0) { // Swiping right
             icon = ContextCompat.getDrawable(context, rightIconResId);
+            if (icon != null) {
+                icon = icon.mutate();
+                androidx.core.graphics.drawable.DrawableCompat.setTint(icon, ContextCompat.getColor(context, rightIconTintResId));
+            }
             background = new ColorDrawable(ContextCompat.getColor(context, rightColorResId));
             int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
             int iconTop = itemView.getTop() + iconMargin;
@@ -116,6 +134,10 @@ public class SwipeHelper extends ItemTouchHelper.SimpleCallback {
             }
         } else if (clampedDx < 0) { // Swiping left
             icon = ContextCompat.getDrawable(context, leftIconResId);
+            if (icon != null) {
+                icon = icon.mutate();
+                androidx.core.graphics.drawable.DrawableCompat.setTint(icon, ContextCompat.getColor(context, leftIconTintResId));
+            }
             background = new ColorDrawable(ContextCompat.getColor(context, leftColorResId));
             int iconMargin = (itemView.getHeight() - icon.getIntrinsicHeight()) / 2;
             int iconTop = itemView.getTop() + iconMargin;
