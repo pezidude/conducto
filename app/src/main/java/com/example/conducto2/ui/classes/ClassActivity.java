@@ -1,5 +1,6 @@
 package com.example.conducto2.ui.classes;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.SpannableString;
@@ -22,6 +23,7 @@ import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Lesson;
+import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.ui.classes.fragments.ScheduledFragment;
 import com.example.conducto2.ui.classes.fragments.LiveFragment;
@@ -85,7 +87,10 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         bottomNavigationView.setItemIconTintList(null);
         bottomNavigationView.setItemTextColor(null);
 
-        // Populate class fields
+        refreshClassInfo();
+    }
+
+    private void refreshClassInfo() {
         Class currentClass = DataManager.getCurClass();
         if (currentClass != null) {
             joinCodeTextView.setText("Code: " + currentClass.getJoinCode());
@@ -178,6 +183,24 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
     protected void onResume() {
         super.onResume();
         applyNavigationStyles();
+        refreshClassInfo();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        User user = DataManager.getUserInstance();
+        if (user != null && "teacher".equals(user.getUserType())) {
+            MenuItem editItem = menu.add(Menu.NONE, 1001, Menu.NONE, "Edit");
+            editItem.setIcon(R.drawable.ic_edit);
+            editItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            editItem.setOnMenuItemClickListener(v -> {
+                Intent intent = new Intent(this, ClassEditActivity.class);
+                intent.putExtra("class_obj", DataManager.getCurClass());
+                startActivity(intent);
+                return true;
+            });
+        }
+        return super.onCreateOptionsMenu(menu);
     }
 
     /**

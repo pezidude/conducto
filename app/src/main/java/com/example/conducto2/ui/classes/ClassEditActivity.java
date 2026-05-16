@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirebaseComm;
 import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
 
 import java.util.ArrayList;
@@ -81,6 +82,11 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
             currentClass.setTeacherName(teacherName);
             currentClass.ensureJoinCode(); // This will generate a code if it's missing
             firestoreManager.updateClass(currentClass);
+            
+            // Update DataManager if this is the current class being viewed
+            if (DataManager.getCurClass() != null && currentClass.getId().equals(DataManager.getCurClass().getId())) {
+                DataManager.setCurClass(currentClass);
+            }
         } else {
             if (!FirebaseComm.isUserSignedIn()) {
                 Toast.makeText(this, "You must be logged in to add a class", Toast.LENGTH_SHORT).show();

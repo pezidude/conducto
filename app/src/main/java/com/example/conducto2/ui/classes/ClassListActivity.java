@@ -62,7 +62,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
         // User Dependent logic
         User user = DataManager.getUserInstance();
         if (user != null && "teacher".equals(user.getUserType())) {
-            addClassFab.setOnClickListener(this::showFabMenu);
+            addClassFab.setOnClickListener(v -> startActivity(new Intent(ClassListActivity.this, ClassEditActivity.class)));
             setupSwipe();
         } else {
             addClassFab.setOnClickListener(v -> showJoinClassDialog());
@@ -113,23 +113,6 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
         }
     }
 
-    private void showFabMenu(View view) {
-        PopupMenu popupMenu = new PopupMenu(this, view);
-        popupMenu.getMenuInflater().inflate(R.menu.fab_menu, popupMenu.getMenu());
-        popupMenu.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.menu_create_class) {
-                startActivity(new Intent(ClassListActivity.this, ClassEditActivity.class));
-                return true;
-            } else if (itemId == R.id.menu_join_class) {
-                showJoinClassDialog();
-                return true;
-            }
-            return false;
-        });
-        popupMenu.show();
-    }
-
     private void showJoinClassDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         LayoutInflater inflater = getLayoutInflater();
@@ -153,7 +136,6 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     private void setupRecyclerView() {
         classAdapter = new ClassAdapter();
         classesRecyclerView.setAdapter(classAdapter);
-        startListening();
     }
 
     private void startListening() {
@@ -216,7 +198,6 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
         Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
         intent.putExtra("class_obj", classAdapter.getItem(position));
         startActivity(intent);
-        classAdapter.notifyDataSetChanged();
     }
 
     private void showDeleteConfirmation(int position) {
@@ -237,23 +218,17 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onPause() {
+        super.onPause();
+        stopListening();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (classAdapter != null) {
-            classAdapter.notifyDataSetChanged();
-        }
+        startListening();
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        stopListening();
-    }
 
     @Override
     public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
