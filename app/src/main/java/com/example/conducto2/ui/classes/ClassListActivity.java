@@ -1,7 +1,10 @@
 package com.example.conducto2.ui.classes;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -10,6 +13,7 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -22,19 +26,24 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.SwipeHelper;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ClassListActivity extends BaseDrawerActivity implements FirebaseComm.DBResult {
 
     private RecyclerView classesRecyclerView;
     private ClassAdapter classAdapter;
-    private ImageButton filterByUserButton;
+    private EditText searchEditText;
     private ImageButton sortByNameButton;
     private FloatingActionButton addClassFab;
-    private boolean isFilteredByUser = false;
+    private String searchQuery = "";
     private boolean isSortedByName = false;
+    private ListenerRegistration classesListener;
     // private FirestoreManager firestoreManager; // Inherited
 
     @Override
@@ -48,6 +57,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
         initViews();
         setupRecyclerView();
         setupListeners();
+        updateButtonStates();
 
         // User Dependent logic
         User user = DataManager.getUserInstance();
@@ -66,7 +76,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
 
 
         sortByNameButton = findViewById(R.id.sort_by_name_button);
-        filterByUserButton = findViewById(R.id.filter_by_user_button);
+        searchEditText = findViewById(R.id.search_classes_edit_text);
         addClassFab = findViewById(R.id.add_class_fab);
     }
     private void setupListeners() {
@@ -75,11 +85,32 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
             updateQuery();
         });
 
-        filterByUserButton.setOnClickListener(v -> {
-            isFilteredByUser = !isFilteredByUser;
-            updateQuery();
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchQuery = s.toString().trim();
+                updateQuery();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
         // FAB listener is now set in onCreate after user type is determined
+    }
+
+    private void updateButtonStates() {
+        // Sort Button
+        sortByNameButton.setImageResource(R.drawable.sort_by_alpha_24px);
+        if (isSortedByName) {
+            sortByNameButton.setBackgroundResource(R.drawable.bg_circle_highlight);
+            sortByNameButton.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.brand_primary)));
+        } else {
+            sortByNameButton.setBackgroundResource(android.R.color.transparent);
+            sortByNameButton.setImageTintList(ColorStateList.valueOf(ContextCompat.getColor(this, R.color.white)));
+        }
     }
 
     private void showFabMenu(View view) {
@@ -120,11 +151,48 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     }
 
     private void setupRecyclerView() {
-        classAdapter = new ClassAdapter(getOptions());
+        classAdapter = new ClassAdapter();
         classesRecyclerView.setAdapter(classAdapter);
+        startListening();
+    }
+
+    private void startListening() {
+        if (classesListener != null) return;
+
+        Query query = FirebaseComm.getCollectionReference("classes")
+                .whereArrayContains("members", FirebaseComm.authUserEmail());
+
+        classesListener = query.addSnapshotListener((value, error) -> {
+            if (error != null) {
+                return;
+            }
+
+            if (value == null) return;
+
+            List<Class> classes = new ArrayList<>();
+            for (QueryDocumentSnapshot doc : value) {
+                Class aClass = doc.toObject(Class.class);
+                aClass.setId(doc.getId());
+                classes.add(aClass);
+            }
+            classAdapter.updateData(classes);
+            updateQuery(); // Apply current filter/sort
+        });
+    }
+
+    private void stopListening() {
+        if (classesListener != null) {
+            classesListener.remove();
+            classesListener = null;
+        }
     }
 
     private void setupSwipe() {
+        User user = DataManager.getUserInstance();
+        if (user == null || !"teacher".equals(user.getUserType())) {
+            return;
+        }
+
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {
@@ -152,48 +220,25 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     }
 
     private void showDeleteConfirmation(int position) {
-        classAdapter.notifyDataSetChanged();
+        Class aClass = classAdapter.getItem(position);
         new AlertDialog.Builder(ClassListActivity.this)
                 .setTitle("Delete Class")
                 .setMessage("Are you sure you want to permanently delete this class including nested lessons, students, etc?\nTHIS CAN NOT BE UNDONE!")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    classAdapter.getSnapshots().getSnapshot(position).getReference().delete();
-                    classAdapter.notifyDataSetChanged();
+                    FirebaseComm.getCollectionReference("classes").document(aClass.getId()).delete();
                 })
-                .setNegativeButton("Cancel", (dialog, which) -> classAdapter.notifyDataSetChanged())
-                .setOnCancelListener(dialog -> classAdapter.notifyDataSetChanged())
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private Query buildQuery() {
-        Query query = FirebaseComm.getCollectionReference("classes");
-        /* base query */
-        query = query.whereArrayContains("members", FirebaseComm.authUserEmail());
-        if (isFilteredByUser) {
-            // TODO: filter by something else
-        }
-
-        if (isSortedByName) {
-            query = query.orderBy("name", Query.Direction.ASCENDING);
-        }
-
-        return query;
-    }
-
     private void updateQuery() {
-        classAdapter.updateOptions(getOptions());
-    }
-
-    private FirestoreRecyclerOptions<Class> getOptions() {
-        return new FirestoreRecyclerOptions.Builder<Class>()
-                .setQuery(buildQuery(), Class.class)
-                .build();
+        updateButtonStates();
+        classAdapter.filter(searchQuery, isSortedByName);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        classesRecyclerView.post(() -> classAdapter.startListening());
     }
 
     @Override
@@ -207,7 +252,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     @Override
     protected void onStop() {
         super.onStop();
-        classAdapter.stopListening();
+        stopListening();
     }
 
     @Override

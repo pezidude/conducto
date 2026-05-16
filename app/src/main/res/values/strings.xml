@@ -121,6 +121,7 @@
     <string name="label_lesson_date">Date</string>
     <string name="label_lesson_time">Time</string>
     <string name="label_lesson_notes">Notes</string>
+    <string name="label_lesson_no_notes">Empty Notes</string>
     <string name="hint_lesson_title">e.g. Scales &amp; Arpeggios</string>
     <string name="hint_lesson_notes">Add notes for this lesson…</string>
     <string name="btn_save_lesson">Save Lesson</string>
@@ -154,8 +155,8 @@
     <string name="speed_one_half_faster">1.5×</string>
     <string name="speed_double">2×</string>
     <string name="player_time_format">%1$s / %2$s</string>
-    <string name="player_lesson_notes">Lesson Notes</string>
-    <string name="player_no_notes">No notes for this lesson</string>
+    <string name="player_music_files">Assigned Files</string>
+    <string name="player_no_files">No files for this lesson</string>
 
     <!-- ── Homework ── -->
     <string name="title_homework">Homework</string>
