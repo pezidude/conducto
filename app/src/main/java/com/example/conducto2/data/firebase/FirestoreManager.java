@@ -1,28 +1,17 @@
 package com.example.conducto2.data.firebase;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.util.Log;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.data.model.Annotation;
 import com.example.conducto2.data.model.Class;
-import com.example.conducto2.data.model.DynamicAnnotation;
-import com.example.conducto2.data.model.HighlightAnnotation;
 import com.example.conducto2.data.model.Lesson;
-import com.example.conducto2.data.model.MusicFile;
 import com.example.conducto2.data.model.Role;
 import com.example.conducto2.data.model.User;
 
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -32,7 +21,6 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,10 +45,6 @@ public class FirestoreManager extends FirebaseComm {
 
     public interface ClassesFetchListener {
         void onClassesFetched(List<Class> classes);
-    }
-    
-    public interface AnnotationFetchListener {
-        void onAnnotationsFetched(List<Annotation> annotations);
     }
 
     public interface LiveLessonListener {
@@ -444,39 +428,6 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
-
-    public void getAnnotationsForLesson(String classId, String lessonId, AnnotationFetchListener listener) {
-        FIRESTORE.collection("classes").document(classId)
-                .collection("lessons").document(lessonId)
-                .collection("annotations")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<Annotation> annotations = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String type = document.getString("type");
-                        Annotation annotation = null;
-                        if ("highlight".equals(type)) {
-                            annotation = document.toObject(HighlightAnnotation.class);
-                        } else if ("ghost_dynamic".equals(type)) {
-                            annotation = document.toObject(DynamicAnnotation.class);
-                        }
-
-                        if (annotation != null) {
-                            annotation.setAnnotationId(document.getId());
-                            annotations.add(annotation);
-                        }
-                    }
-                    if (listener != null) {
-                        listener.onAnnotationsFetched(annotations);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error fetching annotations", e);
-                    if (listener != null) {
-                        listener.onAnnotationsFetched(new ArrayList<>());
-                    }
-                });
-    }
 
     public void addDraftRole(String classId, String lessonId, Role role) {
         FIRESTORE.collection("classes").document(classId)
