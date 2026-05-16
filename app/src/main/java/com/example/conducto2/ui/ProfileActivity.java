@@ -44,11 +44,11 @@ public class ProfileActivity extends BaseDrawerActivity {
     private TextView tvProfileName;
     private TextView tvProfileRole;
     private EditText etDisplayName;
+    private EditText etBio;
     private MaterialButton btnSaveProfile;
     private View flAvatarContainer;
     private TextView tvStatusMessage;
 
-    private FirestoreManager firestoreManager;
     private User currentUser;
 
     private final ActivityResultLauncher<String> pickImageLauncher = registerForActivityResult(
@@ -96,6 +96,7 @@ public class ProfileActivity extends BaseDrawerActivity {
         tvProfileName = findViewById(R.id.tvProfileName);
         tvProfileRole = findViewById(R.id.tvProfileRole);
         etDisplayName = findViewById(R.id.etDisplayName);
+        etBio = findViewById(R.id.etBio);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         flAvatarContainer = findViewById(R.id.flAvatarContainer);
         tvStatusMessage = findViewById(R.id.tvStatusMessage);
@@ -173,6 +174,7 @@ public class ProfileActivity extends BaseDrawerActivity {
         tvProfileName.setText(fullName);
         tvProfileRole.setText(currentUser.getUserType());
         etDisplayName.setText(fullName);
+        etBio.setText(currentUser.getDescription());
 
         // Set initials
         String initials = "";
@@ -265,16 +267,32 @@ public class ProfileActivity extends BaseDrawerActivity {
     }
 
     private void saveProfile() {
-        // Here we could also update first name and last name if we split etDisplayName
-        // For now, let's just show a dialog as pfp is updated immediately on selection
-        showMessageDialog("Profile Saved", "Your profile changes have been saved.");
+        if (currentUser == null) return;
+
+        String displayName = etDisplayName.getText().toString().trim();
+        String description = etBio.getText().toString().trim();
+
+        // Basic split for first/last name if changed
+        String[] parts = displayName.split("\\s+", 2);
+        if (parts.length > 0) currentUser.setFname(parts[0]);
+        if (parts.length > 1) currentUser.setLname(parts[1]);
+
+        currentUser.setDescription(description);
+
+        tvStatusMessage.setText("Saving profile...");
+        tvStatusMessage.setVisibility(View.VISIBLE);
+
+        firestoreManager.updateUser(currentUser);
+        DataManager.setUser(currentUser);
     }
 
     private void showMessageDialog(String title, String message) {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", null)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    finish();
+                })
                 .show();
     }
 }

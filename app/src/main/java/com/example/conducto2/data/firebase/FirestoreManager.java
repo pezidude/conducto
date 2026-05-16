@@ -90,6 +90,24 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    public void updateUser(User user) {
+        if (user == null || user.getEmail() == null) return;
+
+        DocumentReference ref = FIRESTORE.collection("users").document(user.getEmail());
+        ref.set(user)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.uploadResult(true, DbOperation.UPDATE_USER);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error updating user", e);
+                    if (dbResult != null) {
+                        dbResult.uploadResult(false, DbOperation.UPDATE_USER);
+                    }
+                });
+    }
+
     public void insertLesson(String classId, Lesson lesson) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document();
         lesson.setId(ref.getId());

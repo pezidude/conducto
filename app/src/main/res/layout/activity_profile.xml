@@ -139,7 +139,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/hint_bio"
+                    android:text="@string/label_bio"
                     style="@style/TextAppearance.Conducto.Label"
                     android:layout_marginTop="@dimen/spacing_base"
                     android:layout_marginBottom="@dimen/spacing_xs"/>

@@ -175,9 +175,9 @@
     <!-- ── Profile ── -->
     <string name="title_profile">Profile</string>
     <string name="title_profile_customization">Customize Profile</string>
-    <string name="label_display_name">Display Name</string>
-    <string name="label_bio">Bio</string>
-    <string name="hint_bio">Tell your students a little about yourself…</string>
+    <string name="label_display_name">Full Name</string>
+    <string name="label_bio">User Description</string>
+    <string name="hint_bio">Tell others a little about yourself…</string>
     <string name="btn_save_profile">Save Changes</string>
     <string name="btn_change_photo">Change Photo</string>
     <string name="profile_teacher_badge">Teacher</string>

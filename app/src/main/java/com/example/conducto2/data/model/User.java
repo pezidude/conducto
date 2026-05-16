@@ -12,6 +12,7 @@ public class User {
     private String email;
     private String userType;
     private String profilePictureBase64;
+    private String description;
 
     public User(String email, String fname, String lname) {
         this.fname = fname;
@@ -64,6 +65,10 @@ public class User {
         this.profilePictureBase64 = profilePictureBase64;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public String getFname() {
         return fname;
     }
@@ -81,5 +86,9 @@ public class User {
     }
     public String getProfilePictureBase64() {
         return profilePictureBase64;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }
