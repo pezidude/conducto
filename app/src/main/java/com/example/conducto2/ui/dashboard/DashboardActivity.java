@@ -63,6 +63,19 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         firestoreManager.getUser(this); // pass the job to onUserFetched
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh dashboard specific UI from DataManager
+        User user = DataManager.getUserInstance();
+        if (user != null) {
+            String welcomeMsg = "Welcome, " + user.getFname() + " " + user.getLname();
+            tvWelcomeMessage.setText(welcomeMsg);
+            tvUserTypeStatus.setText("User Type: " + user.getUserType());
+            updateAvatar(user);
+        }
+    }
+
     private void initViews() {
         btnLogout = findViewById(R.id.btnLogout);
         tvWelcomeMessage = findViewById(R.id.tvWelcomeMessage);
