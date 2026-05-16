@@ -12,7 +12,7 @@
         android:layout_height="match_parent">
 
         <!-- Sheet music view (fills entire screen) -->
-        <com.example.conducto2.ui.player.widget.InteractiveWebView
+        <WebView
             android:id="@+id/sheetMusicView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
