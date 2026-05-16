@@ -54,7 +54,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
         User user = DataManager.getUserInstance();
         if (user != null && "teacher".equals(user.getUserType())) {
             addClassFab.setOnClickListener(this::showFabMenu);
-            addEditDelete();
+            setupSwipe();
         } else {
             addClassFab.setOnClickListener(v -> showJoinClassDialog());
         }
@@ -131,36 +131,45 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
 
     }
 
-    private void addEditDelete() {
+    private void setupSwipe() {
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {
-                // Swipe to Edit
-                Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
-                intent.putExtra("class_obj", classAdapter.getItem(position));
-                startActivity(intent);
-                classAdapter.notifyItemChanged(position); // To reset the item view
+                editClass(position);
             }
 
             @Override
             public void onSwipeRight(int position) {
-                // Swipe to Delete
-                new AlertDialog.Builder(ClassListActivity.this)
-                        .setMessage("Are you sure you want to delete this class?")
-                        .setPositiveButton("Yes", (dialog, which) -> {
-                            classAdapter.getSnapshots().getSnapshot(position).getReference().delete();
-                        })
-                        .setNegativeButton("No", (dialog, which) -> {
-                            classAdapter.notifyItemChanged(position);
-                        })
-                        .setOnCancelListener(dialog -> {
-                            classAdapter.notifyItemChanged(position);
-                        })
-                        .create()
-                        .show();
+                showDeleteConfirmation(position);
             }
         });
-        new ItemTouchHelper(swipeHelper).attachToRecyclerView(classesRecyclerView);
+
+        swipeHelper.setLeftAction(R.drawable.ic_edit, R.color.brand_primary);
+        swipeHelper.setRightAction(R.drawable.ic_delete, R.color.error);
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(swipeHelper);
+        itemTouchHelper.attachToRecyclerView(classesRecyclerView);
+    }
+
+    private void editClass(int position) {
+        Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
+        intent.putExtra("class_obj", classAdapter.getItem(position));
+        startActivity(intent);
+        classAdapter.notifyDataSetChanged();
+    }
+
+    private void showDeleteConfirmation(int position) {
+        classAdapter.notifyDataSetChanged();
+        new AlertDialog.Builder(ClassListActivity.this)
+                .setTitle("Delete Class")
+                .setMessage("Are you sure you want to permanently delete this class including nested lessons, students, etc?\nTHIS CAN NOT BE UNDONE!")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    classAdapter.getSnapshots().getSnapshot(position).getReference().delete();
+                    classAdapter.notifyDataSetChanged();
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> classAdapter.notifyDataSetChanged())
+                .setOnCancelListener(dialog -> classAdapter.notifyDataSetChanged())
+                .show();
     }
 
     private Query buildQuery() {
@@ -190,6 +199,14 @@ public class ClassListActivity extends BaseDrawerActivity implements FirestoreMa
     protected void onStart() {
         super.onStart();
         classesRecyclerView.post(() -> classAdapter.startListening());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (classAdapter != null) {
+            classAdapter.notifyDataSetChanged();
+        }
     }
 
     @Override
