@@ -430,17 +430,35 @@ public class FirestoreManager extends FirebaseComm {
 
     public void updateLessonLiveStatus(String classId, String lessonId, boolean isLive) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
-        ref.update("isLive", isLive)
-                .addOnSuccessListener(aVoid -> {
-                    if (dbResult != null) {
-                        dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_LIVE_STATUS);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_LIVE_STATUS);
-                    }
-                });
+        
+        if (isLive) {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("isLive", true);
+            updates.put("isArchived", false);
+            ref.update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        if (dbResult != null) {
+                            dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (dbResult != null) {
+                            dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                        }
+                    });
+        } else {
+            ref.update("isLive", false)
+                    .addOnSuccessListener(aVoid -> {
+                        if (dbResult != null) {
+                            dbResult.uploadResult(true, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (dbResult != null) {
+                            dbResult.uploadResult(false, DbOperation.UPDATE_LESSON_LIVE_STATUS);
+                        }
+                    });
+        }
     }
 
     public void listenForLiveLesson(String classID, LiveLessonListener listener) {

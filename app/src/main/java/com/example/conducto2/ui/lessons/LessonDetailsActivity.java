@@ -66,6 +66,17 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         if (adapter != null) {
             adapter.startListening();
         }
+        
+        // Refresh class data to ensure we have the latest isActive status
+        if (DataManager.getCurClass() != null) {
+            firestoreManager.getClassById(DataManager.getCurClass().getId(), updatedClass -> {
+                if (updatedClass != null) {
+                    DataManager.setCurClass(updatedClass);
+                    setupGoLiveButton(); // Re-check button state with fresh class data
+                }
+            });
+        }
+        
         populateLessonView(); // Refresh lesson details when returning from editing
     }
 
@@ -316,8 +327,9 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         firestoreManager.updateLessonLiveStatus(classId, lesson.getId(), true);
         firestoreManager.updateClassActivity(classId, true);
         
-        // Update local state to prevent multiple clicks if updateClassActivity is slow
+        // Update local state to maintain consistency across the app
         currentClass.setActive(true);
+        lesson.setLive(true);
     }
 
     @Override
