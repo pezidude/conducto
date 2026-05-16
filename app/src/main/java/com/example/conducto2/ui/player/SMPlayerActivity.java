@@ -2,6 +2,7 @@ package com.example.conducto2.ui.player;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +13,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.view.WindowManager;
 import android.os.Handler;
@@ -58,6 +60,14 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private DrawerLayout drawerLayout;
     private RecyclerView mixerRecyclerView;
     private MixerAdapter mixerAdapter;
+    private RecyclerView participantRecyclerView;
+    private ParticipantAdapter participantAdapter;
+    private List<User> participantUsers = new ArrayList<>();
+    private TextView tvCountdown;
+    private boolean isCountdownActive = false;
+    private String lastStatus = null;
+    private int lastMeasure = -1;
+    private int lastBpm = -1;
 
     private boolean isPlaying = false;
     private boolean isScoreLoaded = false;
@@ -78,6 +88,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
+        
+        // Lock screen orientation to portrait
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         
         // Keep the screen on while this activity is in the foreground
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -113,21 +126,36 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         btnEndLiveLesson = findViewById(R.id.btn_end_live_lesson);
         drawerLayout = findViewById(R.id.drawer_layout);
         mixerRecyclerView = findViewById(R.id.mixer_recycler_view);
+        participantRecyclerView = findViewById(R.id.participant_recycler_view);
+        tvCountdown = findViewById(R.id.tv_countdown);
 
         User user = DataManager.getUserInstance();
-        if (user != null && "teacher".equals(user.getUserType())) {
+        if (user != null) {
             btnOpenMixer.setVisibility(View.VISIBLE);
             btnOpenMixer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
             
-            mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+            // Set up common components
+            participantAdapter = new ParticipantAdapter(participantUsers, new ArrayList<>());
+            participantRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+            participantRecyclerView.setAdapter(participantAdapter);
+            loadParticipantUsers();
 
-            if (isLive) {
-                btnEndLiveLesson.setVisibility(View.VISIBLE);
-                btnEndLiveLesson.setOnClickListener(v -> showEndLiveLessonConfirmation());
+            if ("teacher".equals(user.getUserType())) {
+                // Teacher specific setup
+                mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+                
+                if (isLive) {
+                    btnEndLiveLesson.setVisibility(View.VISIBLE);
+                    btnEndLiveLesson.setOnClickListener(v -> showEndLiveLessonConfirmation());
+                }
+            } else {
+                // Student specific setup: Hide teacher-only views in the drawer
+                mixerRecyclerView.setVisibility(View.GONE);
+                findViewById(R.id.tv_mixer_header).setVisibility(View.GONE);
             }
         } else {
             btnOpenMixer.setVisibility(View.GONE);
-            // Disable drawer for students
+            // Disable drawer if no user
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         }
 
@@ -151,6 +179,26 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     }
 
+    private void loadParticipantUsers() {
+        Class curClass = DataManager.getCurClass();
+        if (curClass == null || curClass.getMembers() == null) return;
+
+        firestoreManager.getAllUsers(new ArrayList<>(), users -> {
+            if (users != null) {
+                participantUsers.clear();
+                for (User user : users) {
+                    // Include everyone who is a member of this class (including the teacher/owner)
+                    if (curClass.getMembers().contains(user.getEmail()) || user.getEmail().equals(curClass.getOwnerEmail())) {
+                        participantUsers.add(user);
+                    }
+                }
+                if (participantAdapter != null) {
+                    participantAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
     public void enablePlayback() {
         if (canControlPlayback) {
             btnTogglePlayback.setEnabled(true);
@@ -163,8 +211,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             @Override
             public void handleOnBackPressed() {
                 User user = DataManager.getUserInstance();
-                if (isLive && user != null && "teacher".equals(user.getUserType())) {
-                    showTeacherBackDialog();
+                if (isLive && user != null) {
+                    if ("teacher".equals(user.getUserType())) {
+                        showTeacherBackDialog();
+                    } else {
+                        showStudentBackDialog();
+                    }
                 } else {
                     setEnabled(false);
                     onBackPressed();
@@ -172,6 +224,15 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             }
         };
         getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void showStudentBackDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Leaving Live Lesson")
+                .setMessage("Are you sure you want to leave the live lesson?")
+                .setPositiveButton("Leave", (dialog, which) -> finish())
+                .setNegativeButton("Stay", null)
+                .show();
     }
 
     private void showTeacherBackDialog() {
@@ -188,7 +249,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                         finish();
                     }
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Stay", null)
                 .show();
     }
 
@@ -244,9 +305,17 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "File loaded.");
                 isScoreLoaded = true;
+
+                // Notify presence on join only when the page/score finished loading
+                User user = DataManager.getUserInstance();
+                Class cls = DataManager.getCurClass();
+                Lesson lesson = DataManager.getCurLesson();
+                if (isLive && user != null && cls != null && lesson != null) {
+                    firestoreManager.updateStudentPresence(cls.getId(), lesson.getId(), user.getEmail(), true);
+                }
+
                 sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
                 
-                User user = DataManager.getUserInstance();
                 if (isLive && user != null) {
                     if ("student".equals(user.getUserType())) {
                         // Mute students in live sessions
@@ -261,6 +330,13 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                     sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
                 } else {
                     sheetMusicView.evaluateJavascript("setClickToSeekEnabled(false);", null);
+                }
+
+                PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.playback_fragment_container);
+                if (playbackFragment != null) {
+                    // Start enabled if user has control, but executePlay will disable it if it starts playing immediately
+                    playbackFragment.setSpeedControlEnabled(canControlPlayback);
                 }
 
                 enablePlayback();
@@ -351,10 +427,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             @Override
             public void onPageFinished(android.webkit.WebView view, String url) {
                 super.onPageFinished(view, url);
-                runOnUiThread(() -> {
-                    Toast.makeText(SMPlayerActivity.this, "Page finished loading", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "Page finished loading");
-                });
+                Log.d(TAG, "Page finished loading");
+
             }
         });
         sheetMusicView.loadUrl("file:///android_asset/viewer.html");
@@ -379,7 +453,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private void loadFile(Uri uri) {
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
-        Toast.makeText(this, "Loading: " + fileName, Toast.LENGTH_SHORT).show();
         Log.d(TAG, "Loading: " + fileName);
 
         new Thread(() -> { // run in background so UI execution is not blocked
@@ -411,6 +484,15 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     protected void onPause() {
         super.onPause();
+        
+        cancelCountdown();
+        User user = DataManager.getUserInstance();
+        Class cls = DataManager.getCurClass();
+        Lesson lesson = DataManager.getCurLesson();
+        if (isLive && user != null && cls != null && lesson != null) {
+            firestoreManager.updateStudentPresence(cls.getId(), lesson.getId(), user.getEmail(), false);
+        }
+
         stopStatusListener();
         playbackHandler.removeCallbacksAndMessages(null);
         if (sheetMusicView != null) {
@@ -422,6 +504,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     protected void onResume() {
         super.onResume();
+        
         startStatusListener();
         if (sheetMusicView != null) {
             sheetMusicView.onResume();     // Wakes up WebView rendering
@@ -486,6 +569,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                             Long currentMeasure = snapshot.getLong("currentMeasure");
                             Long bpm = snapshot.getLong("bpm");
                             
+                            List<String> connectedStudents = (List<String>) snapshot.get("connectedStudents");
+                            if (participantAdapter != null) {
+                                runOnUiThread(() -> participantAdapter.setConnectedEmails(connectedStudents));
+                            }
+                            
                             handleStatusChange(status, 
                                     targetTimestamp != null ? targetTimestamp : 0,
                                     currentMeasure != null ? currentMeasure.intValue() : -1,
@@ -523,18 +611,36 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             return;
         }
 
+        // Only process if something meaningful changed (status, measure, or BPM)
+        // This prevents participant presence updates from resetting the countdown or playback
+        boolean statusChanged = status != null && !status.equals(lastStatus);
+        boolean measureChanged = currentMeasure >= 0 && currentMeasure != lastMeasure;
+        boolean bpmChanged = bpm > 0 && bpm != currentBPM;
+
+        if (!statusChanged && !measureChanged && !bpmChanged) {
+            return;
+        }
+
+        lastStatus = status;
+        lastMeasure = currentMeasure;
+
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
 
-        // Cancel any pending playback commands
-        playbackHandler.removeCallbacksAndMessages(null);
-
         // Sync BPM if provided
-        if (bpm > 0 && bpm != currentBPM) {
+        if (bpmChanged) {
             currentBPM = bpm;
             sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
             if (playbackFragment != null) playbackFragment.updateBpmUI(currentBPM);
         }
+
+        // If we are already playing/counting and only the BPM changed, we've updated it above.
+        // If the status or measure changed, we need to handle it.
+        if (!statusChanged && !measureChanged) return;
+
+        // Cancel any pending playback commands only if status or measure changes
+        playbackHandler.removeCallbacksAndMessages(null);
+        cancelCountdown();
 
         if (Lesson.STATUS_PLAYING.equals(status) && isFirstSync && isLive) {
             Log.d(TAG, "handleStatusChange: Joined mid-play. Waiting for next pause/jump.");
@@ -577,17 +683,83 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     private void executePlay() {
         isPlaying = true;
-        sheetMusicView.evaluateJavascript("play();", null);
+        sheetMusicView.evaluateJavascript("setClickToSeekEnabled(false);", null);
+
+        PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.playback_fragment_container);
+        if (playbackFragment != null) {
+            playbackFragment.setSpeedControlEnabled(false);
+        }
+
+        startCountdown(() -> {
+            sheetMusicView.evaluateJavascript("play();", null);
+        });
     }
 
     private void executePause() {
         isPlaying = false;
+        cancelCountdown();
+        if (canControlPlayback) {
+            sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
+        }
         sheetMusicView.evaluateJavascript("pause();", null);
+
+        PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.playback_fragment_container);
+        if (playbackFragment != null && canControlPlayback) {
+            playbackFragment.setSpeedControlEnabled(true);
+        }
     }
 
     private void executeStop() {
         isPlaying = false;
+        cancelCountdown();
+        if (canControlPlayback) {
+            sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
+        }
         sheetMusicView.evaluateJavascript("stop();", null);
+
+        PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.playback_fragment_container);
+        if (playbackFragment != null && canControlPlayback) {
+            playbackFragment.setSpeedControlEnabled(true);
+        }
+    }
+
+    private void startCountdown(Runnable onFinished) {
+        if (isCountdownActive) return;
+        isCountdownActive = true;
+        
+        tvCountdown.setVisibility(View.VISIBLE);
+        tvCountdown.setText("4");
+
+        long beatDuration = 60000 / Math.max(1, currentBPM);
+
+        playbackHandler.postDelayed(() -> {
+            if (!isCountdownActive) return;
+            tvCountdown.setText("3");
+            playbackHandler.postDelayed(() -> {
+                if (!isCountdownActive) return;
+                tvCountdown.setText("2");
+                playbackHandler.postDelayed(() -> {
+                    if (!isCountdownActive) return;
+                    tvCountdown.setText("1");
+                    playbackHandler.postDelayed(() -> {
+                        if (!isCountdownActive) return;
+                        tvCountdown.setVisibility(View.GONE);
+                        isCountdownActive = false;
+                        if (onFinished != null) onFinished.run();
+                    }, beatDuration);
+                }, beatDuration);
+            }, beatDuration);
+        }, beatDuration);
+    }
+
+    private void cancelCountdown() {
+        isCountdownActive = false;
+        if (tvCountdown != null) {
+            tvCountdown.setVisibility(View.GONE);
+        }
     }
 
     /**

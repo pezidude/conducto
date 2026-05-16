@@ -69,6 +69,21 @@
             android:visibility="gone"
             android:contentDescription="Open Mixer" />
 
+        <!-- Countdown Overlay -->
+        <TextView
+            android:id="@+id/tv_countdown"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textSize="120sp"
+            android:textStyle="bold"
+            android:textColor="@color/brand_accent"
+            android:background="#88000000"
+            android:visibility="gone"
+            android:elevation="20dp"
+            android:clickable="true"
+            android:focusable="true" />
+
     </FrameLayout>
 
     <!-- Mixer Drawer -->
@@ -84,6 +99,24 @@
         android:padding="16dp">
 
         <TextView
+            android:id="@+id/tv_participants_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Participants"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="8dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/participant_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:minHeight="80dp" />
+
+        <TextView
+            android:id="@+id/tv_mixer_header"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Instrument Mixer"

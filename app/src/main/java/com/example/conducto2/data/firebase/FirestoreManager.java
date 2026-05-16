@@ -371,6 +371,23 @@ public class FirestoreManager extends FirebaseComm {
         updateLessonStatus(classId, lessonId, status, 0, -1, -1);
     }
 
+    public void updateStudentPresence(String classId, String lessonId, String email, boolean isConnected) {
+        if (classId == null || lessonId == null || email == null) return;
+
+        DocumentReference lessonRef = FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId);
+
+        if (isConnected) {
+            lessonRef.update("connectedStudents", FieldValue.arrayUnion(email))
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Student connected: " + email))
+                    .addOnFailureListener(e -> Log.e(TAG, "Error updating student connection status", e));
+        } else {
+            lessonRef.update("connectedStudents", FieldValue.arrayRemove(email))
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Student disconnected: " + email))
+                    .addOnFailureListener(e -> Log.e(TAG, "Error updating student connection status", e));
+        }
+    }
+
     /**
      * Calculates the offset between the local device time and the Firebase server time.
      * This is used for synchronizing playback across multiple devices.
