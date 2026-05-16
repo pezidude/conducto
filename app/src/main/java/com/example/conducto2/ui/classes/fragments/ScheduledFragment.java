@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,11 +35,7 @@ public class ScheduledFragment extends Fragment {
 
     private RecyclerView lessonsRecyclerView;
     private LessonAdapter lessonAdapter;
-    private ImageButton filterByUserButton;
-    private ImageButton sortByDateButton;
     private FloatingActionButton addLessonFab;
-    private boolean isFilteredByUser = false;
-    private boolean isSortedByDate = false;
 
     @Nullable
     @Override
@@ -105,8 +100,6 @@ public class ScheduledFragment extends Fragment {
         lessonsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         lessonsRecyclerView.setItemAnimator(null);
 
-        sortByDateButton = view.findViewById(R.id.sort_by_date_button);
-        filterByUserButton = view.findViewById(R.id.filter_by_user_button);
         addLessonFab = view.findViewById(R.id.add_lesson_fab);
     }
 
@@ -120,15 +113,6 @@ public class ScheduledFragment extends Fragment {
     }
 
     private void setupListeners() {
-        sortByDateButton.setOnClickListener(v -> {
-            isSortedByDate = !isSortedByDate;
-            updateQuery();
-        });
-        filterByUserButton.setOnClickListener(v -> {
-            isFilteredByUser = !isFilteredByUser;
-            updateQuery();
-        });
-
         addLessonFab.setOnClickListener(v -> {
             DataManager.setCurLesson(null); // set an empty lesson to be edited
             Intent intent = new Intent(getContext(), LessonEditActivity.class);
@@ -169,24 +153,9 @@ public class ScheduledFragment extends Fragment {
     }
 
     private Query buildQuery() {
-        Query query = FirebaseFirestore.getInstance().collection("classes")
+        return FirebaseFirestore.getInstance().collection("classes")
                 .document(DataManager.getCurClass().getId()).collection("lessons")
                 .whereEqualTo("isArchived", false);
-        if (isFilteredByUser) {
-            // TODO: add filter query
-        }
-        if (isSortedByDate) {
-            query = query.orderBy("date", Query.Direction.DESCENDING);
-        }
-        return query;
-    }
-
-    private void updateQuery() {
-        Query query = buildQuery();
-        FirestoreRecyclerOptions<Lesson> options = new FirestoreRecyclerOptions.Builder<Lesson>()
-                .setQuery(query, Lesson.class)
-                .build();
-        lessonAdapter.updateOptions(options);
     }
 
     @Override

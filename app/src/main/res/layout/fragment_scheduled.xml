@@ -7,43 +7,6 @@
     android:orientation="vertical"
     android:background="@color/background_app">
 
-    <!-- Filter strip (moved from Activity) -->
-    <LinearLayout
-        android:id="@+id/filter_strip"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="@color/primary"
-        android:paddingStart="@dimen/screen_horizontal_margin"
-        android:paddingEnd="@dimen/screen_horizontal_margin"
-        android:paddingBottom="@dimen/spacing_base"
-        android:gravity="center_vertical">
-
-
-        <ImageButton
-            android:id="@+id/sort_by_date_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="@dimen/spacing_sm"
-            android:background="@drawable/bg_circle_highlight"
-            android:src="@drawable/ic_sort_arrows"
-            app:tint="@color/black"
-            android:contentDescription="Sort by Date"
-            android:padding="@dimen/spacing_sm"/>
-
-        <ImageButton
-            android:id="@+id/filter_by_user_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="@dimen/spacing_xs"
-            android:background="@drawable/bg_circle_highlight"
-            android:src="@drawable/ic_filter_list"
-            app:tint="@color/black"
-            android:contentDescription="Filter Lessons"
-            android:padding="@dimen/spacing_sm"/>
-
-    </LinearLayout>
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
