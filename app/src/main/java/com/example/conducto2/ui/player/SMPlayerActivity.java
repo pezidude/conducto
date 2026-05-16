@@ -19,6 +19,7 @@ import android.os.Looper;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -70,6 +71,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private boolean isLive = false;
     private boolean canControlPlayback = true;
+    private boolean isFirstSync = true;
     private long serverTimeOffset = 0;
 
     @Override
@@ -92,6 +94,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         initViews();
 
         setupWebView();
+
+        setupBackNavigation();
 
         // Log this access for the "Recent Lessons" feature
         Lesson curLesson = DataManager.getCurLesson();
@@ -154,6 +158,67 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    private void setupBackNavigation() {
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                User user = DataManager.getUserInstance();
+                if (isLive && user != null && "teacher".equals(user.getUserType())) {
+                    showTeacherBackDialog();
+                } else {
+                    setEnabled(false);
+                    onBackPressed();
+                }
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, callback);
+    }
+
+    private void showTeacherBackDialog() {
+        User user = DataManager.getUserInstance();
+        new AlertDialog.Builder(this)
+                .setTitle("Leaving Live Lesson")
+                .setMessage("Would you like to end the live lesson for all students or just leave?")
+                .setPositiveButton("End Lesson", (dialog, which) -> endLiveLesson())
+                .setNeutralButton("Just Leave", (dialog, which) -> {
+                    if (isPlaying) {
+                        isPlaying = false;
+                        pauseAndSync(this::finish);
+                    } else {
+                        finish();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void pauseAndSync(Runnable onComplete) {
+        User user = DataManager.getUserInstance();
+        if (isLive && user != null && "teacher".equals(user.getUserType())) {
+            sheetMusicView.evaluateJavascript("getCurrentMeasure();", value -> {
+                int measure = -1;
+                try {
+                    if (value != null && !value.equals("null")) {
+                        measure = Integer.parseInt(value);
+                    }
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Error parsing measure: " + value);
+                }
+                final int finalMeasure = measure;
+                executePause();
+                new Thread(() -> {
+                    updateFirestoreStatus(Lesson.STATUS_PAUSED, 0, finalMeasure, currentBPM);
+                    if (onComplete != null) {
+                        playbackHandler.post(onComplete);
+                    }
+                }).start();
+            });
+        } else {
+            executePause();
+            if (onComplete != null) onComplete.run();
+        }
+    }
+
     /**
      * A bridge class to handle callbacks from JavaScript.
      */
@@ -190,6 +255,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                         // Setup mixer for teacher
                         setupMixer(instrumentNamesJson);
                     }
+                }
+
+                if (canControlPlayback) {
+                    sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
+                } else {
+                    sheetMusicView.evaluateJavascript("setClickToSeekEnabled(false);", null);
                 }
 
                 enablePlayback();
@@ -465,12 +536,21 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             if (playbackFragment != null) playbackFragment.updateBpmUI(currentBPM);
         }
 
+        if (Lesson.STATUS_PLAYING.equals(status) && isFirstSync && isLive) {
+            Log.d(TAG, "handleStatusChange: Joined mid-play. Waiting for next pause/jump.");
+            isFirstSync = false;
+            if (playbackFragment != null) playbackFragment.setPlaying(false);
+            return;
+        }
+
         // Sync playback measure if provided
         if (currentMeasure >= 0) {
             sheetMusicView.evaluateJavascript("jumpToMeasure(" + currentMeasure + ");", null);
         }
 
         if (Lesson.STATUS_PLAYING.equals(status)) {
+            isFirstSync = false;
+
             if (isLive && targetTimestamp > 0) {
                 long currentServerTime = System.currentTimeMillis() + serverTimeOffset;
                 long delay = 1000 - (currentServerTime - targetTimestamp);
@@ -485,9 +565,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             }
             if (playbackFragment != null) playbackFragment.setPlaying(true);
         } else if (Lesson.STATUS_PAUSED.equals(status)) {
+            isFirstSync = false;
             executePause();
             if (playbackFragment != null) playbackFragment.setPlaying(false);
         } else if (Lesson.STATUS_STOPPED.equals(status)) {
+            isFirstSync = false;
             executeStop();
             if (playbackFragment != null) playbackFragment.setPlaying(false);
         }
@@ -541,20 +623,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 updateFirestoreStatus(status, targetTimestamp, -1, currentBPM);
                 // Local execution will be handled by handleStatusChange when the Firestore update cycles back
             } else {
-                // Pause - get current measure first to resync students
-                sheetMusicView.evaluateJavascript("getCurrentMeasure();", value -> {
-                    int measure = -1;
-                    try {
-                        if (value != null && !value.equals("null")) {
-                            measure = Integer.parseInt(value);
-                        }
-                    } catch (NumberFormatException e) {
-                        Log.e(TAG, "Error parsing measure: " + value);
-                    }
-                    final int finalMeasure = measure;
-                    executePause();
-                    new Thread(() -> updateFirestoreStatus(Lesson.STATUS_PAUSED, 0, finalMeasure, currentBPM)).start();
-                });
+                pauseAndSync(null);
             }
         } else {
             // Local execution for immediate feedback

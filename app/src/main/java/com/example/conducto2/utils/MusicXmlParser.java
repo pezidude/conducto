@@ -120,6 +120,7 @@ public class MusicXmlParser {
     }
 
     private static void filterVoicesInPart(Element part, Set<String> selectedVoices) {
+        Set<String> usedStaffs = new HashSet<>();
         NodeList measures = part.getElementsByTagName("measure");
         for (int i = 0; i < measures.getLength(); i++) {
             Element measure = (Element) measures.item(i);
@@ -136,16 +137,82 @@ public class MusicXmlParser {
                     }
                     if (!selectedVoices.contains(voice)) {
                         toRemove.add(note);
+                    } else {
+                        // Track used staffs
+                        NodeList staffNodes = note.getElementsByTagName("staff");
+                        if (staffNodes.getLength() > 0) {
+                            usedStaffs.add(staffNodes.item(0).getTextContent());
+                        }
                     }
                 }
-                // Optional: handle backup/forward? 
-                // For now, let's keep them and see if OSMD handles "empty" measure segments.
-                // If we remove all notes of a voice, the backups/forwards associated with it might cause issues.
-                // But MusicXML is quite forgiving if notes are missing.
             }
             for (Node n : toRemove) {
                 measure.removeChild(n);
             }
+        }
+
+        // Cleanup empty staffs if possible
+        if (!usedStaffs.isEmpty()) {
+            cleanupStaffs(part, usedStaffs);
+        }
+    }
+
+    private static void cleanupStaffs(Element part, Set<String> usedStaffs) {
+        // If all staffs are used, nothing to do
+        // (This is a simplified check, ideally we'd check the 'staves' attribute)
+        
+        NodeList stavesNodes = part.getElementsByTagName("staves");
+        if (stavesNodes.getLength() > 0) {
+            int originalStaves = 1;
+            try {
+                originalStaves = Integer.parseInt(stavesNodes.item(0).getTextContent());
+            } catch (Exception e) {}
+
+            if (usedStaffs.size() < originalStaves) {
+                // Update staves count
+                for (int i = 0; i < stavesNodes.getLength(); i++) {
+                    stavesNodes.item(i).setTextContent(String.valueOf(usedStaffs.size()));
+                }
+
+                // If only one staff remains, we can often just remove the <staff> element from notes
+                // and remove extra <clef> elements.
+                if (usedStaffs.size() == 1) {
+                    String remainingStaff = usedStaffs.iterator().next();
+                    removeStaffNumbering(part, remainingStaff);
+                }
+            }
+        }
+    }
+
+    private static void removeStaffNumbering(Element part, String remainingStaff) {
+        // Remove <staff> element from notes
+        NodeList notes = part.getElementsByTagName("note");
+        for (int i = 0; i < notes.getLength(); i++) {
+            Element note = (Element) notes.item(i);
+            NodeList staffNodes = note.getElementsByTagName("staff");
+            for (int j = 0; j < staffNodes.getLength(); j++) {
+                note.removeChild(staffNodes.item(j));
+            }
+        }
+
+        // Keep only the clef for the remaining staff
+        NodeList clefs = part.getElementsByTagName("clef");
+        List<Node> clefsToRemove = new ArrayList<>();
+        for (int i = 0; i < clefs.getLength(); i++) {
+            Element clef = (Element) clefs.item(i);
+            String number = clef.getAttribute("number");
+            if (number != null && !number.isEmpty() && !number.equals(remainingStaff)) {
+                clefsToRemove.add(clef);
+            }
+        }
+        for (Node n : clefsToRemove) {
+            n.getParentNode().removeChild(n);
+        }
+        
+        // Remove number attribute from remaining clef if it's now the only one
+        NodeList remainingClefs = part.getElementsByTagName("clef");
+        if (remainingClefs.getLength() == 1) {
+            ((Element)remainingClefs.item(0)).removeAttribute("number");
         }
     }
 
