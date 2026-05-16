@@ -1,13 +1,12 @@
 package com.example.conducto2.data.model;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class Role {
     private String id;
     private String name;
-    private Map<String, List<String>> selectedVoicesPerPart = new HashMap<>();
+    private List<String> selectedPartIds = new ArrayList<>();
 
     public Role() {} // Required for Firestore
 
@@ -31,11 +30,11 @@ public class Role {
         this.name = name;
     }
 
-    public Map<String, List<String>> getSelectedVoicesPerPart() {
-        return selectedVoicesPerPart;
+    public List<String> getSelectedPartIds() {
+        return selectedPartIds;
     }
 
-    public void setSelectedVoicesPerPart(Map<String, List<String>> selectedVoicesPerPart) {
-        this.selectedVoicesPerPart = selectedVoicesPerPart;
+    public void setSelectedPartIds(List<String> selectedPartIds) {
+        this.selectedPartIds = selectedPartIds;
     }
 }

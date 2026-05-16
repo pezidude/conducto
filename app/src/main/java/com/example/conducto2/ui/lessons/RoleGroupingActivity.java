@@ -80,11 +80,8 @@ public class RoleGroupingActivity extends AppCompatActivity {
             if (queryDocumentSnapshots.isEmpty()) {
                 Role partitura = new Role("Partitura");
                 if (partInfoMap != null) {
-                    Map<String, List<String>> allVoices = new HashMap<>();
-                    for (MusicXmlParser.PartInfo info : partInfoMap.values()) {
-                        allVoices.put(info.id, new ArrayList<>(info.voices));
-                    }
-                    partitura.setSelectedVoicesPerPart(allVoices);
+                    List<String> allParts = new ArrayList<>(partInfoMap.keySet());
+                    partitura.setSelectedPartIds(allParts);
                 }
                 firestoreManager.addDraftRole(classId, lessonId, partitura);
             }
@@ -114,7 +111,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
                 .setQuery(query, Role.class)
                 .build();
 
-        roleAdapter = new RoleAdapter(options, this::showVoiceSelectionDialog, this::showEditNameDialog, this::showDeleteConfirmationDialog);
+        roleAdapter = new RoleAdapter(options, this::showPartSelectionDialog, this::showEditNameDialog, this::showDeleteConfirmationDialog);
         rvRoles.setAdapter(roleAdapter);
 
         btnAddRole.setOnClickListener(v -> {
@@ -215,54 +212,42 @@ public class RoleGroupingActivity extends AppCompatActivity {
         }).start();
     }
 
-    private void showVoiceSelectionDialog(Role role, String docId) {
+    private void showPartSelectionDialog(Role role, String docId) {
         if (partInfoMap == null) return;
 
-        List<String> voiceLabels = new ArrayList<>();
+        List<String> partNames = new ArrayList<>();
         List<String> partIds = new ArrayList<>();
-        List<String> voices = new ArrayList<>();
 
         for (MusicXmlParser.PartInfo part : partInfoMap.values()) {
-            for (String voice : part.voices) {
-                voiceLabels.add("Part: " + part.name + " - Voice: " + voice);
-                partIds.add(part.id);
-                voices.add(voice);
-            }
+            partNames.add(part.name + " (" + part.id + ")");
+            partIds.add(part.id);
         }
 
-        String[] labelsArray = voiceLabels.toArray(new String[0]);
-        boolean[] checkedItems = new boolean[voiceLabels.size()];
+        String[] labelsArray = partNames.toArray(new String[0]);
+        boolean[] checkedItems = new boolean[partNames.size()];
 
-        Map<String, List<String>> selectedVoices = role.getSelectedVoicesPerPart();
-        for (int i = 0; i < voiceLabels.size(); i++) {
-            String pId = partIds.get(i);
-            String v = voices.get(i);
-            if (selectedVoices != null && selectedVoices.containsKey(pId) &&
-                selectedVoices.get(pId).contains(v)) {
+        List<String> selectedParts = role.getSelectedPartIds();
+        for (int i = 0; i < partIds.size(); i++) {
+            if (selectedParts != null && selectedParts.contains(partIds.get(i))) {
                 checkedItems[i] = true;
             }
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select Voices for " + role.getName());
+        builder.setTitle("Select Parts for " + role.getName());
         builder.setMultiChoiceItems(labelsArray, checkedItems, (dialog, which, isChecked) -> {
             checkedItems[which] = isChecked;
         });
 
         builder.setPositiveButton("OK", (dialog, which) -> {
-            Map<String, List<String>> newSelection = new HashMap<>();
+            List<String> newSelection = new ArrayList<>();
             for (int i = 0; i < checkedItems.length; i++) {
                 if (checkedItems[i]) {
-                    String pId = partIds.get(i);
-                    String v = voices.get(i);
-                    if (!newSelection.containsKey(pId)) {
-                        newSelection.put(pId, new ArrayList<>());
-                    }
-                    newSelection.get(pId).add(v);
+                    newSelection.add(partIds.get(i));
                 }
             }
             Map<String, Object> updates = new HashMap<>();
-            updates.put("selectedVoicesPerPart", newSelection);
+            updates.put("selectedPartIds", newSelection);
             firestoreManager.updateDraftRole(classId, lessonId, docId, updates);
         });
         builder.setNegativeButton("Cancel", null);
@@ -280,15 +265,9 @@ public class RoleGroupingActivity extends AppCompatActivity {
             try {
                 for (int i = 0; i < roleAdapter.getItemCount(); i++) {
                     Role role = roleAdapter.getItem(i);
-                    if (role.getSelectedVoicesPerPart() == null || role.getSelectedVoicesPerPart().isEmpty()) continue;
+                    if (role.getSelectedPartIds() == null || role.getSelectedPartIds().isEmpty()) continue;
 
-                    // Convert List back to Set for filterVoices
-                    Map<String, Set<String>> voicesSetMap = new HashMap<>();
-                    for (Map.Entry<String, List<String>> entry : role.getSelectedVoicesPerPart().entrySet()) {
-                        voicesSetMap.put(entry.getKey(), new HashSet<>(entry.getValue()));
-                    }
-
-                    Document filteredDoc = MusicXmlParser.filterVoices(originalDoc, voicesSetMap);
+                    Document filteredDoc = MusicXmlParser.filterParts(originalDoc, role.getSelectedPartIds());
                     String xmlString = MusicXmlParser.documentToString(filteredDoc);
                     uploadRoleFile(role.getName(), xmlString);
                 }

@@ -22,12 +22,12 @@ import java.util.Map;
 
 public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.RoleViewHolder> {
 
-    private OnSelectVoicesClickListener listener;
+    private OnSelectPartsClickListener listener;
     private OnRoleNameClickListener nameListener;
     private OnDeleteRoleClickListener deleteListener;
 
-    public interface OnSelectVoicesClickListener {
-        void onSelectVoicesClick(Role role, String docId);
+    public interface OnSelectPartsClickListener {
+        void onSelectPartsClick(Role role, String docId);
     }
 
     public interface OnRoleNameClickListener {
@@ -39,7 +39,7 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
     }
 
     public RoleAdapter(@NonNull FirestoreRecyclerOptions<Role> options, 
-                       OnSelectVoicesClickListener listener,
+                       OnSelectPartsClickListener listener,
                        OnRoleNameClickListener nameListener,
                        OnDeleteRoleClickListener deleteListener) {
         super(options);
@@ -79,14 +79,14 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
         });
 
         StringBuilder sb = new StringBuilder();
-        if (role.getSelectedVoicesPerPart() != null) {
-            for (Map.Entry<String, List<String>> entry : role.getSelectedVoicesPerPart().entrySet()) {
-                sb.append("Part ").append(entry.getKey()).append(": Voices ").append(entry.getValue().toString()).append("\n");
+        if (role.getSelectedPartIds() != null) {
+            for (String partId : role.getSelectedPartIds()) {
+                sb.append("Part: ").append(partId).append("\n");
             }
         }
-        holder.tvSelectedVoices.setText(sb.length() > 0 ? sb.toString().trim() : "No voices selected");
+        holder.tvSelectedParts.setText(sb.length() > 0 ? sb.toString().trim() : "No parts selected");
 
-        holder.btnSelectVoices.setOnClickListener(v -> listener.onSelectVoicesClick(role, docId));
+        holder.btnSelectParts.setOnClickListener(v -> listener.onSelectPartsClick(role, docId));
         holder.btnDeleteRole.setOnClickListener(v -> {
             if (deleteListener != null) {
                 deleteListener.onDeleteRoleClick(docId);
@@ -96,8 +96,8 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
 
     static class RoleViewHolder extends RecyclerView.ViewHolder {
         EditText etRoleName;
-        TextView tvSelectedVoices;
-        Button btnSelectVoices;
+        TextView tvSelectedParts;
+        Button btnSelectParts;
         ImageButton btnDeleteRole;
         TextWatcher nameWatcher; // Kept for class compatibility if needed elsewhere
         String currentDocId;
@@ -106,8 +106,8 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
         public RoleViewHolder(@NonNull View itemView) {
             super(itemView);
             etRoleName = itemView.findViewById(R.id.et_role_name);
-            tvSelectedVoices = itemView.findViewById(R.id.tv_selected_voices);
-            btnSelectVoices = itemView.findViewById(R.id.btn_select_voices);
+            tvSelectedParts = itemView.findViewById(R.id.tv_selected_voices); // Using existing ID
+            btnSelectParts = itemView.findViewById(R.id.btn_select_voices); // Using existing ID
             btnDeleteRole = itemView.findViewById(R.id.btn_delete_role);
         }
     }

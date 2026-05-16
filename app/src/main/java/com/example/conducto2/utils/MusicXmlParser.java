@@ -73,6 +73,53 @@ public class MusicXmlParser {
         return partMap;
     }
 
+    public static Document filterParts(Document originalDoc, List<String> selectedPartIds) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document newDoc = builder.newDocument();
+
+        if (originalDoc.getDocumentElement() != null) {
+            Node importedRoot = newDoc.importNode(originalDoc.getDocumentElement(), true);
+            newDoc.appendChild(importedRoot);
+        }
+
+        Set<String> selectedSet = new HashSet<>(selectedPartIds);
+
+        // Remove parts that are not selected from part-list
+        NodeList partListNodes = newDoc.getElementsByTagName("score-part");
+        List<Node> partsToRemoveFromList = new ArrayList<>();
+        for (int i = 0; i < partListNodes.getLength(); i++) {
+            Element part = (Element) partListNodes.item(i);
+            String id = part.getAttribute("id");
+            if (!selectedSet.contains(id)) {
+                partsToRemoveFromList.add(part);
+            }
+        }
+        for (Node n : partsToRemoveFromList) {
+            if (n.getParentNode() != null) {
+                n.getParentNode().removeChild(n);
+            }
+        }
+
+        // Remove actual part elements
+        NodeList partNodes = newDoc.getElementsByTagName("part");
+        List<Node> partsToRemove = new ArrayList<>();
+        for (int i = 0; i < partNodes.getLength(); i++) {
+            Element part = (Element) partNodes.item(i);
+            String id = part.getAttribute("id");
+            if (!selectedSet.contains(id)) {
+                partsToRemove.add(part);
+            }
+        }
+        for (Node n : partsToRemove) {
+            if (n.getParentNode() != null) {
+                n.getParentNode().removeChild(n);
+            }
+        }
+
+        return newDoc;
+    }
+
     public static Document filterVoices(Document originalDoc, Map<String, Set<String>> selectedVoicesPerPart) throws Exception {
         // On Android, cloning the Document node (type 9) is often not supported.
         // Instead, we create a new document and import the document element.
