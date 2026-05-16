@@ -475,7 +475,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             return;
         }
 
-        List<String> availableStudents = new ArrayList<>();
         final Map<String, List<String>> fileMapping = currentLesson.getFileMapping() != null ? currentLesson.getFileMapping() : new HashMap<>();
 
         // Get students assigned for this file
@@ -492,52 +491,36 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirestoreM
             }
         }
 
-        // Populate available students: lesson attendees not assigned to other files
-        for (String studentEmail : classAttendees) {
-            if (!studentsAssignedToOtherFiles.contains(studentEmail)) {
-                availableStudents.add(studentEmail);
+        // Filter allUsers to get only class attendees not assigned elsewhere
+        List<User> availableStudentObjects = new ArrayList<>();
+        for (User user : allUsers) {
+            if (classAttendees.contains(user.getEmail()) && !studentsAssignedToOtherFiles.contains(user.getEmail())) {
+                availableStudentObjects.add(user);
             }
         }
 
-        String[] studentDisplayInfo = new String[availableStudents.size()];
-        boolean[] checkedItems = new boolean[availableStudents.size()];
-        for (int i = 0; i < availableStudents.size(); i++) {
-            String studentEmail = availableStudents.get(i);
-            // Find user object to display full name
-            String displayName = studentEmail; // default to email
-            for (User user : allUsers) {
-                if (user.getEmail().equals(studentEmail)) {
-                    displayName = user.getFname() + " " + user.getLname();
-                    break;
-                }
-            }
-            studentDisplayInfo[i] = displayName;
-            if (assignedStudentsForThisFile.contains(studentEmail)) {
-                checkedItems[i] = true;
-            }
+        if (availableStudentObjects.isEmpty()) {
+            Toast.makeText(this, "No available students to assign.", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Assign " + musicFile.getTitle() + " to:");
-        List<String> finalAssignedStudentsForThisFile = new ArrayList<>(assignedStudentsForThisFile);
-        builder.setMultiChoiceItems(studentDisplayInfo, checkedItems, (dialog, which, isChecked) -> {
-            String selectedEmail = availableStudents.get(which);
-            if (isChecked) {
-                if (!finalAssignedStudentsForThisFile.contains(selectedEmail)) {
-                    finalAssignedStudentsForThisFile.add(selectedEmail);
-                }
-            } else {
-                finalAssignedStudentsForThisFile.remove(selectedEmail);
-            }
-        });
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_student_assignment, null);
+        RecyclerView rvStudents = dialogView.findViewById(R.id.rv_students);
+        rvStudents.setLayoutManager(new LinearLayoutManager(this));
+        
+        StudentAssignmentAdapter adapter = new StudentAssignmentAdapter(availableStudentObjects, assignedStudentsForThisFile);
+        rvStudents.setAdapter(adapter);
 
-        builder.setPositiveButton("OK", (dialog, which) -> {
-            fileMapping.put(musicFile.getUrl(), finalAssignedStudentsForThisFile);
-            currentLesson.setFileMapping(fileMapping);
-            Toast.makeText(this, "Assignments updated.", Toast.LENGTH_SHORT).show();
-        });
-        builder.setNegativeButton("Cancel", null);
-        builder.create().show();
+        new AlertDialog.Builder(this)
+                .setTitle("Assign " + musicFile.getTitle() + " to:")
+                .setView(dialogView)
+                .setPositiveButton("OK", (dialog, which) -> {
+                    fileMapping.put(musicFile.getUrl(), adapter.getSelectedEmails());
+                    currentLesson.setFileMapping(fileMapping);
+                    Toast.makeText(this, "Assignments updated.", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override
