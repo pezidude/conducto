@@ -178,7 +178,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             adapter.stopListening();
         }
 
-        adapter = new MusicXmlAdapter(options, false) {
+        adapter = new MusicXmlAdapter(options, false, true) {
             @Override
             public void onDataChanged() {
                 super.onDataChanged();
@@ -266,23 +266,21 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         boolean isTeacher = user != null && "teacher".equals(user.getUserType());
         boolean isLive = lesson != null && lesson.isLive();
         
-        if (isTeacher || isLive) {
+        if (isLive) {
             btnGoLive.setVisibility(View.VISIBLE);
-            if (isLive) {
-                btnGoLive.setText("Live");
-                btnGoLive.setEnabled(true);
-                btnGoLive.setOnClickListener(v -> {
-                    Intent intent = new Intent(this, ClassActivity.class);
-                    intent.putExtra("target_tab", 2); // Index of LiveFragment in ClassActivity
-                    intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    startActivity(intent);
-                });
-            } else {
-                // Only teacher reaches here when isLive is false
-                btnGoLive.setText("Go Live");
-                btnGoLive.setEnabled(true);
-                btnGoLive.setOnClickListener(v -> goLive());
-            }
+            btnGoLive.setText("Live");
+            btnGoLive.setEnabled(true);
+            btnGoLive.setOnClickListener(v -> {
+                Intent intent = new Intent(this, ClassActivity.class);
+                intent.putExtra("target_tab", 2); // Index of LiveFragment in ClassActivity
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(intent);
+            });
+        } else if (isTeacher) {
+            btnGoLive.setVisibility(View.VISIBLE);
+            btnGoLive.setText("Go Live");
+            btnGoLive.setEnabled(true);
+            btnGoLive.setOnClickListener(v -> goLive());
         } else {
             btnGoLive.setVisibility(View.GONE);
         }

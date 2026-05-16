@@ -31,6 +31,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     private OnRenameListener renameListener;
     private OnAiInfoClickListener aiInfoListener;
     private final boolean showButtons;
+    private final boolean showAiButton;
     private List<String> pendingDeletions = new ArrayList<>();
 
     public interface OnAssignButtonClickListener {
@@ -56,12 +57,24 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     /**
      * Constructor for MusicXmlAdapter.
      *
-     * @param options     FirestoreRecyclerOptions for MusicFile.
-     * @param showButtons Whether to show Assign and Delete buttons (e.g., true for teachers in edit mode).
+     * @param options      FirestoreRecyclerOptions for MusicFile.
+     * @param showButtons  Whether to show Assign and Delete buttons (e.g., true for teachers in edit mode).
+     * @param showAiButton Whether to show the AI Info button.
      */
-    public MusicXmlAdapter(@NonNull FirestoreRecyclerOptions<MusicFile> options, boolean showButtons) {
+    public MusicXmlAdapter(@NonNull FirestoreRecyclerOptions<MusicFile> options, boolean showButtons, boolean showAiButton) {
         super(options);
         this.showButtons = showButtons;
+        this.showAiButton = showAiButton;
+    }
+
+    /**
+     * Constructor for MusicXmlAdapter with default showAiButton = true.
+     *
+     * @param options     FirestoreRecyclerOptions for MusicFile.
+     * @param showButtons Whether to show Assign and Delete buttons.
+     */
+    public MusicXmlAdapter(@NonNull FirestoreRecyclerOptions<MusicFile> options, boolean showButtons) {
+        this(options, showButtons, true);
     }
 
     public void setOnAssignButtonClickListener(OnAssignButtonClickListener listener) {
@@ -115,6 +128,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
             holder.aiInfoButton.setEnabled(true);
         }
 
+        holder.aiInfoButton.setVisibility(showAiButton ? View.VISIBLE : View.GONE);
         holder.aiInfoButton.setOnClickListener(v -> {
             if (aiInfoListener != null) {
                 aiInfoListener.onAiInfoClick(model);

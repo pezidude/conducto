@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
@@ -74,6 +75,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     private boolean shouldFinishOnTasksEnd = false;
     private final List<String> pendingDeletions = new ArrayList<>();
     private final List<String> pendingUrlDeletions = new ArrayList<>();
+    private boolean originalIsArchived = false;
+    private Map<String, List<String>> originalFileMapping = new HashMap<>();
 
     private final ActivityResultLauncher<Intent> musicXmlLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -125,6 +128,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         if (DataManager.getCurLesson() != null) {
             currentLesson = DataManager.getCurLesson();
             isEditMode = true;
+            originalIsArchived = currentLesson.isArchived();
+            originalFileMapping = currentLesson.getFileMapping() != null ? new HashMap<>(currentLesson.getFileMapping()) : new HashMap<>();
             if (currentLesson.getDate() != null) {
                 calendar.setTime(currentLesson.getDate());
             }
@@ -134,6 +139,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             isEditMode = false;
             saveLessonButton.setText(R.string.btn_save_lesson);
             currentLesson = new Lesson();
+            originalIsArchived = false;
+            originalFileMapping = new HashMap<>();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
         }
 
@@ -146,8 +153,70 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         setupRecyclerView();
         setupListeners();
         
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleExit();
+            }
+        });
+
         startTask(getString(R.string.status_loading));
         firestoreManager.getAllUsers(allUsers, users -> endTask());
+    }
+
+    private void handleExit() {
+        if (hasUnsavedChanges()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Unsaved Changes")
+                    .setMessage("You have unsaved changes. Do you want to save them before exiting?")
+                    .setPositiveButton("Save", (dialog, which) -> {
+                        shouldFinishOnTasksEnd = true;
+                        saveLesson();
+                    })
+                    .setNegativeButton("Discard", (dialog, which) -> finish())
+                    .setNeutralButton("Cancel", null)
+                    .show();
+        } else {
+            finish();
+        }
+    }
+
+    private boolean hasUnsavedChanges() {
+        if (currentLesson == null) return false;
+
+        String currentTitle = lessonTitleInput.getText().toString().trim();
+        String currentInfo = lessonInfoInput.getText().toString().trim();
+        String currentGenre = genreSelector.getText().toString().trim();
+
+        String originalTitle = isEditMode && currentLesson.getTitle() != null ? currentLesson.getTitle() : "";
+        String originalInfo = isEditMode && currentLesson.getInfo() != null ? currentLesson.getInfo() : "";
+        String originalGenre = isEditMode && currentLesson.getGenreLabel() != null ? currentLesson.getGenreLabel() : "";
+
+        if (!currentTitle.equals(originalTitle)) return true;
+        if (!currentInfo.equals(originalInfo)) return true;
+        if (!currentGenre.equals(originalGenre)) return true;
+
+        if (isEditMode && currentLesson.getDate() != null) {
+            Calendar originalCal = Calendar.getInstance();
+            originalCal.setTime(currentLesson.getDate());
+            if (originalCal.get(Calendar.YEAR) != calendar.get(Calendar.YEAR) ||
+                originalCal.get(Calendar.MONTH) != calendar.get(Calendar.MONTH) ||
+                originalCal.get(Calendar.DAY_OF_MONTH) != calendar.get(Calendar.DAY_OF_MONTH) ||
+                originalCal.get(Calendar.HOUR_OF_DAY) != calendar.get(Calendar.HOUR_OF_DAY) ||
+                originalCal.get(Calendar.MINUTE) != calendar.get(Calendar.MINUTE)) {
+                return true;
+            }
+        } else if (!isEditMode) {
+            if (!currentTitle.isEmpty() || !currentInfo.isEmpty() || !currentGenre.isEmpty()) return true;
+        }
+
+        if (currentLesson.isArchived() != originalIsArchived) return true;
+
+        Map<String, List<String>> currentFileMapping = currentLesson.getFileMapping();
+        if (currentFileMapping == null) currentFileMapping = new HashMap<>();
+        if (!currentFileMapping.equals(originalFileMapping)) return true;
+
+        return !pendingDeletions.isEmpty();
     }
 
     @Override
@@ -205,7 +274,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                     .setQuery(query, MusicFile.class)
                     .build();
 
-            musicXmlAdapter = new MusicXmlAdapter(options, true);
+            musicXmlAdapter = new MusicXmlAdapter(options, true, false);
             musicXmlAdapter.setPendingDeletions(pendingDeletions);
             musicXmlAdapter.setOnAssignButtonClickListener(this);
             musicXmlAdapter.setOnDeleteButtonClickListener(this);
@@ -376,7 +445,10 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     @Override
     public boolean onOptionsItemSelected(@androidx.annotation.NonNull android.view.MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_archive) {
+        if (id == android.R.id.home) {
+            handleExit();
+            return true;
+        } else if (id == R.id.action_archive) {
             archiveLesson();
             return true;
         } else if (id == R.id.action_delete) {
@@ -446,16 +518,23 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         if (success) {
             if (operation == FirebaseComm.DbOperation.INSERT_LESSON || operation == FirebaseComm.DbOperation.UPDATE_LESSON) {
                 hideError();
+
+                // Update original state to reflect saved data
+                originalIsArchived = currentLesson.isArchived();
+                originalFileMapping = currentLesson.getFileMapping() != null ? new HashMap<>(currentLesson.getFileMapping()) : new HashMap<>();
+
                 if (!isEditMode) {
                     isEditMode = true;
                     saveLessonButton.setText(R.string.btn_save);
                     // Also need to update the query in adapter since currentLesson.getId() is now available
                     setupRecyclerView();
                 } else {
+                    // If we were already in edit mode, we usually want to exit after saving
                     shouldFinishOnTasksEnd = true;
-                    if (pendingTasks == 0) {
-                        finish();
-                    }
+                }
+
+                if (shouldFinishOnTasksEnd && pendingTasks == 0) {
+                    finish();
                 }
             }
         }
