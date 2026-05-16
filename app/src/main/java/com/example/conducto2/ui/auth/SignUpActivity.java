@@ -30,8 +30,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     TextView tvError, tvGoToSignIn;
     EditText etEmail, etPassword, etConfirmPassword;
     EditText etFname, etLname, etUname;
-    MaterialButtonToggleGroup rgUserType;
-    // new variant of RadioGroup
+    MaterialButtonToggleGroup rgUserType;    // new variant of RadioGroup
 
 
     Button btnSignUp;

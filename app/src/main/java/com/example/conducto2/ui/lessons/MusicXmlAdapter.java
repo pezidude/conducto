@@ -29,6 +29,7 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
     private OnItemClickListener itemClickListener;
     private OnDeleteButtonClickListener deleteListener;
     private OnRenameListener renameListener;
+    private OnAiInfoClickListener aiInfoListener;
     private final boolean showButtons;
     private List<String> pendingDeletions = new ArrayList<>();
 
@@ -46,6 +47,10 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
 
     public interface OnRenameListener {
         void onRename(MusicFile musicFile, String documentId);
+    }
+
+    public interface OnAiInfoClickListener {
+        void onAiInfoClick(MusicFile musicFile);
     }
 
     /**
@@ -75,6 +80,10 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         this.renameListener = listener;
     }
 
+    public void setOnAiInfoClickListener(OnAiInfoClickListener listener) {
+        this.aiInfoListener = listener;
+    }
+
     public void setPendingDeletions(List<String> pendingDeletions) {
         this.pendingDeletions = pendingDeletions;
         notifyDataSetChanged();
@@ -98,11 +107,19 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
             holder.itemView.setAlpha(0.4f);
             holder.fileNameTextView.setPaintFlags(holder.fileNameTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             holder.assignButton.setEnabled(false);
+            holder.aiInfoButton.setEnabled(false);
         } else {
             holder.itemView.setAlpha(1.0f);
             holder.fileNameTextView.setPaintFlags(holder.fileNameTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             holder.assignButton.setEnabled(true);
+            holder.aiInfoButton.setEnabled(true);
         }
+
+        holder.aiInfoButton.setOnClickListener(v -> {
+            if (aiInfoListener != null) {
+                aiInfoListener.onAiInfoClick(model);
+            }
+        });
 
         if (showButtons) {
             holder.assignButton.setVisibility(View.VISIBLE);
@@ -141,12 +158,14 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         TextView fileNameTextView;
         Button assignButton;
         ImageButton deleteButton;
+        ImageButton aiInfoButton;
 
         ViewHolder(View view) {
             super(view);
             fileNameTextView = view.findViewById(R.id.music_xml_file_name);
             assignButton = view.findViewById(R.id.assign_button);
             deleteButton = view.findViewById(R.id.delete_button);
+            aiInfoButton = view.findViewById(R.id.ai_info_button);
         }
     }
 }

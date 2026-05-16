@@ -38,6 +38,7 @@ public class PlaybackFragment extends Fragment {
 
     private PlaybackControlsListener mListener;
     private ImageButton playPauseButton;
+    private Slider speedSlider;
     private boolean isPlaying = false;
 
     public PlaybackFragment() {
@@ -66,7 +67,7 @@ public class PlaybackFragment extends Fragment {
             }
         });
 
-        Slider speedSlider = view.findViewById(R.id.speed_slider);
+        speedSlider = view.findViewById(R.id.speed_slider);
         speedSlider.addOnChangeListener((slider, value, fromUser) -> {
             if (fromUser && mListener != null) {
                 mListener.onSpeedChanged((int) value);
@@ -86,6 +87,15 @@ public class PlaybackFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    /**
+     * Enables or disables the speed slider.
+     */
+    public void setSpeedControlEnabled(boolean enabled) {
+        if (speedSlider != null) {
+            speedSlider.setEnabled(enabled);
+        }
     }
 
     /**

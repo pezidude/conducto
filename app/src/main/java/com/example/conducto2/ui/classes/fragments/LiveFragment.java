@@ -72,8 +72,14 @@ public class LiveFragment extends Fragment implements FirestoreManager.LiveLesso
             });
         }
 
+        User user = DataManager.getUserInstance();
         if (btnEndLive != null) {
-            btnEndLive.setOnClickListener(v -> showEndLiveLessonConfirmation());
+            if (user != null && "teacher".equals(user.getUserType())) {
+                btnEndLive.setVisibility(View.VISIBLE);
+                btnEndLive.setOnClickListener(v -> showEndLiveLessonConfirmation());
+            } else {
+                btnEndLive.setVisibility(View.GONE);
+            }
         }
     }
 

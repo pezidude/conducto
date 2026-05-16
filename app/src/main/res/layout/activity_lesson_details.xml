@@ -144,7 +144,7 @@
                     android:id="@+id/music_xml_files_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/player_lesson_notes"
+                    android:text="@string/player_music_files"
                     style="@style/TextAppearance.Conducto.Label"
                     android:layout_marginBottom="@dimen/spacing_sm"
                     android:layout_marginTop="@dimen/spacing_xs"/>
@@ -156,6 +156,18 @@
                     android:divider="@null"
                     android:dividerHeight="0dp"
                     android:nestedScrollingEnabled="false"/>
+
+                <TextView
+                    android:id="@+id/tv_no_files"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/player_no_files"
+                    style="@style/TextAppearance.Conducto.Body"
+                    android:textColor="@color/text_secondary"
+                    android:textStyle="italic"
+                    android:padding="@dimen/spacing_lg"
+                    android:visibility="gone"
+                    tools:visibility="visible"/>
 
             </LinearLayout>
         </LinearLayout>

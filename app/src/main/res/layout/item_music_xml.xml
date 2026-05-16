@@ -43,6 +43,17 @@
             android:ellipsize="middle"
             tools:text="hanon_exercise_12.musicxml"/>
 
+        <!-- AI Info button -->
+        <ImageButton
+            android:id="@+id/ai_info_button"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@null"
+            android:src="@android:drawable/ic_menu_help"
+            android:tint="@color/accent"
+            android:contentDescription="AI Info"
+            android:padding="@dimen/spacing_xs"/>
+
         <!-- Assign button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/assign_button"

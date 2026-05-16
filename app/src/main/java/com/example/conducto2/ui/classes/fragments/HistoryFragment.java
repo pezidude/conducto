@@ -53,6 +53,11 @@ public class HistoryFragment extends Fragment {
     }
 
     private void setupSwipe() {
+        User user = DataManager.getUserInstance();
+        if (user == null || !"teacher".equals(user.getUserType())) {
+            return;
+        }
+
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {

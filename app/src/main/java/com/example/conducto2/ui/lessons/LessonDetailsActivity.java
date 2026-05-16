@@ -45,6 +45,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
     private TextView lessonDate;
     private TextView lessonInfo;
     private RecyclerView musicXmlFilesRecyclerView;
+    private TextView tvNoFiles;
     private MaterialButton btnGoLive;
     private TextView tvStatusMessage;
     private MusicXmlAdapter adapter;
@@ -81,6 +82,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         lessonDate = findViewById(R.id.lesson_details_date);
         lessonInfo = findViewById(R.id.lesson_details_info);
         musicXmlFilesRecyclerView = findViewById(R.id.music_xml_files_recyclerview);
+        tvNoFiles = findViewById(R.id.tv_no_files);
         musicXmlFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         musicXmlFilesRecyclerView.setNestedScrollingEnabled(false);
         //musicXmlFilesRecyclerView.setItemAnimator(null); // fix bug in recycle view
@@ -110,7 +112,16 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         } else {
             lessonDate.setText("No date set");
         }
-        lessonInfo.setText(lesson.getInfo());
+        
+        if (lesson.getInfo() == null || lesson.getInfo().trim().isEmpty()) {
+            lessonInfo.setText(R.string.label_lesson_no_notes);
+            lessonInfo.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+            lessonInfo.setTypeface(null, android.graphics.Typeface.ITALIC);
+        } else {
+            lessonInfo.setText(lesson.getInfo());
+            lessonInfo.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+            lessonInfo.setTypeface(null, android.graphics.Typeface.NORMAL);
+        }
 
         setupMusicFilesList();
         setupGoLiveButton();
@@ -167,7 +178,18 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             adapter.stopListening();
         }
 
-        adapter = new MusicXmlAdapter(options, false);
+        adapter = new MusicXmlAdapter(options, false) {
+            @Override
+            public void onDataChanged() {
+                super.onDataChanged();
+                if (tvNoFiles != null) {
+                    tvNoFiles.setVisibility(getItemCount() == 0 ? View.VISIBLE : View.GONE);
+                }
+                if (musicXmlFilesRecyclerView != null) {
+                    musicXmlFilesRecyclerView.setVisibility(getItemCount() == 0 ? View.GONE : View.VISIBLE);
+                }
+            }
+        };
         adapter.setOnItemClickListener(selectedFile -> {
             Intent intent = new Intent(this, SMPlayerActivity.class);
             intent.putExtra("isLive", false);

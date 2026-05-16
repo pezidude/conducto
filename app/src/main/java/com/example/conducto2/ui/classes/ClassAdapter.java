@@ -11,22 +11,55 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Class;
-import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
-import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 
-public class ClassAdapter extends FirestoreRecyclerAdapter<Class, ClassAdapter.ClassViewHolder> {
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-    public ClassAdapter(@NonNull FirestoreRecyclerOptions<Class> options) {
-        super(options);
+public class ClassAdapter extends RecyclerView.Adapter<ClassAdapter.ClassViewHolder> {
+
+    private List<Class> allItems = new ArrayList<>();
+    private List<Class> displayedItems = new ArrayList<>();
+
+    public ClassAdapter() {
+    }
+
+    public void updateData(List<Class> items) {
+        this.allItems = new ArrayList<>(items);
+        filter("", false); // Reset filter
+    }
+
+    public void filter(String query, boolean isSortedByName) {
+        String lowerQuery = query.toLowerCase().trim();
+        
+        displayedItems = allItems.stream()
+                .filter(item -> item.getName().toLowerCase().contains(lowerQuery))
+                .sorted((c1, c2) -> {
+                    if (isSortedByName) {
+                        return c1.getName().compareToIgnoreCase(c2.getName());
+                    }
+                    return 0;
+                })
+                .collect(Collectors.toList());
+        
+        notifyDataSetChanged();
+    }
+
+    public Class getItem(int position) {
+        return displayedItems.get(position);
     }
 
     @Override
-    protected void onBindViewHolder(@NonNull ClassViewHolder holder, int position, @NonNull Class model) {
+    public int getItemCount() {
+        return displayedItems.size();
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ClassViewHolder holder, int position) {
+        Class model = displayedItems.get(position);
         holder.bind(model);
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), ClassActivity.class);
-            model.setId(getSnapshots().getSnapshot(position).getId());
-            // intent.putExtra("class_id", model.getId());
             DataManager.setCurClass(model);
             v.getContext().startActivity(intent);
         });
