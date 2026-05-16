@@ -2,34 +2,34 @@ package com.example.conducto2.data.model;
 
 import com.example.conducto2.R;
 
-public class ClassicalLesson extends Lesson {
-    public ClassicalLesson() {
+public class RockLesson extends Lesson {
+    public RockLesson() {
         super();
-        setGenre("Classical");
+        setGenre("Rock");
     }
 
-    public ClassicalLesson(Lesson lesson) {
+    public RockLesson(Lesson lesson) {
         super(lesson);
-        setGenre("Classical");
+        setGenre("Rock");
     }
 
     @Override
     public int getGenreColorResId() {
-        return R.color.info; // Blue
+        return R.color.error; // Red
     }
 
     @Override
     public int getGenreIconResId() {
-        return R.drawable.ic_treble_clef;
+        return R.drawable.ic_music_note;
     }
 
     @Override
     public String getGenreLabel() {
-        return "Classical";
+        return "Rock";
     }
 
     @Override
     public int getRecentLessonTintResId() {
-        return R.color.info;
+        return R.color.error;
     }
 }

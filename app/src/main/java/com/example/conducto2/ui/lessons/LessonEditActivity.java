@@ -57,6 +57,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     private Button saveLessonButton;
     private Button uploadMusicXmlButton;
     private Button groupVoicesPickerButton;
+    private TextView errorTextView;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
     private LinearProgressIndicator loadingProgress;
@@ -78,10 +79,14 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
-                    // TODO: validate file ZIP header + xml 'score-partwise' tag inside it.
                     Uri fileUri = result.getData().getData();
-                    String title = FileHelper.getTitleFromUri(this, fileUri);
-                    uploadFileToStorage(fileUri, title);
+                    if (FileHelper.isValidMusicXml(this, fileUri)) {
+                        hideError();
+                        String title = FileHelper.getTitleFromUri(this, fileUri);
+                        uploadFileToStorage(fileUri, title);
+                    } else {
+                        showError("Invalid MusicXML or MXL file");
+                    }
                 }
             });
 
@@ -90,13 +95,18 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                     Uri fileUri = result.getData().getData();
-                    String title = FileHelper.getTitleFromUri(this, fileUri);
-                    Intent intent = new Intent(this, RoleGroupingActivity.class);
-                    intent.putExtra("fileUri", fileUri.toString());
-                    intent.putExtra("classId", classId);
-                    intent.putExtra("lessonId", currentLesson.getId());
-                    intent.putExtra("title", title);
-                    startActivity(intent);
+                    if (FileHelper.isValidMusicXml(this, fileUri)) {
+                        hideError();
+                        String title = FileHelper.getTitleFromUri(this, fileUri);
+                        Intent intent = new Intent(this, RoleGroupingActivity.class);
+                        intent.putExtra("fileUri", fileUri.toString());
+                        intent.putExtra("classId", classId);
+                        intent.putExtra("lessonId", currentLesson.getId());
+                        intent.putExtra("title", title);
+                        startActivity(intent);
+                    } else {
+                        showError("Invalid MusicXML or MXL file");
+                    }
                 }
             });
 
@@ -125,10 +135,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             saveLessonButton.setText(R.string.btn_save_lesson);
             currentLesson = new Lesson();
             DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
-            uploadMusicXmlButton.setEnabled(false);
-            groupVoicesPickerButton.setEnabled(false);
-            // TODO: change the style / set enabled to true but give an error.
-            //  the current state is confusing
         }
 
         if (DataManager.getCurClass() != null) {
@@ -181,6 +187,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         saveLessonButton = findViewById(R.id.save_lesson_button);
         uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
         groupVoicesPickerButton = findViewById(R.id.btn_group_voices_picker);
+        errorTextView = findViewById(R.id.error_text_view);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
         loadingProgress = findViewById(R.id.loading_progress);
     }
@@ -210,14 +217,39 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
     private void setupListeners() {
         lessonDateTimePicker.setOnClickListener(v -> showDatePickerDialog());
-        uploadMusicXmlButton.setOnClickListener(v -> openFilePicker(musicXmlLauncher));
-        groupVoicesPickerButton.setOnClickListener(v -> openFilePicker(groupVoicesLauncher));
+        uploadMusicXmlButton.setOnClickListener(v -> {
+            if (isEditMode) {
+                openFilePicker(musicXmlLauncher);
+            } else {
+                showError("Please save the lesson first before uploading files.");
+            }
+        });
+        groupVoicesPickerButton.setOnClickListener(v -> {
+            if (isEditMode) {
+                openFilePicker(groupVoicesLauncher);
+            } else {
+                showError("Please save the lesson first before grouping voices.");
+            }
+        });
         saveLessonButton.setOnClickListener(v -> saveLesson());
 
         // Setup genre selector
-        String[] genres = {"Classical", "Jazz", "Pop"};
+        String[] genres = {"Classical", "Jazz", "Pop", "Rock"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, genres);
         genreSelector.setAdapter(adapter);
+    }
+
+    private void showError(String message) {
+        if (errorTextView != null) {
+            errorTextView.setText(message);
+            errorTextView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideError() {
+        if (errorTextView != null) {
+            errorTextView.setVisibility(View.GONE);
+        }
     }
 
     private void archiveLesson() {
@@ -413,9 +445,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         endTask();
         if (success) {
             if (operation == FirebaseComm.DbOperation.INSERT_LESSON || operation == FirebaseComm.DbOperation.UPDATE_LESSON) {
+                hideError();
                 if (!isEditMode) {
-                    uploadMusicXmlButton.setEnabled(true);
-                    groupVoicesPickerButton.setEnabled(true);
                     isEditMode = true;
                     saveLessonButton.setText(R.string.btn_save);
                     // Also need to update the query in adapter since currentLesson.getId() is now available

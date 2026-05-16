@@ -203,6 +203,19 @@
                 app:iconTint="@color/text_primary"
                 android:layout_marginTop="@dimen/spacing_sm"/>
 
+            <!-- Error message view -->
+            <TextView
+                android:id="@+id/error_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/holo_red_dark"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:visibility="gone"
+                tools:visibility="visible"
+                tools:text="Error message goes here"/>
+
             <!-- Music XML list -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/music_xml_recycler_view"

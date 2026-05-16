@@ -26,6 +26,7 @@ public class Lesson implements Parcelable {
     private int currentMeasure;
     private int bpm;
     private String genre; // "Classical", "Jazz", "Pop", etc.
+    private List<String> connectedStudents; // List of connected student emails
 
     public static final String STATUS_STOPPED = "STOPPED";
     public static final String STATUS_PAUSED = "PAUSED";
@@ -51,6 +52,10 @@ public class Lesson implements Parcelable {
         this.fileMapping = new HashMap<>();
         if (event.fileMapping != null) {
             this.fileMapping.putAll(event.fileMapping);
+        }
+        this.connectedStudents = new ArrayList<>();
+        if (event.connectedStudents != null) {
+            this.connectedStudents.addAll(event.connectedStudents);
         }
     }
 
@@ -146,6 +151,14 @@ public class Lesson implements Parcelable {
         this.fileMapping = fileMapping;
     }
 
+    public List<String> getConnectedStudents() {
+        return connectedStudents;
+    }
+
+    public void setConnectedStudents(List<String> connectedStudents) {
+        this.connectedStudents = connectedStudents;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -213,6 +226,7 @@ public class Lesson implements Parcelable {
         this.genre = null;
         this.musicXMLFiles = new ArrayList<>();
         this.fileMapping = new HashMap<>();
+        this.connectedStudents = new ArrayList<>();
     }
     public Lesson() {
         this("", "", new Date(), "");
@@ -235,6 +249,7 @@ public class Lesson implements Parcelable {
         musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
         fileMapping = new HashMap<>();
         in.readMap(fileMapping, List.class.getClassLoader());
+        connectedStudents = in.createStringArrayList();
     }
 
     /**
@@ -250,9 +265,10 @@ public class Lesson implements Parcelable {
                 return new JazzLesson(base);
             case "Pop":
                 return new PopLesson(base);
+            case "Rock":
+                return new RockLesson(base);
             default:
-                return base;
-        }
+                return base;        }
     }
 
     public static final Creator<Lesson> CREATOR = new Creator<Lesson>() {
@@ -299,5 +315,6 @@ public class Lesson implements Parcelable {
         dest.writeString(genre);
         dest.writeTypedList(musicXMLFiles);
         dest.writeMap(fileMapping);
+        dest.writeStringList(connectedStudents);
     }
 }

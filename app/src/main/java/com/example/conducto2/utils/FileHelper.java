@@ -24,6 +24,57 @@ public class FileHelper {
         return getFileName(context, uri);
     }
 
+    public static boolean isValidMusicXml(Context context, Uri uri) {
+        try (InputStream inputStream = openInputStream(context, uri)) {
+            BufferedInputStream bis = new BufferedInputStream(inputStream);
+            bis.mark(4);
+            byte[] header = new byte[4];
+            int read = bis.read(header);
+            bis.reset();
+
+            if (read >= 2 && header[0] == 'P' && header[1] == 'K') {
+                return validateZippedMusicXml(bis);
+            } else {
+                return validateXmlStream(bis);
+            }
+        } catch (Exception e) {
+            Log.e("FileHelper", "Validation failed", e);
+        }
+        return false;
+    }
+
+    private static boolean validateZippedMusicXml(InputStream is) throws Exception {
+        ZipInputStream zis = new ZipInputStream(is);
+        ZipEntry entry;
+        while ((entry = zis.getNextEntry()) != null) {
+            String name = entry.getName();
+            if (!entry.isDirectory() && name.toLowerCase().endsWith(".xml")
+                    && !name.equalsIgnoreCase("META-INF/container.xml")
+                    && !name.equalsIgnoreCase("container.xml")) {
+                if (validateXmlStream(zis)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean validateXmlStream(InputStream is) throws Exception {
+        XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+        XmlPullParser parser = factory.newPullParser();
+        parser.setInput(is, null);
+
+        int eventType = parser.getEventType();
+        while (eventType != XmlPullParser.END_DOCUMENT) {
+            if (eventType == XmlPullParser.START_TAG) {
+                String tagName = parser.getName();
+                return "score-partwise".equals(tagName) || "score-timewise".equals(tagName);
+            }
+            eventType = parser.next();
+        }
+        return false;
+    }
+
     private static InputStream openInputStream(Context context, Uri uri) throws Exception {
         String scheme = uri.getScheme();
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
