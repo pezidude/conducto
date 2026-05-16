@@ -20,9 +20,9 @@
     <!-- Logo mark -->
     <ImageView
         android:id="@+id/ivLogo"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
-        android:src="@drawable/ic_music_note"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:src="@drawable/ic_conductor"
         android:contentDescription="@string/app_name"
         android:padding="16dp"
         android:background="@drawable/bg_circle_highlight"
