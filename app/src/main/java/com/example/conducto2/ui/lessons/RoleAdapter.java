@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -22,22 +23,29 @@ import java.util.Map;
 public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.RoleViewHolder> {
 
     private OnSelectVoicesClickListener listener;
-    private OnRoleNameChangedListener nameListener;
+    private OnRoleNameClickListener nameListener;
+    private OnDeleteRoleClickListener deleteListener;
 
     public interface OnSelectVoicesClickListener {
         void onSelectVoicesClick(Role role, String docId);
     }
 
-    public interface OnRoleNameChangedListener {
-        void onRoleNameChanged(String docId, String newName);
+    public interface OnRoleNameClickListener {
+        void onRoleNameClick(Role role, String docId);
+    }
+
+    public interface OnDeleteRoleClickListener {
+        void onDeleteRoleClick(String docId);
     }
 
     public RoleAdapter(@NonNull FirestoreRecyclerOptions<Role> options, 
                        OnSelectVoicesClickListener listener,
-                       OnRoleNameChangedListener nameListener) {
+                       OnRoleNameClickListener nameListener,
+                       OnDeleteRoleClickListener deleteListener) {
         super(options);
         this.listener = listener;
         this.nameListener = nameListener;
+        this.deleteListener = deleteListener;
         setHasStableIds(true);
     }
 
@@ -57,20 +65,18 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
     protected void onBindViewHolder(@NonNull RoleViewHolder holder, int position, @NonNull Role role) {
         String docId = getSnapshots().getSnapshot(position).getId();
         
-        // No more TextWatcher for auto-updating Firestore
-        if (holder.nameWatcher != null) {
-            holder.etRoleName.removeTextChangedListener(holder.nameWatcher);
-        }
-
         holder.currentDocId = docId;
         String remoteName = role.getName() != null ? role.getName() : "";
-        
-        // Sync with remote data only if not focused
-        if (!holder.etRoleName.isFocused()) {
-            if (!holder.etRoleName.getText().toString().equals(remoteName)) {
-                holder.etRoleName.setText(remoteName);
+        holder.etRoleName.setText(remoteName);
+
+        // Make the EditText act as a button for the dialog
+        holder.etRoleName.setFocusable(false);
+        holder.etRoleName.setCursorVisible(false);
+        holder.etRoleName.setOnClickListener(v -> {
+            if (nameListener != null) {
+                nameListener.onRoleNameClick(role, docId);
             }
-        }
+        });
 
         StringBuilder sb = new StringBuilder();
         if (role.getSelectedVoicesPerPart() != null) {
@@ -81,14 +87,9 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
         holder.tvSelectedVoices.setText(sb.length() > 0 ? sb.toString().trim() : "No voices selected");
 
         holder.btnSelectVoices.setOnClickListener(v -> listener.onSelectVoicesClick(role, docId));
-
-        // Update Firestore only when focus is lost
-        holder.etRoleName.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                String newName = holder.etRoleName.getText().toString();
-                if (nameListener != null) {
-                    nameListener.onRoleNameChanged(docId, newName);
-                }
+        holder.btnDeleteRole.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onDeleteRoleClick(docId);
             }
         });
     }
@@ -97,6 +98,7 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
         EditText etRoleName;
         TextView tvSelectedVoices;
         Button btnSelectVoices;
+        ImageButton btnDeleteRole;
         TextWatcher nameWatcher; // Kept for class compatibility if needed elsewhere
         String currentDocId;
         Runnable updateRunnable;
@@ -106,6 +108,7 @@ public class RoleAdapter extends FirestoreRecyclerAdapter<Role, RoleAdapter.Role
             etRoleName = itemView.findViewById(R.id.et_role_name);
             tvSelectedVoices = itemView.findViewById(R.id.tv_selected_voices);
             btnSelectVoices = itemView.findViewById(R.id.btn_select_voices);
+            btnDeleteRole = itemView.findViewById(R.id.btn_delete_role);
         }
     }
 }

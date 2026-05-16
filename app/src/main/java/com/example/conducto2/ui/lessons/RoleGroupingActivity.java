@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.firebase.FirestoreManager;
+import com.example.conducto2.data.manager.DataManager;
 import com.example.conducto2.data.model.Role;
 import com.example.conducto2.utils.MusicXmlParser;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
@@ -70,6 +72,22 @@ public class RoleGroupingActivity extends AppCompatActivity {
         loadSourceFile();
     }
 
+    private void checkAndAddDefaultRoles() {
+        firestoreManager.getDraftRolesQuery(classId, lessonId).get().addOnSuccessListener(queryDocumentSnapshots -> {
+            if (queryDocumentSnapshots.isEmpty()) {
+                Role partitura = new Role("Partitura");
+                if (partInfoMap != null) {
+                    Map<String, List<String>> allVoices = new HashMap<>();
+                    for (MusicXmlParser.PartInfo info : partInfoMap.values()) {
+                        allVoices.put(info.id, new ArrayList<>(info.voices));
+                    }
+                    partitura.setSelectedVoicesPerPart(allVoices);
+                }
+                firestoreManager.addDraftRole(classId, lessonId, partitura);
+            }
+        });
+    }
+
     private void findViews() {
         tvSourceFile = findViewById(R.id.tv_source_file);
         btnAddRole = findViewById(R.id.btn_add_role);
@@ -93,7 +111,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
                 .setQuery(query, Role.class)
                 .build();
 
-        roleAdapter = new RoleAdapter(options, this::showVoiceSelectionDialog, this::updateRoleName);
+        roleAdapter = new RoleAdapter(options, this::showVoiceSelectionDialog, this::showEditNameDialog, this::showDeleteConfirmationDialog);
         rvRoles.setAdapter(roleAdapter);
 
         btnAddRole.setOnClickListener(v -> {
@@ -102,6 +120,36 @@ public class RoleGroupingActivity extends AppCompatActivity {
         });
 
         btnSaveUpload.setOnClickListener(v -> saveAndUpload());
+    }
+
+    private void showDeleteConfirmationDialog(String docId) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete Role")
+                .setMessage("Are you sure you want to delete this role?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    firestoreManager.deleteDraftRole(classId, lessonId, docId);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showEditNameDialog(Role role, String docId) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Edit Role Name");
+
+        final EditText input = new EditText(this);
+        input.setText(role.getName());
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String newName = input.getText().toString().trim();
+            if (!newName.isEmpty()) {
+                updateRoleName(docId, newName);
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 
     private void updateRoleName(String docId, String newName) {
@@ -152,6 +200,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     pbLoading.setVisibility(View.GONE);
                     Toast.makeText(this, "File parsed successfully", Toast.LENGTH_SHORT).show();
+                    checkAndAddDefaultRoles();
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Error loading source file", e);
@@ -263,6 +312,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
     }
 
     private void uploadRoleFile(String roleName, String content) {
-        firestoreManager.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content);
+        firestoreManager.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content, DataManager.getUserInstance().getEmail());
     }
 }

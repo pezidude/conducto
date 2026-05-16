@@ -570,7 +570,7 @@ public class FirestoreManager extends FirebaseComm {
                 .orderBy("name", Query.Direction.ASCENDING);
     }
 
-    public void uploadRoleMusicFile(String classId, String lessonId, String originalTitle, String roleName, String content) {
+    public void uploadRoleMusicFile(String classId, String lessonId, String originalTitle, String roleName, String content, String teacherEmail) {
         StorageReference storageRef = FirebaseStorage.getInstance().getReference();
         String fileName = "role_" + roleName.replaceAll("\\s+", "_") + "_" + java.util.UUID.randomUUID().toString() + ".musicxml";
         StorageReference fileRef = storageRef.child("classes/" + classId + "/lessons/" + lessonId + "/" + fileName);
@@ -578,13 +578,40 @@ public class FirestoreManager extends FirebaseComm {
         byte[] data = content.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         fileRef.putBytes(data)
                 .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    String downloadUrl = uri.toString();
                     MusicFile musicFile = new MusicFile(originalTitle + " - " + roleName, uri);
                     FIRESTORE.collection("classes").document(classId)
                             .collection("lessons").document(lessonId)
                             .collection("musicFiles")
                             .add(musicFile);
+                    
+                    if (teacherEmail != null && roleName.toLowerCase().contains("partitura")) {
+                        updateLessonMapping(classId, lessonId, downloadUrl, teacherEmail);
+                    }
                 }))
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
+    }
+
+    private void updateLessonMapping(String classId, String lessonId, String fileUrl, String email) {
+        DocumentReference lessonRef = FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId);
+        
+        FIRESTORE.runTransaction(transaction -> {
+            Lesson lesson = transaction.get(lessonRef).toObject(Lesson.class);
+            if (lesson != null) {
+                Map<String, List<String>> mapping = lesson.getFileMapping();
+                if (mapping == null) mapping = new HashMap<>();
+                
+                List<String> students = mapping.get(fileUrl);
+                if (students == null) students = new ArrayList<>();
+                if (!students.contains(email)) {
+                    students.add(email);
+                }
+                mapping.put(fileUrl, students);
+                transaction.update(lessonRef, "fileMapping", mapping);
+            }
+            return null;
+        }).addOnFailureListener(e -> Log.e(TAG, "Failed to update lesson mapping for teacher", e));
     }
 
     public void logLessonAccess(String userId, String classId, String lessonId, String title) {
