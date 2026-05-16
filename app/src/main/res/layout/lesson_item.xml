@@ -31,7 +31,7 @@
                 android:layout_height="33dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_music_note"
-                app:tint="@color/accent"
+                app:tint="@color/accent_light"
                 android:contentDescription="@null"/>
 
         </FrameLayout>

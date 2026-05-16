@@ -270,7 +270,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         // Apply polymorphic tint to the icon
         Drawable icon = item.getIcon();
         if (icon != null) {
-            icon.setTint(color);
+            icon.mutate().setTint(color);
         }
 
         item.setOnMenuItemClickListener(menuItem -> {

@@ -17,11 +17,13 @@
 
         <!-- File icon -->
         <FrameLayout
+            android:id="@+id/music_file_icon_tile"
             android:layout_width="36dp"
             android:layout_height="36dp"
             android:background="@drawable/bg_icon_tile">
 
             <ImageView
+                android:id="@+id/music_file_icon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"

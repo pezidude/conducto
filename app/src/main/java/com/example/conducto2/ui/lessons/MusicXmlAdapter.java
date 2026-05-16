@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -128,6 +129,19 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
             holder.aiInfoButton.setEnabled(true);
         }
 
+        // Apply theme-based styling to the icon
+        com.example.conducto2.data.model.Lesson currentLesson = com.example.conducto2.data.manager.DataManager.getCurLesson();
+        if (currentLesson != null) {
+            com.example.conducto2.data.model.Lesson polyLesson = com.example.conducto2.data.model.Lesson.fromBase(currentLesson);
+            int color = androidx.core.content.ContextCompat.getColor(holder.itemView.getContext(), polyLesson.getGenreColorResId());
+            
+            if (holder.iconTile.getBackground() != null) {
+                holder.iconTile.getBackground().mutate().setTint(color);
+            }
+            holder.iconView.setImageResource(polyLesson.getGenreIconResId());
+            holder.iconView.setColorFilter(androidx.core.content.ContextCompat.getColor(holder.itemView.getContext(), R.color.white));
+        }
+
         holder.aiInfoButton.setVisibility(showAiButton ? View.VISIBLE : View.GONE);
         holder.aiInfoButton.setOnClickListener(v -> {
             if (aiInfoListener != null) {
@@ -173,6 +187,8 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         Button assignButton;
         ImageButton deleteButton;
         ImageButton aiInfoButton;
+        View iconTile;
+        ImageView iconView;
 
         ViewHolder(View view) {
             super(view);
@@ -180,6 +196,8 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
             assignButton = view.findViewById(R.id.assign_button);
             deleteButton = view.findViewById(R.id.delete_button);
             aiInfoButton = view.findViewById(R.id.ai_info_button);
+            iconTile = view.findViewById(R.id.music_file_icon_tile);
+            iconView = view.findViewById(R.id.music_file_icon);
         }
     }
 }

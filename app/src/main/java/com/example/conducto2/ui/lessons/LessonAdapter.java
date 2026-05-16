@@ -83,7 +83,9 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             // Apply polymorphic styling
             int color = ContextCompat.getColor(itemView.getContext(), 
                 lesson.isLive() ? R.color.red_600 : lesson.getGenreColorResId());
-            iconTile.getBackground().setTint(color);
+            if (iconTile.getBackground() != null) {
+                iconTile.getBackground().mutate().setTint(color);
+            }
             
             if (lesson.isLive()) {
                 iconView.setImageResource(R.drawable.ic_live_dot);
