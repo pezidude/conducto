@@ -39,20 +39,33 @@ import com.google.android.material.navigation.NavigationView;
 import java.util.List;
 
 /**
- * Base activity for screens that include a navigation drawer.
- * It handles the drawer setup, header, and dynamic menu items for classes.
- * Activities that need this functionality should extend this class.
+ * BaseDrawerActivity
+ * 
+ * An abstract architectural foundation for all primary application screens that require 
+ * a Navigation Drawer. This class handles the complex orchestration of the drawer lifecycle, 
+ * dynamic menu generation, and user profile synchronization.
+ * 
+ * Key Roles:
+ * 1. Base UI Hub: Implements a common DrawerLayout/NavigationView structure.
+ * 2. Dynamic Roster: Automatically populates the drawer with the user's enrolled classes.
+ * 3. Intelligent History: Fetches and maintains a "Recent Lessons" menu with lazy cleanup.
+ * 4. User Context: Synchronizes the drawer header with real-time Firebase user data.
  */
 public class BaseDrawerActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
-    /** The main layout that holds the navigation drawer. */
+    /** The root layout component providing the sliding side menu functionality. */
     protected DrawerLayout drawerLayout;
-    /** The view that displays the navigation items. */
+
+    /** The view responsible for rendering the navigation menu items and the user header. */
     protected NavigationView navigationView;
+
+    /** The database manager inherited by all subclasses forFirestore interactions. */
     protected FirestoreManager firestoreManager;
-    /** A unique ID for the dynamically created class menu items. */
+
+    /** identifier for the dynamically generated group of Classroom menu items. */
     private static final int DYNAMIC_CLASSES_GROUP_ID = 12345;
-    /** A unique ID for the dynamically created recent lesson menu items. */
+
+    /** identifier for the dynamically generated group of Recent Lesson menu items. */
     private static final int DYNAMIC_RECENT_LESSONS_GROUP_ID = 12346;
 
     @Override
@@ -62,14 +75,24 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     }
 
     /**
-     * Sets up the content view for the activity, inflating the base drawer layout and embedding the specific activity's layout within it.
-     * It also initializes the toolbar and drawer toggle.
-     * @param layoutResID Resource ID to be inflated.
+     * Overrides the standard content setter to inject the requested layout into 
+     * a standardized drawer frame.
+     * 
+     * Sequential Logic:
+     * 1. Inflate the base drawer container.
+     * 2. Locate the central content frame.
+     * 3. Nest the specific activity's layout inside that frame.
+     * 4. Initialize navigation listeners and the Toolbar toggle.
+     * 
+     * @param layoutResID The resource ID of the specific screen's layout.
      */
     @Override
     public void setContentView(int layoutResID) {
+        // Step 1: Inflate the parent drawer structure.
         DrawerLayout fullView = (DrawerLayout) getLayoutInflater().inflate(R.layout.activity_base_drawer, null);
         FrameLayout activityContainer = fullView.findViewById(R.id.content_frame);
+        
+        // Step 2: Inject the child layout provided by the subclass into the central FrameLayout.
         getLayoutInflater().inflate(layoutResID, activityContainer, true);
         super.setContentView(fullView);
 
@@ -77,9 +100,10 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         navigationView = fullView.findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         
-        // Disable default tinting to allow manual colorization of dynamic items
+        // Disable default coloring to allow custom tints for genre icons.
         navigationView.setItemIconTintList(null);
 
+        // Step 3: Link the system Toolbar to the Drawer state.
         Toolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) {
             setSupportActionBar(toolbar);
@@ -92,30 +116,27 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         setupDrawerHeader();
     }
 
-    /**
-     * Refreshes the drawer header and menu when the activity resumes to ensure data is up to date.
-     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh drawer in case user details or class list changed
+        // Reactive Updates: Ensure user data and menu lists are fresh when the screen returns.
         setupDrawerHeader();
         setupDrawerMenu();
     }
 
     /**
-     * Sets up the navigation drawer header with the current user's information, including name, email, and status.
+     * Populates the top section of the drawer with the authenticated user's profile.
+     * Handles async data fetching if the local user instance is currently null.
      */
     private void setupDrawerHeader() {
         if (!FirebaseComm.isUserSignedIn()) return;
 
         User user = DataManager.getUserInstance();
         if (user == null) {
-            // User data not loaded yet, try to fetch it
+            // Lazy Loading: If user isn't in cache, fetch and recurse.
             firestoreManager.getUser(fetchedUser -> {
                 if (fetchedUser != null) {
                     DataManager.setUser(fetchedUser);
-                    // Now that we have the user, setup the header again
                     setupDrawerHeader();
                 }
             });
@@ -133,6 +154,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         if (name != null) name.setText(user.getFname() + " " + user.getLname());
         if (email != null) email.setText(user.getEmail());
 
+        // Avatar Logic: Generate initials as a fallback for missing images.
         if (tvInitials != null) {
             String initials = "";
             if (user.getFname() != null && !user.getFname().isEmpty()) {
@@ -144,6 +166,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             tvInitials.setText(initials);
         }
 
+        // Image Processing: Decode Base64 profile picture.
         if (image != null) {
             String base64Image = user.getProfilePictureBase64();
             if (base64Image != null && !base64Image.isEmpty()) {
@@ -170,8 +193,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     }
 
     /**
-     * Populates the navigation drawer with a list of the user's classes, fetched from Firestore.
-     * Each class is a clickable menu item that navigates to the {@link ClassActivity}.
+     * Synchronizes the navigation menu with the user's current classroom list from Firestore.
      */
     private void setupDrawerMenu() {
         if (!FirebaseComm.isUserSignedIn()) return;
@@ -180,7 +202,8 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         firestoreManager.getClassesForUser(email, classes -> {
             if (classes != null) {
                 Menu menu = navigationView.getMenu();
-                menu.removeGroup(DYNAMIC_CLASSES_GROUP_ID); // Clear previous dynamic items
+                // State Management: Clear old items before adding fresh data to prevent duplicates.
+                menu.removeGroup(DYNAMIC_CLASSES_GROUP_ID); 
 
                 if (!classes.isEmpty()) {
                     for (Class cls : classes) {
@@ -201,8 +224,13 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     }
 
     /**
-     * Fetches and displays the most recently accessed lessons in the navigation drawer.
-     * Includes lazy cleanup for deleted lessons.
+     * Orchestrates the population of the "Recent Lessons" menu.
+     * Implements an asynchronous verification logic:
+     * 1. Fetches recent access logs.
+     * 2. Verifies that the referenced lessons still exist in the database.
+     * 3. Lazy Cleanup: Automatically deletes log entries for "ghost" lessons.
+     * 4. Multi-Threaded Sync: Uses Atomic counters to wait for all async checks 
+     *    before re-ordering and rendering the menu on the UI thread.
      */
     private void setupRecentLessonsMenu() {
         if (!FirebaseComm.isUserSignedIn()) return;
@@ -218,6 +246,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
             final int total = recentLessons.size();
             final java.util.concurrent.atomic.AtomicInteger count = new java.util.concurrent.atomic.AtomicInteger(0);
 
+            // Sequential Parallelism: Iterate through logs and fetch full lesson details for each.
             for (Lesson lessonLog : recentLessons) {
                 firestoreManager.getLesson(lessonLog.getClassId(), lessonLog.getId(), actualLesson -> {
                     if (actualLesson != null) {
@@ -225,17 +254,17 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                             validLessons.add(Lesson.fromBase(actualLesson));
                         }
                     } else {
-                        // Ghost entry detected, perform lazy cleanup
+                        // Integrity Fix: Entry exists in history but lesson document is gone.
                         firestoreManager.deleteRecentLessonLog(email, lessonLog.getId());
                     }
 
+                    // Synchronization Point: Check if all asynchronous fetches are complete.
                     if (count.incrementAndGet() == total) {
-                        // All checks done, update menu on UI thread
                         runOnUiThread(() -> {
                             Menu menu = navigationView.getMenu();
                             menu.removeGroup(DYNAMIC_RECENT_LESSONS_GROUP_ID);
                             
-                            // Re-sort to match the order of the original fetch (most recent first)
+                            // Re-Ordering logic: Restore the time-based sequence after parallel fetching.
                             synchronized (validLessons) {
                                 for (Lesson log : recentLessons) {
                                     for (Lesson valid : validLessons) {
@@ -253,13 +282,20 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         });
     }
 
+    /**
+     * Generates a polymorphically styled menu item for a recent lesson.
+     * Applies Spannable tints and genre-specific icons.
+     * 
+     * @param menu The parent NavigationView menu.
+     * @param lesson The lesson model to render.
+     */
     private void addRecentLessonToMenu(Menu menu, Lesson lesson) {
         String genreLabel = lesson.getGenreLabel();
         String fullTitle = "[" + genreLabel + "] " + lesson.getTitle();
         int color = ContextCompat.getColor(this, lesson.getRecentLessonTintResId());
 
+        // Rich Formatting: Apply bold style and genre color to the prefix.
         SpannableString spannableTitle = new SpannableString(fullTitle);
-        // Color and Bold the "[Genre]" prefix
         int prefixEnd = genreLabel.length() + 2;
         spannableTitle.setSpan(new ForegroundColorSpan(color), 0, prefixEnd, 0);
         spannableTitle.setSpan(new StyleSpan(Typeface.BOLD), 0, prefixEnd, 0);
@@ -267,7 +303,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         MenuItem item = menu.add(DYNAMIC_RECENT_LESSONS_GROUP_ID, Menu.NONE, Menu.NONE, spannableTitle)
                 .setIcon(lesson.getGenreIconResId());
         
-        // Apply polymorphic tint to the icon
+        // Polymorphic Styling: Mutate the menu icon tint to match the genre theme.
         Drawable icon = item.getIcon();
         if (icon != null) {
             icon.mutate().setTint(color);
@@ -288,9 +324,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     }
 
     /**
-     * Handles clicks on navigation drawer items, navigating to the corresponding activities.
-     * @param item The selected item.
-     * @return True if the event was handled, false otherwise.
+     * Handles selection of static top-level navigation items.
      */
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {

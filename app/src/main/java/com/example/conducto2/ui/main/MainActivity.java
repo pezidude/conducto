@@ -13,14 +13,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.conducto2.R;
 import com.example.conducto2.data.firebase.FirestoreManager;
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.receivers.AlarmScheduler;
-import com.example.conducto2.receivers.BootReceiver;
-import com.example.conducto2.receivers.HeadsetReceiver;
 import com.example.conducto2.ui.TestActivity;
 import com.example.conducto2.ui.auth.SignInActivity;
 import com.example.conducto2.ui.auth.SignUpActivity;
 import com.example.conducto2.ui.dashboard.DashboardActivity;
-import com.example.conducto2.utils.NotificationHelper;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.Calendar;
@@ -31,28 +27,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // Views - Buttons
     MaterialButton btnSignIn, btnSignUp, btnNotify, btnAlarm, btnGoToTest;
-
-    BootReceiver br;
-    HeadsetReceiver hr;
     
     private FirestoreManager firestoreManager;
 
-    // Notification Helper
-    private NotificationHelper notificationHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        AlarmScheduler.requestExactAlarmPermission(this);
-        
+
         firestoreManager = new FirestoreManager();
 
         initViews();
-        notificationHelper = new NotificationHelper(this);
-
-        br = new BootReceiver();
-        hr = new HeadsetReceiver();
     }
 
     private void checkIfUserSignedIn() {
@@ -82,18 +68,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onResume() {
         super.onResume();
         checkIfUserSignedIn();
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BOOT_COMPLETED);
-        registerReceiver(br, filter);
-
-        IntentFilter filter2 = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
-        registerReceiver(hr, filter2);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(br);
-        unregisterReceiver(hr);
+
     }
 
     public void initViews() {
@@ -119,14 +99,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             startActivity(new Intent(MainActivity.this, SignUpActivity.class));
         } else if (id == R.id.btnGoToTest) {
             startActivity(new Intent(MainActivity.this, TestActivity.class));
-        } else if (id == R.id.btnNotify) {
-            notificationHelper.makeNotification("Status", hr.getState() == 1 ? "Headset Plugged in!" : "Headset is Not Plugged in!");
-        } else if (id == R.id.btnAlarm) {
-            Toast.makeText(this, "Alarm Set", Toast.LENGTH_SHORT).show();
-            Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.SECOND, 10);
-            long triggerTime = calendar.getTimeInMillis();
-            AlarmScheduler.setAlarm(MainActivity.this, triggerTime, ALARM_REQUEST_CODE);
         }
     }
 

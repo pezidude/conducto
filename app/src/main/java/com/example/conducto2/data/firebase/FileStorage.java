@@ -26,16 +26,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * FileStorage
+ * 
+ * A specialized subclass of {@link FirebaseComm} dedicated to binary data management.
+ * It coordinates the storage of MusicXML files and user images in Firebase Storage 
+ * and maintains the corresponding pointers in Firestore.
+ * 
+ * Key functionalities:
+ * 1. Uploading raw MusicXML files and generated Role-specific scores.
+ * 2. Automating the mapping of teacher-specific parts during role generation.
+ * 3. Handling binary image data for user profiles or post attachments.
+ * 4. Providing callback bridges for binary data retrieval (e.g., fetching score content).
+ */
 public class FileStorage extends FirebaseComm {
 
+    /** Identifier for logging storage-related events. */
     private static final String TAG = "FileStorage";
+    
+    /** The instance of Firebase Cloud Storage service. */
     private FirebaseStorage firebaseStorage;
+    
+    /** The listener instance assigned to handle binary data results. */
     private StorageResult storageResult;
 
+    /**
+     * Interface for reporting binary data results (e.g., from Storage to UI).
+     */
     public interface StorageResult {
+        /**
+         * Triggered when binary data is successfully fetched.
+         * @param data The raw byte array.
+         */
         void fileResult(byte[] data);
     }
 
+    /**
+     * Initializes the storage manager and secures references to both Storage and 
+     * Firestore (inherited) services.
+     */
     public FileStorage() {
         firebaseStorage = FirebaseStorage.getInstance();
         if (FIRESTORE == null) {
@@ -43,10 +72,23 @@ public class FileStorage extends FirebaseComm {
         }
     }
 
+    /**
+     * Assigns a listener to receive binary data results.
+     * @param storageResult The listener implementation.
+     */
     public void setStorageResult(StorageResult storageResult) {
         this.storageResult = storageResult;
     }
 
+    /**
+     * Uploads a teacher-assigned music file to a specific lesson.
+     * 
+     * @param classId The ID of the class.
+     * @param lessonId The ID of the lesson.
+     * @param fileUri The local Uri of the file to upload.
+     * @param title The display title for the file.
+     * @param extension The file extension (e.g., "musicxml").
+     */
     public void uploadMusicFile(String classId, String lessonId, Uri fileUri, String title, String extension) {
         StorageReference storageRef = firebaseStorage.getReference();
         String fileName = "musicresource_" + java.util.UUID.randomUUID().toString() + "." + extension;
@@ -54,6 +96,7 @@ public class FileStorage extends FirebaseComm {
 
         fileRef.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                    // Create a MusicFile model and persist it to the lesson's musicFiles collection in Firestore.
                     MusicFile musicFile = new MusicFile(title, uri);
                     FIRESTORE.collection("classes").document(classId)
                             .collection("lessons").document(lessonId)
@@ -80,6 +123,16 @@ public class FileStorage extends FirebaseComm {
                 });
     }
 
+    /**
+     * Uploads a generated XML score for a specific role and optionally updates the lesson mapping.
+     * 
+     * @param classId The parent class ID.
+     * @param lessonId The parent lesson ID.
+     * @param originalTitle The name of the master score.
+     * @param roleName The name of the role (e.g., "Violin").
+     * @param content The XML text content.
+     * @param teacherEmail The email of the teacher who should be auto-assigned the 'partitura'.
+     */
     public void uploadRoleMusicFile(String classId, String lessonId, String originalTitle, String roleName, String content, String teacherEmail) {
         StorageReference storageRef = firebaseStorage.getReference();
         String fileName = "role_" + roleName.replaceAll("\\s+", "_") + "_" + java.util.UUID.randomUUID().toString() + ".musicxml";
@@ -95,6 +148,7 @@ public class FileStorage extends FirebaseComm {
                             .collection("musicFiles")
                             .add(musicFile);
 
+                    // Logic: Automatically assign the "Full Score" (partitura) to the teacher's lesson mapping.
                     if (teacherEmail != null && roleName.toLowerCase().contains("partitura")) {
                         updateLessonMapping(classId, lessonId, downloadUrl, teacherEmail);
                     }
@@ -102,6 +156,53 @@ public class FileStorage extends FirebaseComm {
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to upload role file: " + roleName, e));
     }
 
+    /**
+     * Renames a music file document in the lesson's musicFiles sub-collection.
+     * 
+     * @param classId The parent class ID.
+     * @param lessonId The parent lesson ID.
+     * @param fileDocId The ID of the music file document to update.
+     * @param newTitle The new display title for the file.
+     */
+    public void renameMusicFile(String classId, String lessonId, String fileDocId, String newTitle) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("musicFiles").document(fileDocId)
+                .update("title", newTitle)
+                .addOnSuccessListener(aVoid -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("File renamed.");
+                        dbResult.uploadResult(true, DbOperation.RENAME_MUSIC_FILE);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (dbResult != null) {
+                        dbResult.displayMessage("Failed to rename file: " + e.getMessage());
+                        dbResult.uploadResult(false, DbOperation.RENAME_MUSIC_FILE);
+                    }
+                });
+    }
+
+    /**
+     * Deletes a music file document from Firestore.
+     * 
+     * @param classId The parent class ID.
+     * @param lessonId The parent lesson ID.
+     * @param fileDocId The ID of the music file document to delete.
+     * @param listener Callback for operation completion.
+     */
+    public void deleteMusicFile(String classId, String lessonId, String fileDocId, OnCompleteListener<Void> listener) {
+        FIRESTORE.collection("classes").document(classId)
+                .collection("lessons").document(lessonId)
+                .collection("musicFiles").document(fileDocId)
+                .delete()
+                .addOnCompleteListener(listener);
+    }
+
+    /**
+     * Atomically updates the lesson's file mapping inside a Firestore transaction.
+     * Ensures that the music part assignment is thread-safe and consistent.
+     */
     private void updateLessonMapping(String classId, String lessonId, String fileUrl, String email) {
         DocumentReference lessonRef = FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId);
@@ -124,115 +225,56 @@ public class FileStorage extends FirebaseComm {
         }).addOnFailureListener(e -> Log.e(TAG, "Failed to update lesson mapping for teacher", e));
     }
 
-    public void renameMusicFile(String classId, String lessonId, String fileDocId, String newTitle) {
-        FIRESTORE.collection("classes").document(classId)
-                .collection("lessons").document(lessonId)
-                .collection("musicFiles").document(fileDocId)
-                .update("title", newTitle)
-                .addOnSuccessListener(aVoid -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("File renamed.");
-                        dbResult.uploadResult(true, DbOperation.RENAME_MUSIC_FILE);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (dbResult != null) {
-                        dbResult.displayMessage("Failed to rename file: " + e.getMessage());
-                        dbResult.uploadResult(false, DbOperation.RENAME_MUSIC_FILE);
-                    }
-                });
-    }
-
-    public void deleteMusicFile(String classId, String lessonId, String fileDocId, OnCompleteListener<Void> listener) {
-        FIRESTORE.collection("classes").document(classId)
-                .collection("lessons").document(lessonId)
-                .collection("musicFiles").document(fileDocId)
-                .delete()
-                .addOnCompleteListener(listener);
-    }
-
+    /**
+     * Saves an image Bitmap to Firebase Storage.
+     * @param bitmap The image to save.
+     * @param entryName The storage path/filename.
+     */
     public void saveImageToStorage(Bitmap bitmap, String entryName) {
-        // set the reference as follows:
-        // "folder
-        // " named entryname which is the id of the post
-        // unique image name in case we have more than one image in the post...future
         StorageReference storageRef = firebaseStorage.getReference();
-        // at the moment add random name
         StorageReference imageRef = storageRef.child(entryName);
-        // bitmap to byte array
+        
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
         byte[] data = baos.toByteArray();
         UploadTask uploadTask = imageRef.putBytes(data);
-        // This is required only if we want to get the image url
-        // in https:...  type -> direct url to the image
-        // not via Firebase references
-        Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-            @Override
-            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                if (!task.isSuccessful()) {
-                    throw task.getException();
-                }
-                getFileFromStorage(entryName);
-                // Continue with the task to get the download URL
-                return imageRef.getDownloadUrl();
+        
+        uploadTask.continueWithTask(task -> {
+            if (!task.isSuccessful()) {
+                throw task.getException();
             }
-        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-            @Override
-            public void onComplete(@NonNull Task<Uri> task) {
-                if (task.isSuccessful()) {
-                    Uri downloadUri = task.getResult();
-                    Log.d(TAG, "onSuccess: " + downloadUri);
-                } else {
-                    // Handle failures
-                    Log.d(TAG, "onComplete:  failed");
-                }
+            return imageRef.getDownloadUrl();
+        }).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                Uri downloadUri = task.getResult();
+                Log.d(TAG, "onSuccess: " + downloadUri);
             }
         });
     }
 
-    public void getFileFromStorage (String name)
-    {
+    /**
+     * Retrieves binary data from Storage by name.
+     * @param name The storage path.
+     */
+    public void getFileFromStorage(String name) {
         StorageReference storageRef = firebaseStorage.getReference();
-        // at the moment add random name
         StorageReference fileRef = storageRef.child(name);
-        fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-            @Override
-            public void onSuccess(byte[] bytes) {
-                // Use the bytes to display the image
-                if(storageResult!=null)
-                    storageResult.fileResult(bytes);
-
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                // Handle any errors
-            }
+        fileRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(bytes -> {
+            if(storageResult != null) storageResult.fileResult(bytes);
         });
     }
 
-    public void getImageFromStorage(ImageView ivPostPhoto, String name)
-    {
+    /**
+     * Retrieves an image from Storage and populates an ImageView.
+     * @param ivPostPhoto The target ImageView.
+     * @param name The storage path.
+     */
+    public void getImageFromStorage(ImageView ivPostPhoto, String name) {
         StorageReference storageRef = firebaseStorage.getReference();
-        // at the moment add random name
         StorageReference imageRef = storageRef.child(name);
-        imageRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
-            @Override
-            public void onSuccess(byte[] bytes) {
-                // Use the bytes to display the image
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                ivPostPhoto.setImageBitmap(bitmap);
-            }
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception exception) {
-                // Handle any errors
-            }
+        imageRef.getBytes(Long.MAX_VALUE).addOnSuccessListener(bytes -> {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            ivPostPhoto.setImageBitmap(bitmap);
         });
-
     }
-
-
-
 }

@@ -24,24 +24,43 @@ import com.example.conducto2.data.model.User;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 
-public class SignUpActivity extends AppCompatActivity implements View.OnClickListener,FBAuth.SignInResult, FirebaseComm.DBResult {
+/**
+ * SignUpActivity
+ * 
+ * This activity manages the new user registration pipeline. It implements a 
+ * robust, two-stage data persistence strategy:
+ * 1. Cloud Authentication: Creating an identity (Email/Password) in Firebase Auth.
+ * 2. Profile Persistence: Storing user metadata (Names, Type, Profile Pic) in Firestore.
+ * 
+ * Features:
+ * - Comprehensive multi-field validation.
+ * - Role selection (Teacher vs. Student) using custom Material toggle groups.
+ * - Cascading callback orchestration (waiting for Auth success before triggering DB writes).
+ */
+public class SignUpActivity extends AppCompatActivity implements View.OnClickListener, FBAuth.SignInResult, FirebaseComm.DBResult {
 
-    FBAuth signUp;
-    TextView tvError, tvGoToSignIn;
-    EditText etEmail, etPassword, etConfirmPassword;
-    EditText etFname, etLname, etUname;
-    MaterialButtonToggleGroup rgUserType;    // new variant of RadioGroup
+    /** The authentication manager for account creation. */
+    private FBAuth signUp;
 
+    /** Feedback labels for error reporting and navigation. */
+    private TextView tvError, tvGoToSignIn;
 
-    Button btnSignUp;
+    /** Primary input fields for identity and profile data. */
+    private EditText etEmail, etPassword, etConfirmPassword;
+    private EditText etFname, etLname, etUname;
+
+    /** Material UI component for selecting the account's system role. */
+    private MaterialButtonToggleGroup rgUserType;    
+
+    /** Button to initiate the multi-stage registration process. */
+    private Button btnSignUp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
-
-        // init views
+        // UI Initialization
         tvError = findViewById(R.id.tvError);
         tvError.setVisibility(View.GONE);
         etEmail = findViewById(R.id.etEmail);
@@ -60,26 +79,29 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         connectToDB();
     }
 
+    /**
+     * Secures a connection to the Auth service and performs an immediate session check.
+     */
     private void connectToDB() {
         signUp = new FBAuth();
         signUp.setSignInResult(this);
 
         if (isUserSignedIn()) {
-            // move to post Activity
             Log.d("DATA", "user is already signed in: " + authUserEmail());
-            Intent go = new Intent(SignUpActivity.this, DashboardActivity.class);
-            startActivity(go);
-
+            startActivity(new Intent(SignUpActivity.this, DashboardActivity.class));
+            finish();
         }
 
-        // this means user not signed in registered
         Toast.makeText(this, "please register/sign in", Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Performs a comprehensive set of client-side validations.
+     * Checks for: Empty fields and password mismatch.
+     */
     public void register() {
-        // Get input and remove leading/trailing spaces
         String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString(); // Don't trim password, spaces might be intentional
+        String password = etPassword.getText().toString(); 
         String uname = etUname.getText().toString().trim();
         String fname = etFname.getText().toString().trim();
         String lname = etLname.getText().toString().trim();
@@ -87,45 +109,50 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
 
         tvError.setVisibility(View.VISIBLE);
 
+        // Validation Rule 1: All metadata fields must be non-empty.
         if (email.isEmpty() || password.isEmpty() || uname.isEmpty() || fname.isEmpty() || lname.isEmpty()) {
-            // check if ANY field is empty
             tvError.setText("Please enter all required fields.");
-        } else if (!password.equals(confirmPass)) {
-            // check if passwords match
+        } 
+        // Validation Rule 2: Password confirmation must match.
+        else if (!password.equals(confirmPass)) {
             tvError.setText("Passwords don't match.");
-        } else {
+        } 
+        else {
             tvError.setVisibility(View.GONE);
-
+            // Logic Trigger: Start Stage 1 (Cloud Account Creation).
             signUp.createUser(email, password);
         }
     }
 
-    @Override
-    public void loginResult(boolean result, String message) {
-        return;
-    }
-
+    /**
+     * Stage 2 Logic: Persists the validated user profile to the Firestore database.
+     * @param user The fully populated User POJO.
+     */
     public void insertUserToFB(User user) {
-        // the the user details to the fire store
         FirestoreManager fbManager = new FirestoreManager();
-        fbManager.insertUser(user);
         fbManager.setDbResult(this);
+        fbManager.insertUser(user);
     }
 
+    /**
+     * Stage 1 Callback: Handles the result of the Firebase Auth account creation.
+     */
     @Override
     public void registerResult(boolean result, String message) {
-        // 1st step: fbauth result function
         if (result) {
-            // here user is authed
+            // Identity Created. Now resolve the system role from the UI selection.
             int selectedId = rgUserType.getCheckedButtonId();
             MaterialButton selectedButton = findViewById(selectedId);
-            String userType = selectedButton.getText().toString().toLowerCase();
+            String userType = selectedButton != null ? selectedButton.getText().toString().toLowerCase() : "student";
 
+            // Construct the persistent user model.
             User user = new User(etEmail.getText().toString().trim(), etFname.getText().toString().trim(), etLname.getText().toString().trim(), userType);
+            
+            // Initiation: Trigger Stage 2 (Profile Persistence).
             insertUserToFB(user);
-            DataManager.setUser(user);
+            DataManager.setUser(user); // Cache for local use.
         } else {
-            // here user is NOT authed
+            // Error Path: Notify user of Auth failure (e.g., email already in use).
             tvError.setVisibility(View.VISIBLE);
             tvError.setText(message);
         }
@@ -136,25 +163,32 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         if (view == btnSignUp) {
             register();
         } else if (view == tvGoToSignIn) {
-            Intent go = new Intent(SignUpActivity.this, SignInActivity.class);
-            startActivity(go);
+            startActivity(new Intent(SignUpActivity.this, SignInActivity.class));
         }
     }
 
+    /**
+     * Stage 2 Callback: Handles the result of the profile write to Firestore.
+     */
     @Override
     public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
-        // firestore result function (should be success because of auth step)
         if (success) {
+            // Pipeline Complete. Navigate to the main application hub.
             Intent go = new Intent(SignUpActivity.this, DashboardActivity.class);
             startActivity(go);
+            finish();
         } else {
-            Log.d("Auth", "[ERROR] User creation somehow failed after successful authentication.");
-
+            Log.e("Auth", "[CRITICAL] Profile creation failed after successful auth.");
         }
     }
 
     @Override
     public void displayMessage(String message) {
         Toast.makeText(this, "Register Success!", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void loginResult(boolean result, String message) {
+        // Not used in this activity.
     }
 }

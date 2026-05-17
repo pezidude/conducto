@@ -29,12 +29,26 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 /**
- * Fragment that displays the list of lessons (homework) for a specific class.
+ * ScheduledFragment
+ * 
+ * The default landing fragment for the ClassActivity hub. It displays a real-time list 
+ * of active/upcoming lessons for the classroom.
+ * 
+ * Key Responsibilities:
+ * 1. Data Display: Renders all lessons where `isArchived` is false.
+ * 2. Administrative Hub: Provides the primary Floating Action Button (FAB) for teachers 
+ *    to create new lessons.
+ * 3. Lifecycle Management: Supports gesture-based actions to edit or archive existing lessons.
  */
 public class ScheduledFragment extends Fragment {
 
+    /** The list component rendering the active lesson cards. */
     private RecyclerView lessonsRecyclerView;
+    
+    /** The real-time Firestore adapter handling the polymorphic lesson UI. */
     private LessonAdapter lessonAdapter;
+    
+    /** Contextual button for initiating lesson creation (Teacher only). */
     private FloatingActionButton addLessonFab;
 
     @Nullable
@@ -52,6 +66,10 @@ public class ScheduledFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Initializes the ItemTouchHelper for swipe gestures.
+     * Enforces Role-Based Access Control (RBAC): Only teachers can perform swipe actions.
+     */
     private void setupSwipe() {
         User user = DataManager.getUserInstance();
         if (user == null || !"teacher".equals(user.getUserType())) {
@@ -61,15 +79,18 @@ public class ScheduledFragment extends Fragment {
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {
+                // Swipe Left -> Archive Lesson
                 showArchiveConfirmation(position);
             }
 
             @Override
             public void onSwipeRight(int position) {
+                // Swipe Right -> Edit Lesson
                 editLesson(position);
             }
         });
 
+        // Configure visual metadata for the swipe actions.
         swipeHelper.setLeftAction(R.drawable.archive_24px, R.color.navy_400);
         swipeHelper.setRightAction(R.drawable.ic_edit, R.color.brand_primary);
 
@@ -77,8 +98,12 @@ public class ScheduledFragment extends Fragment {
         itemTouchHelper.attachToRecyclerView(lessonsRecyclerView);
     }
 
+    /**
+     * Confirms the intent to move a lesson to the History tab.
+     * Updates the `isArchived` flag in Firestore to `true`.
+     */
     private void showArchiveConfirmation(int position) {
-        lessonAdapter.notifyDataSetChanged();
+        lessonAdapter.notifyDataSetChanged(); // Reset swipe UI visually
         new AlertDialog.Builder(getContext())
                 .setTitle("Archive Lesson")
                 .setMessage("Are you sure you want to archive this lesson?")
@@ -92,22 +117,28 @@ public class ScheduledFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Transitions to the LessonEditActivity with the selected lesson data.
+     */
     private void editLesson(int position) {
         Lesson lesson = lessonAdapter.getItem(position);
         DataManager.setCurLesson(lesson);
         Intent intent = new Intent(getContext(), LessonEditActivity.class);
         startActivity(intent);
-        lessonAdapter.notifyDataSetChanged();
+        lessonAdapter.notifyDataSetChanged(); // Reset swipe UI
     }
 
     private void initViews(View view) {
         lessonsRecyclerView = view.findViewById(R.id.lessons_recycler_view);
         lessonsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        lessonsRecyclerView.setItemAnimator(null);
+        lessonsRecyclerView.setItemAnimator(null); // Prevent flickering on data sync
 
         addLessonFab = view.findViewById(R.id.add_lesson_fab);
     }
 
+    /**
+     * Configures the visibility of administrative controls based on the user's role.
+     */
     private void setupUI() {
         User user = DataManager.getUserInstance();
         if (user != null && "teacher".equals(user.getUserType())) {
@@ -117,14 +148,21 @@ public class ScheduledFragment extends Fragment {
         }
     }
 
+    /**
+     * Wires the FAB to clear the current lesson cache and open the editor for a fresh document.
+     */
     private void setupListeners() {
         addLessonFab.setOnClickListener(v -> {
-            DataManager.setCurLesson(null); // set an empty lesson to be edited
+            DataManager.setCurLesson(null); // Null signals a new lesson creation
             Intent intent = new Intent(getContext(), LessonEditActivity.class);
             startActivity(intent);
         });
     }
 
+    /**
+     * Defines the standard navigation behavior when a lesson card is clicked.
+     * Opens the detailed view.
+     */
     private void setupItemClickListener() {
         lessonAdapter.setOnItemClickListener(snapshot -> {
             Lesson lesson = snapshot.toObject(Lesson.class);
@@ -144,6 +182,10 @@ public class ScheduledFragment extends Fragment {
         lessonsRecyclerView.setAdapter(lessonAdapter);
     }
 
+    /**
+     * Fragment Lifecycle Management: Optimizes network usage by only listening to 
+     * Firestore changes when the fragment is actually visible to the user in the ViewPager.
+     */
     @Override
     public void setMenuVisibility(boolean isVisibleToUser) {
         super.setMenuVisibility(isVisibleToUser);
@@ -157,6 +199,9 @@ public class ScheduledFragment extends Fragment {
         }
     }
 
+    /**
+     * Builds the specific Firestore query for this tab: unarchived lessons for the current class.
+     */
     private Query buildQuery() {
         return FirebaseFirestore.getInstance().collection("classes")
                 .document(DataManager.getCurClass().getId()).collection("lessons")

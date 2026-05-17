@@ -1,0 +1,390 @@
+@startuml
+class com.example.conducto2.data.firebase.FirebaseComm {
+- {static} String TAG
+# {static} FirebaseFirestore FIRESTORE
+- {static} FirebaseAuth AUTH
+# DBResult dbResult
++ void setDbResult(DBResult)
++ {static} FirebaseAuth getAuth()
++ {static} FirebaseFirestore getFirestore()
++ {static} CollectionReference getCollectionReference(String)
++ {static} boolean isUserSignedIn()
++ {static} String authUserEmail()
++ {static} void signOut()
+}
+
+
+enum com.example.conducto2.data.firebase.DbOperation {
++  INSERT_USER
++  UPDATE_USER
++  INSERT_LESSON
++  UPDATE_LESSON
++  DELETE_LESSON
++  INSERT_CLASS
++  UPDATE_CLASS
++  JOIN_CLASS
++  FETCH_CLASSES
++  UPDATE_LESSON_STATUS
++  UPDATE_LESSON_LIVE_STATUS
++  UPDATE_LESSON_ARCHIVED_STATUS
++  UPLOAD_MUSIC_FILE
++  RENAME_MUSIC_FILE
++  OTHER
+}
+
+interface com.example.conducto2.data.firebase.FirebaseComm$DBResult {
+~ void uploadResult(boolean,DbOperation)
+~ void displayMessage(String)
+}
+
+class com.example.conducto2.data.firebase.FileStorage {
+- {static} String TAG
+- FirebaseStorage firebaseStorage
+- StorageResult storageResult
++ void setStorageResult(StorageResult)
++ void uploadMusicFile(String,String,Uri,String,String)
++ void uploadRoleMusicFile(String,String,String,String,String,String)
++ void renameMusicFile(String,String,String,String)
++ void deleteMusicFile(String,String,String,OnCompleteListener<Void>)
+- void updateLessonMapping(String,String,String,String)
++ void saveImageToStorage(Bitmap,String)
++ void getFileFromStorage(String)
++ void getImageFromStorage(ImageView,String)
+}
+
+
+interface com.example.conducto2.data.firebase.FileStorage$StorageResult {
+~ void fileResult(byte[])
+}
+
+class com.example.conducto2.data.model.Role {
+- String id
+- String name
+- List<String> selectedPartIds
++ String getId()
++ void setId(String)
++ String getName()
++ void setName(String)
++ List<String> getSelectedPartIds()
++ void setSelectedPartIds(List<String>)
+}
+
+
+class com.example.conducto2.data.firebase.FirestoreManager {
+- {static} String TAG
+- FirebaseUser firebaseUser
++ void setDbResult(DBResult)
++ void insertUser(User)
++ void updateUser(User)
++ void insertLesson(String,Lesson)
++ void updateLesson(String,Lesson)
++ void updateUserProfilePicture(String,String)
++ void deleteLesson(String,String)
++ void updateLessonArchivedStatus(String,String,boolean)
++ void getUser(UserFetchListener)
++ void getAllUsers(List<User>,AllUsersFetchListener)
++ void getClassesForUser(String,ClassesFetchListener)
++ void insertClass(Class)
++ void updateClass(Class)
++ void joinClassWithCode(String)
++ void updateClassActivity(String,boolean)
++ void updateLessonStatus(String,String,String,long,int,int)
++ void updateLessonStatus(String,String,String,long)
++ void updateLessonStatus(String,String,String)
++ void updateStudentPresence(String,String,String,boolean)
++ void calculateServerTimeOffset(OnSuccessListener<Long>)
++ void updateLessonLiveStatus(String,String,boolean)
++ void listenForLiveLesson(String,LiveLessonListener)
++ void addDraftRole(String,String,Role)
++ void updateDraftRole(String,String,String,Map<String,Object>)
++ void deleteDraftRole(String,String,String)
++ Query getDraftRolesQuery(String,String)
++ void logLessonAccess(String,String,String,String)
++ void deleteRecentLessonLog(String,String)
++ void getRecentLessons(String,RecentLessonsFetchListener)
++ void getLesson(String,String,OnSuccessListener<Lesson>)
++ void getClassById(String,OnSuccessListener<Class>)
+}
+
+
+interface com.example.conducto2.data.firebase.FirestoreManager$UserFetchListener {
+~ void onUserFetched(User)
+}
+
+interface com.example.conducto2.data.firebase.FirestoreManager$AllUsersFetchListener {
+~ void onUsersFetched(List<User>)
+}
+
+interface com.example.conducto2.data.firebase.FirestoreManager$ClassesFetchListener {
+~ void onClassesFetched(List<Class>)
+}
+
+interface com.example.conducto2.data.firebase.FirestoreManager$LiveLessonListener {
+~ void onLiveLessonChanged(Lesson)
+}
+
+interface com.example.conducto2.data.firebase.FirestoreManager$RecentLessonsFetchListener {
+~ void onRecentLessonsFetched(List<Lesson>)
+}
+
+class com.example.conducto2.data.model.ClassicalLesson {
++ int getGenreColorResId()
++ int getGenreIconResId()
++ String getGenreLabel()
++ int getRecentLessonTintResId()
+}
+
+class com.example.conducto2.data.model.Class {
+- String name
+- String description
+- String teacherName
+- String ownerEmail
+- ArrayList<String> members
+- String id
+- String joinCode
+- boolean isActive
++ {static} Creator<Class> CREATOR
+- String generateNewJoinCode()
++ void ensureJoinCode()
++ String getName()
++ void setName(String)
++ String getDescription()
++ void setDescription(String)
++ String getTeacherName()
++ void setTeacherName(String)
++ String getOwnerEmail()
++ void setOwnerEmail(String)
++ ArrayList<String> getMembers()
++ void setMembers(ArrayList<String>)
++ String getId()
++ void setId(String)
++ String getJoinCode()
++ void setJoinCode(String)
++ boolean isActive()
++ void setActive(boolean)
++ int describeContents()
++ void writeToParcel(Parcel,int)
+}
+
+
+class com.example.conducto2.data.model.User {
+- String userId
+- String fname
+- String lname
+- String email
+- String userType
+- String profilePictureBase64
+- String description
++ String toString()
++ void setFname(String)
++ void setLname(String)
++ void setEmail(String)
++ void setUserType(String)
++ void setProfilePictureBase64(String)
++ void setDescription(String)
++ String getFname()
++ String getLname()
++ String getEmail()
++ String getUserType()
++ String getUserId()
++ String getProfilePictureBase64()
++ String getDescription()
+}
+
+
+class com.example.conducto2.data.file.FileIO {
+- {static} String TAG
+- Context context
+- InputStream openInputStream(Uri)
++ String readMusicXmlContent(Uri)
+- byte[] readAllBytes(Uri)
+- String processMusicXmlData(byte[])
+- boolean isZip(byte[])
+- String readFromZipRecursively(byte[])
+- String getRootFilePath(byte[])
++ String getFileName(Uri)
++ String getExtension(Uri)
+}
+
+
+class com.example.conducto2.data.manager.DataManager {
+- {static} User user
+- {static} Lesson curLesson
+- {static} Class curClass
++ {static} User getUserInstance()
++ {static} void setUser(User)
++ {static} Lesson getCurLesson()
++ {static} void setCurLesson(Lesson)
++ {static} Class getCurClass()
++ {static} void setCurClass(Class)
+}
+
+
+class com.example.conducto2.data.model.JazzLesson {
++ int getGenreColorResId()
++ int getGenreIconResId()
++ String getGenreLabel()
++ int getRecentLessonTintResId()
+}
+
+class com.example.conducto2.data.model.RockLesson {
++ int getGenreColorResId()
++ int getGenreIconResId()
++ String getGenreLabel()
++ int getRecentLessonTintResId()
+}
+
+class com.example.conducto2.data.manager.GeminiManager {
+- String apiKey
+- {static} String[] MODEL_FALLBACKS
+- {static} GeminiManager instance
+- Executor executor
+- ChatFutures currentChatSession
+- Handler mainHandler
++ {static} GeminiManager getInstance(Context)
++ void sendMessage(String,GeminiCallback)
++ void sendMessageWithPhoto(String,Bitmap,GeminiCallback)
++ void sendMessageWithImageView(String,ImageView,GeminiCallback)
+- void executeRequestWithFallback(Content,int,GeminiCallback)
+- Bitmap drawableToBitmap(Drawable)
++ void startNewChat()
++ void sendChatMessage(String,GeminiCallback)
+}
+
+
+interface com.example.conducto2.data.manager.GeminiManager$GeminiCallback {
+~ void onSuccess(String)
+~ void onError(Throwable)
+}
+
+class com.example.conducto2.data.file.FilePickerHelper {
+- ActivityResultLauncher<Intent> launcher
+- OnFilePickedListener listener
++ void openFilePicker()
+}
+
+
+interface com.example.conducto2.data.file.FilePickerHelper$OnFilePickedListener {
+~ void onFilePicked(Uri,String)
+}
+
+class com.example.conducto2.data.model.PopLesson {
++ int getGenreColorResId()
++ int getGenreIconResId()
++ String getGenreLabel()
++ int getRecentLessonTintResId()
+}
+
+class com.example.conducto2.data.model.Lesson {
+- String title
+- String info
+- Date date
+- String classId
+- List<MusicFile> musicXMLFiles
+- Map<String,List<String>> fileMapping
+- String status
+- boolean isLive
+- boolean isArchived
+- long targetTimestamp
+- int currentMeasure
+- int bpm
+- String genre
+- List<String> connectedStudents
++ {static} String STATUS_STOPPED
++ {static} String STATUS_PAUSED
++ {static} String STATUS_PLAYING
+- String id
++ {static} Creator<Lesson> CREATOR
++ String getGenre()
++ void setGenre(String)
++ int getGenreColorResId()
++ int getGenreIconResId()
++ String getGenreLabel()
++ int getRecentLessonTintResId()
++ String toString()
++ void setTitle(String)
++ void setInfo(String)
++ void setDate(Date)
++ Date getDate()
++ String getClassId()
++ void setClassId(String)
++ List<MusicFile> getMusicXMLFiles()
++ void setMusicXMLFiles(List<MusicFile>)
++ Map<String,List<String>> getFileMapping()
++ void setFileMapping(Map<String,List<String>>)
++ List<String> getConnectedStudents()
++ void setConnectedStudents(List<String>)
++ String getStatus()
++ void setStatus(String)
++ boolean isLive()
++ void setLive(boolean)
++ boolean isArchived()
++ void setArchived(boolean)
++ long getTargetTimestamp()
++ void setTargetTimestamp(long)
++ int getCurrentMeasure()
++ void setCurrentMeasure(int)
++ int getBpm()
++ void setBpm(int)
++ {static} Lesson fromBase(Lesson)
++ void setId(String)
++ String getId()
++ int describeContents()
++ String getInfo()
++ String getTitle()
++ void writeToParcel(Parcel,int)
+}
+
+
+class com.example.conducto2.data.firebase.FBAuth {
+- {static} String TAG
+- SignInResult signInResult
++ void setSignInResult(SignInResult)
++ void loginUser(String,String)
++ void createUser(String,String)
+}
+
+
+interface com.example.conducto2.data.firebase.FBAuth$SignInResult {
+~ void loginResult(boolean,String)
+~ void registerResult(boolean,String)
+}
+
+class com.example.conducto2.data.model.MusicFile {
+- String title
+- Uri uri
++ {static} Creator<MusicFile> CREATOR
++ String getTitle()
++ void setTitle(String)
++ Uri getUri()
++ void setUri(Uri)
++ String getUrl()
++ void setUrl(String)
++ int describeContents()
++ void writeToParcel(Parcel,int)
+}
+
+
+
+
+com.example.conducto2.data.firebase.FirebaseComm +.. com.example.conducto2.data.firebase.FirebaseComm$DBResult
+com.example.conducto2.data.firebase.FirebaseComm <|-- com.example.conducto2.data.firebase.FileStorage
+com.example.conducto2.data.firebase.FileStorage +.. com.example.conducto2.data.firebase.FileStorage$StorageResult
+com.example.conducto2.data.firebase.FirebaseComm <|-- com.example.conducto2.data.firebase.FirestoreManager
+com.example.conducto2.data.firebase.FirestoreManager +.. com.example.conducto2.data.firebase.FirestoreManager$UserFetchListener
+com.example.conducto2.data.firebase.FirestoreManager +.. com.example.conducto2.data.firebase.FirestoreManager$AllUsersFetchListener
+com.example.conducto2.data.firebase.FirestoreManager +.. com.example.conducto2.data.firebase.FirestoreManager$ClassesFetchListener
+com.example.conducto2.data.firebase.FirestoreManager +.. com.example.conducto2.data.firebase.FirestoreManager$LiveLessonListener
+com.example.conducto2.data.firebase.FirestoreManager +.. com.example.conducto2.data.firebase.FirestoreManager$RecentLessonsFetchListener
+com.example.conducto2.data.model.Lesson <|-- com.example.conducto2.data.model.ClassicalLesson
+android.os.Parcelable <|.. com.example.conducto2.data.model.Class
+com.example.conducto2.data.model.Lesson <|-- com.example.conducto2.data.model.JazzLesson
+com.example.conducto2.data.model.Lesson <|-- com.example.conducto2.data.model.RockLesson
+com.example.conducto2.data.manager.GeminiManager +.. com.example.conducto2.data.manager.GeminiManager$GeminiCallback
+com.example.conducto2.data.file.FilePickerHelper +.. com.example.conducto2.data.file.FilePickerHelper$OnFilePickedListener
+com.example.conducto2.data.model.Lesson <|-- com.example.conducto2.data.model.PopLesson
+android.os.Parcelable <|.. com.example.conducto2.data.model.Lesson
+com.example.conducto2.data.firebase.FirebaseComm <|-- com.example.conducto2.data.firebase.FBAuth
+com.example.conducto2.data.firebase.FBAuth +.. com.example.conducto2.data.firebase.FBAuth$SignInResult
+android.os.Parcelable <|.. com.example.conducto2.data.model.MusicFile
+@enduml

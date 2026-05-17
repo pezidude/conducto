@@ -34,16 +34,39 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.example.conducto2.data.model.Class;
 
 /**
- * Activity that displays class details with swipeable tabs for Scheduled, People, Live, and Homework.
- * Uses ViewPager2 and BottomNavigationView for navigation.
+ * ClassActivity
+ * 
+ * The main classroom navigation hub. This activity coordinates the high-level 
+ * user experience within a specific class, providing a multi-tab interface 
+ * for scheduling, participant rosters, live lessons, and history.
+ * 
+ * Technical Architecture:
+ * 1. Layout: Uses {@link ViewPager2} to host four distinct Fragments.
+ * 2. Navigation: Integrates a {@link BottomNavigationView} that is synchronized 
+ *    with the ViewPager.
+ * 3. Real-time Status: Implements {@link FirestoreManager.LiveLessonListener} 
+ *    to provide class-wide visual alerts when a lesson goes "Live."
+ * 4. Custom Styling: Implements manual tinting for navigation items to support 
+ *    dynamic state-based alerts (e.g., the red Live dot).
  */
 public class ClassActivity extends BaseDrawerActivity implements FirestoreManager.LiveLessonListener {
 
+    /** The container for swipeable fragments. */
     private ViewPager2 viewPager;
+
+    /** The primary navigation bar for classroom sub-sections. */
     private BottomNavigationView bottomNavigationView;
+
+    /** UI field displaying the class's Join Code for quick reference. */
     private TextView joinCodeTextView;
+
+    /** 
+     * Local state tracking whether any lesson in the class is currently active. 
+     * Drives the color state of the "Live" navigation icon.
+     */
     private boolean isLiveActive = false;
 
+    /** Identifier for logging. */
     public static final String TAG = "ClassActivity";
 
     @Override
@@ -55,10 +78,10 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         setupViewPager();
         setupBottomNavigation();
 
-        // Apply initial styles
+        // Initialize UI styling for the navigation components.
         applyNavigationStyles();
 
-        // setup listener to firestore
+        // Registration of the real-time listener to detect Live sessions.
         Class currentClass = DataManager.getCurClass();
         if (currentClass == null || currentClass.getId() == null) {
             Toast.makeText(this, "Error: Class data is missing", Toast.LENGTH_SHORT).show();
@@ -69,27 +92,34 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         firestoreManager.listenForLiveLesson(currentClass.getId(), this);
         Log.d(TAG, "Listening for live lesson for class: " + currentClass.getId());
 
-        // Check for specific target tab
+        // Navigation Resolution: Support direct deep-linking to specific fragments.
         if (getIntent().hasExtra("target_tab")) {
             int targetTab = getIntent().getIntExtra("target_tab", 0);
             viewPager.setCurrentItem(targetTab, false);
-            // bottomNavigationView selection will be updated by the page change callback
         }
     }
 
+    /**
+     * Initializes views and performs permanent overrides on BottomNavigationView 
+     * to allow for manual state-based color control.
+     */
     private void initViews() {
         viewPager = findViewById(R.id.view_pager);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         joinCodeTextView = findViewById(R.id.class_join_code);
 
-        // Permanently disable global tints and active indicator to allow per-item manual overrides
-        // for the live button. This avoids conflicts with default theme colors
+        // Permanently disable global tints to allow per-item manual overrides 
+        // in applyNavigationStyles(). This prevents default theme behaviors from 
+        // overwriting the dynamic red "Live" indicator.
         bottomNavigationView.setItemIconTintList(null);
         bottomNavigationView.setItemTextColor(null);
 
         refreshClassInfo();
     }
 
+    /**
+     * Synchronizes the UI text and ActionBar title with the current DataManager state.
+     */
     private void refreshClassInfo() {
         Class currentClass = DataManager.getCurClass();
         if (currentClass != null) {
@@ -100,11 +130,15 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         }
     }
 
+    /**
+     * Configures the ViewPager2 adapter and implements bidirectional synchronization 
+     * with the BottomNavigationView.
+     */
     private void setupViewPager() {
         SectionsPagerAdapter pagerAdapter = new SectionsPagerAdapter(this);
         viewPager.setAdapter(pagerAdapter);
 
-        // Synchronize ViewPager swipe with BottomNavigationView selection
+        // ViewPager -> BottomNav sync: Update selected item when user swipes.
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -120,15 +154,19 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
                 if (bottomNavigationView.getSelectedItemId() != itemId) {
                     bottomNavigationView.setSelectedItemId(itemId);
                 }
-                // Refresh styles on swipe
+                // Refresh item tints based on the new selection state.
                 applyNavigationStyles();
             }
         });
     }
 
+    /**
+     * Configures the BottomNav listeners to trigger ViewPager navigation.
+     */
     private void setupBottomNavigation() {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
+            // BottomNav -> ViewPager sync: Update current page when user clicks a button.
             if (itemId == R.id.nav_scheduled) {
                 if (viewPager.getCurrentItem() != 0) viewPager.setCurrentItem(0);
             } else if (itemId == R.id.nav_people) {
@@ -144,6 +182,10 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
         });
     }
 
+    /**
+     * Callback from Firestore when a lesson's live state changes.
+     * Triggers a full UI refresh of the navigation bar to alert the user.
+     */
     @Override
     public void onLiveLessonChanged(Lesson lesson) {
         runOnUiThread(() -> {
@@ -154,7 +196,8 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
 
 
     /**
-     * Adapter for the ViewPager2 to handle the 4 fragments.
+     * Adapter for the ViewPager2. 
+     * Manages the lifecycle of the four primary classroom sub-fragments.
      */
     private static class SectionsPagerAdapter extends FragmentStateAdapter {
         public SectionsPagerAdapter(@NonNull FragmentActivity fragmentActivity) {
@@ -189,6 +232,7 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         User user = DataManager.getUserInstance();
+        // Permission Control: Only instructors can access the classroom settings edit screen.
         if (user != null && "teacher".equals(user.getUserType())) {
             MenuItem editItem = menu.add(Menu.NONE, 1001, Menu.NONE, "Edit");
             editItem.setIcon(R.drawable.ic_edit);
@@ -205,8 +249,12 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
 
     /**
      * Manually applies colors and icons to BottomNavigationView items.
-     * This is necessary because we disable the default tinting to allow
-     * special styling for the 'Live' button.
+     * 
+     * Logical Reasoning:
+     * We disable the default XML-based tinting mechanism to allow for a 
+     * non-binary state model. While standard items switch between "Selected" and 
+     * "Default" colors, the 'Live' button must also account for the 'isLiveActive' 
+     * state independently of whether it is currently the selected tab.
      */
     private void applyNavigationStyles() {
         Menu menu = bottomNavigationView.getMenu();
@@ -218,7 +266,9 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
             boolean isSelected = itemId == selectedId;
 
             if (itemId == R.id.nav_live) {
-                // Special handling for Live button: red icon/text if active
+                // Feature: Red Alert for Live Sessions.
+                // Icon and Text color become high-contrast red if a lesson is live, 
+                // overriding standard navigation colors.
                 item.setIcon(isLiveActive ? R.drawable.ic_live_dot_red : R.drawable.ic_live_dot_white);
                 item.setIconTintList(null);
 
@@ -227,7 +277,7 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
                 s.setSpan(new ForegroundColorSpan(color), 0, s.length(), 0);
                 item.setTitle(s);
             } else {
-                // Standard behavior for other items
+                // Standard Tab Styling: Switch between selected and default tints.
                 int color = ContextCompat.getColor(this, isSelected ? R.color.nav_icon_selected : R.color.nav_icon_default);
 
                 Drawable icon = item.getIcon();

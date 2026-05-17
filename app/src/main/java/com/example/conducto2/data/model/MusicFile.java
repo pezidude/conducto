@@ -7,23 +7,39 @@ import android.os.Parcelable;
 import com.google.firebase.firestore.Exclude;
 
 /**
- * Represents a single music file with its title and storage URL.
- * Implements Parcelable to be passed between activities.
+ * MusicFile
+ * 
+ * Represents a single sheet music resource associated with a lesson. 
+ * This model bridges the gap between Android's {@link Uri} objects (used for local processing)
+ * and Firestore's String requirements for URLs.
+ * 
+ * It implements {@link Parcelable} to facilitate the transmission of file metadata 
+ * between the Lesson list and the Sheet Music Player activity.
  */
 public class MusicFile implements Parcelable {
+    
+    /** The display name of the music file. */
     private String title;
 
+    /** 
+     * The internal Android Uri representing the resource location. 
+     * Excluded from direct Firestore serialization to allow custom string-based mapping.
+     */
     @Exclude
     private Uri uri;
 
-    // Default constructor is required for calls to DataSnapshot.getValue(MusicFile.class)
+    /** Required no-argument constructor for Firestore deserialization. */
     public MusicFile() {}
 
+    /**
+     * Initializes a new music file with a title and a Uri.
+     */
     public MusicFile(String title, Uri uri) {
         this.title = title;
         this.uri = uri;
     }
 
+    /** Parcelable implementation constructor. */
     protected MusicFile(Parcel in) {
         title = in.readString();
         uri = in.readParcelable(Uri.class.getClassLoader());
@@ -60,15 +76,16 @@ public class MusicFile implements Parcelable {
     }
 
     /**
-     * This getter is used by Firestore to serialize the Uri as a String.
-     * The property name in Firestore will be 'url'.
+     * Serializes the Uri as a String for Firestore storage under the key 'url'.
+     * @return The String representation of the Uri.
      */
     public String getUrl() {
         return uri != null ? uri.toString() : null;
     }
 
     /**
-     * This setter is used by Firestore to deserialize a String into a Uri.
+     * Deserializes a String from Firestore back into an Android Uri object.
+     * @param url The string URL retrieved from the database.
      */
     public void setUrl(String url) {
         if (url != null) {

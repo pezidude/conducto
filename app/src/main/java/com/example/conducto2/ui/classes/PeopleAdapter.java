@@ -21,15 +21,35 @@ import com.google.android.material.card.MaterialCardView;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * PeopleAdapter
+ * 
+ * a specialized RecyclerView adapter for rendering the participants of a classroom.
+ * This class handles the complex visual representation of users, including:
+ * 1. Base64 decoding of profile pictures into Android Bitmaps.
+ * 2. Generating dynamic initial-based avatars for users without profile images.
+ * 3. Role-based styling to visually distinguish the teacher from students.
+ */
 public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonViewHolder> {
 
+    /** The current list of users to display in the roster. */
     private List<User> users = new ArrayList<>();
+
+    /** The unique email of the classroom's instructor, used for visual highlighting. */
     private String teacherEmail;
 
+    /**
+     * Constructs a new PeopleAdapter.
+     * @param teacherEmail The email address of the class teacher.
+     */
     public PeopleAdapter(String teacherEmail) {
         this.teacherEmail = teacherEmail;
     }
 
+    /**
+     * Updates the dataset of the adapter.
+     * @param users The new list of users.
+     */
     public void setUsers(List<User> users) {
         this.users = users;
         notifyDataSetChanged();
@@ -42,9 +62,13 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
         return new PersonViewHolder(view);
     }
 
+    /**
+     * Binds a user model to a ViewHolder and determines if they should receive teacher styling.
+     */
     @Override
     public void onBindViewHolder(@NonNull PersonViewHolder holder, int position) {
         User user = users.get(position);
+        // Logical check: Identify if the current user is the classroom teacher.
         holder.bind(user, user.getEmail().equals(teacherEmail));
     }
 
@@ -53,6 +77,10 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
         return users.size();
     }
 
+    /**
+     * ViewHolder for person items.
+     * Encapsulates the UI logic for profile rendering and role-based highlighting.
+     */
     static class PersonViewHolder extends RecyclerView.ViewHolder {
         private MaterialCardView card;
         private ImageView ivProfilePicture;
@@ -73,12 +101,18 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
             tvRoleBadge = itemView.findViewById(R.id.tv_role_badge);
         }
 
+        /**
+         * Populates views and handles the conditional decoding of image data.
+         * @param user The user data model.
+         * @param isTeacher True if this user should be styled as an instructor.
+         */
         public void bind(User user, boolean isTeacher) {
             String fullName = user.getFname() + " " + user.getLname();
             tvName.setText(fullName);
             tvEmail.setText(user.getEmail());
 
-            // Initials
+            // --- Initials Processing ---
+            // Construct initials from first and last name for placeholder avatars.
             String initials = "";
             if (user.getFname() != null && !user.getFname().isEmpty()) {
                 initials += user.getFname().substring(0, 1).toUpperCase();
@@ -88,7 +122,8 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
             }
             tvInitials.setText(initials);
 
-            // Profile Picture
+            // --- Binary Image Decoding ---
+            // Decode profile picture from Base64 string into a high-fidelity Bitmap.
             String base64Image = user.getProfilePictureBase64();
             if (base64Image != null && !base64Image.isEmpty()) {
                 try {
@@ -99,6 +134,7 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
                     tvInitials.setVisibility(View.GONE);
                 } catch (Exception e) {
                     Log.e("PeopleAdapter", "Error decoding base64 image", e);
+                    // Fallback to initials if decoding fails.
                     ivProfilePicture.setVisibility(View.GONE);
                     tvInitials.setVisibility(View.VISIBLE);
                 }
@@ -107,13 +143,12 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
                 tvInitials.setVisibility(View.VISIBLE);
             }
 
-            // Styling for teacher
+            // --- Role-Based Styling ---
+            // Highlight the instructor with a specialized badge and card border.
             if (isTeacher) {
                 tvRoleBadge.setVisibility(View.VISIBLE);
-                // Highlight the card slightly
                 card.setStrokeColor(ContextCompat.getColor(itemView.getContext(), R.color.brand_accent));
                 card.setStrokeWidth(4);
-                // You could also change the background or add a "Teacher" badge
             } else {
                 tvRoleBadge.setVisibility(View.GONE);
                 card.setStrokeWidth(0);

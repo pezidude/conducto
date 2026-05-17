@@ -18,16 +18,37 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+/**
+ * LessonAdapter
+ * 
+ * A specialized RecyclerView adapter that provides a real-time reactive list of lessons
+ * within a class. It leverages {@link FirestoreRecyclerAdapter} to synchronize 
+ * with the database automatically.
+ * 
+ * This adapter implements polymorphic UI rendering, adjusting the visual style (colors, icons)
+ * based on the lesson's genre and real-time "Live" or "Archived" status.
+ */
 public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapter.LessonViewHolder> {
+
+    /** Listener for handling click events on individual lesson items. */
     private OnItemClickListener listener;
 
+    /**
+     * Constructs a new LessonAdapter with Firestore options.
+     * @param options Configuration for the Firestore query and model mapping.
+     */
     public LessonAdapter(@NonNull FirestoreRecyclerOptions<Lesson> options) {
         super(options);
     }
 
+    /**
+     * Binds a lesson document to a ViewHolder. 
+     * Uses the polymorphic factory {@link Lesson#fromBase(Lesson)} to ensure genre-specific 
+     * UI resources are available during the binding process.
+     */
     @Override
     protected void onBindViewHolder(@NonNull LessonViewHolder holder, int position, @NonNull Lesson model) {
-        // Use polymorphism to get specific behavior
+        // Transform the generic model into a specific genre subclass for themed rendering.
         Lesson polymorphicLesson = Lesson.fromBase(model);
         holder.bind(polymorphicLesson);
     }
@@ -39,6 +60,10 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
         return new LessonViewHolder(view);
     }
 
+    /**
+     * ViewHolder for lesson items. 
+     * Implements the internal binding logic and handles click propagation to the parent.
+     */
     class LessonViewHolder extends RecyclerView.ViewHolder {
         private TextView lessonTitle;
         private TextView lessonInfo;
@@ -54,6 +79,7 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             iconTile = itemView.findViewById(R.id.lesson_icon_tile);
             iconView = itemView.findViewById(R.id.lesson_icon);
 
+            // Configure click listener to return the full document snapshot for context-aware navigation.
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
                 if (position != RecyclerView.NO_POSITION && listener != null && position < getSnapshots().size()) {
@@ -62,15 +88,21 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             });
         }
 
+        /**
+         * Populates the UI elements with lesson data and applies conditional styling.
+         * @param lesson The lesson model to bind.
+         */
         public void bind(Lesson lesson) {
             lessonTitle.setText(lesson.getTitle());
+
+            // Visual Logic: Highlight live lessons with high-contrast red.
             if (lesson.isLive()) {
                 lessonTitle.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.red_600));
             } else {
                 lessonTitle.setTextColor(ContextCompat.getColor(itemView.getContext(), R.color.text_primary));
             }
             
-            // Show genre label if it's not empty
+            // UI Enhancement: Prefix info text with the genre label if present.
             String infoText = lesson.getInfo();
             if (!lesson.getGenreLabel().isEmpty()) {
                 infoText = "[" + lesson.getGenreLabel() + "] " + infoText;
@@ -80,9 +112,11 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             SimpleDateFormat dateTimeFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm", Locale.getDefault());
             lessonDate.setText(dateTimeFormat.format(lesson.getDate()));
 
-            // Apply polymorphic styling
+            // Polymorphic Styling: Determine primary color and icon based on genre or live state.
             int color = ContextCompat.getColor(itemView.getContext(), 
                 lesson.isLive() ? R.color.red_600 : lesson.getGenreColorResId());
+            
+            // Mutate the background drawable to apply tint without affecting other instances of the same resource.
             if (iconTile.getBackground() != null) {
                 iconTile.getBackground().mutate().setTint(color);
             }
@@ -94,7 +128,7 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
             }
             iconView.setColorFilter(ContextCompat.getColor(itemView.getContext(), R.color.white));
 
-            // Gray out if archived
+            // State Logic: Dim the entire item if it has been archived to indicate completion.
             if (lesson.isArchived()) {
                 itemView.setAlpha(0.5f);
             } else {
@@ -103,10 +137,15 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
         }
     }
 
+    /** Interface definition for lesson item click callbacks. */
     public interface OnItemClickListener {
         void onItemClick(DocumentSnapshot documentSnapshot);
     }
 
+    /**
+     * Sets the click listener for the adapter.
+     * @param listener The implementation to handle clicks.
+     */
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }

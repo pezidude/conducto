@@ -36,8 +36,17 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Activity that displays the details of a specific lesson, including its title, date, notes, and music files.
- * Provides a "Go Live" functionality for teachers to set this lesson as the active live lesson for the class.
+ * LessonDetailsActivity
+ * 
+ * This activity provides the read-only overview of a specific lesson. It displays
+ * basic metadata (Title, Date, Description) and lists the associated MusicXML files.
+ * 
+ * Key Responsibilities:
+ * 1. Role-Based Rendering: Teachers see the "Go Live" functionality; students see
+ *    only the music files specifically assigned to them.
+ * 2. AI Integration: Interfaces with {@link GeminiManager} to generate automated 
+ *    educational descriptions of sheet music.
+ * 3. Navigation: Acts as the launchpad into the {@link SMPlayerActivity}.
  */
 public class LessonDetailsActivity extends BaseDrawerActivity implements FirebaseComm.DBResult {
 
@@ -57,7 +66,6 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
 
         firestoreManager.setDbResult(this);
         initViews();
-        // populateLessonView(); // This is called in onResume()
     }
 
     @Override
@@ -67,17 +75,17 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             adapter.startListening();
         }
         
-        // Refresh class data to ensure we have the latest isActive status
+        // Refresh class data to ensure we have the latest isActive status before rendering the Live button
         if (DataManager.getCurClass() != null) {
             firestoreManager.getClassById(DataManager.getCurClass().getId(), updatedClass -> {
                 if (updatedClass != null) {
                     DataManager.setCurClass(updatedClass);
-                    setupGoLiveButton(); // Re-check button state with fresh class data
+                    setupGoLiveButton(); 
                 }
             });
         }
         
-        populateLessonView(); // Refresh lesson details when returning from editing
+        populateLessonView();
     }
 
     @Override
@@ -88,6 +96,9 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         }
     }
 
+    /**
+     * Binds UI components to their layout IDs.
+     */
     private void initViews() {
         lessonTitle = findViewById(R.id.lesson_details_title);
         lessonDate = findViewById(R.id.lesson_details_date);
@@ -96,14 +107,13 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         tvNoFiles = findViewById(R.id.tv_no_files);
         musicXmlFilesRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         musicXmlFilesRecyclerView.setNestedScrollingEnabled(false);
-        //musicXmlFilesRecyclerView.setItemAnimator(null); // fix bug in recycle view
         btnGoLive = findViewById(R.id.btn_go_live);
         tvStatusMessage = findViewById(R.id.tv_status_message);
     }
 
     /**
-     * Loads the lesson data from the DataManager and populates the UI.
-     * Also sets up the teacher-specific "Live" button.
+     * Loads the lesson data from the DataManager and populates the UI text elements.
+     * Also triggers the "Recent Lessons" logging via FirestoreManager.
      */
     private void populateLessonView() {
         Lesson lesson = DataManager.getCurLesson();
@@ -112,7 +122,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             return;
         }
 
-        // Log this access for the "Recent Lessons" feature
+        // History Feature: Log this access for the personalized dashboard
         String email = firestoreManager.authUserEmail();
         firestoreManager.logLessonAccess(email, lesson.getClassId(), lesson.getId(), lesson.getTitle());
 
@@ -124,6 +134,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             lessonDate.setText("No date set");
         }
         
+        // UI Polish: Style empty descriptions clearly
         if (lesson.getInfo() == null || lesson.getInfo().trim().isEmpty()) {
             lessonInfo.setText(R.string.label_lesson_no_notes);
             lessonInfo.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
@@ -136,12 +147,13 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
 
         setupMusicFilesList();
         setupGoLiveButton();
-
     }
 
     /**
-     * Configures the music files list with an adapter and click listeners and appropriate
-     * query for the student-specific music files based on the file mapping in the lesson.
+     * Configures the RecyclerView to display the correct music files.
+     * Implementation includes strong Role-Based Access Control (RBAC):
+     * - Teachers see all files.
+     * - Students only see files mapped explicitly to their email address.
      */
     private void setupMusicFilesList() {
         Lesson lesson = DataManager.getCurLesson();
@@ -151,18 +163,20 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             return;
         }
 
+        // Base query targets all files for this lesson
         Query query = FirebaseFirestore.getInstance()
                 .collection("classes").document(DataManager.getCurClass().getId())
                 .collection("lessons").document(lesson.getId())
                 .collection("musicFiles");
 
-        // If the user is a student, filter the music files based on the file mapping.
+        // Authorization Logic: Filter files if the user is a student
         if (user.getUserType() != null && user.getUserType().equals("student")) {
             Map<String, List<String>> fileMapping = lesson.getFileMapping();
             List<String> assignedUrls = new ArrayList<>();
             String userEmail = user.getEmail();
 
             if (fileMapping != null && userEmail != null) {
+                // Scan the mapping table for the student's email
                 for (Map.Entry<String, List<String>> entry : fileMapping.entrySet()) {
                     List<String> students = entry.getValue();
                     if (students != null && students.contains(userEmail)) {
@@ -172,10 +186,10 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             }
 
             if (assignedUrls.isEmpty()) {
-                // If no mapping exists for this student, return a query that yields no results.
+                // Security: If no assignment exists, forcefully break the query
                 query = query.whereEqualTo("url", "NON_EXISTENT_MAPPING");
             } else {
-                // Display only the files assigned to the student, limited to 1.
+                // Display only the assigned files (typically limited to 1 for students)
                 query = query.whereIn("url", assignedUrls).limit(1);
             }
         }
@@ -184,11 +198,11 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
                 .setQuery(query, MusicFile.class)
                 .build();
 
-        // If an adapter already exists, stop it before creating a new one to prevent leaks
         if (adapter != null) {
             adapter.stopListening();
         }
 
+        // Initialize adapter in "View Mode" (showButtons=false, showAiButton=true)
         adapter = new MusicXmlAdapter(options, false, true) {
             @Override
             public void onDataChanged() {
@@ -201,12 +215,14 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
                 }
             }
         };
+        
+        // Navigation Logic: Launch SMPlayerActivity
         adapter.setOnItemClickListener(selectedFile -> {
             Intent intent = new Intent(this, SMPlayerActivity.class);
             intent.putExtra("isLive", false);
+            // In View Details mode, users generally have playback control unless it's a live session
             intent.putExtra("canControlPlayback", true);
             if (selectedFile.getUri() != null) {
-                // fileUri contains the path to the musicFile in Firebase Cloud Storage.
                 intent.putExtra("fileUri", selectedFile.getUri().toString());
                 startActivity(intent);
             } else {
@@ -221,8 +237,10 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
     }
 
     /**
-     * Builds a prompt for the music file and uses Gemini to generate a description.
-     * Displays a loading dialog during the process and an AlertDialog with the result.
+     * Integrates with the Google Gemini API to dynamically generate educational 
+     * descriptions of the selected sheet music.
+     * 
+     * @param musicFile The file object containing the title to be queried.
      */
     private void showAiDescription(MusicFile musicFile) {
         if (musicFile == null || musicFile.getTitle() == null) {
@@ -230,11 +248,10 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             return;
         }
 
-        // 1. Build the prompt
+        // Context Engineering: Build a strict prompt for the LLM
         String prompt = "Provide a brief and engaging description (2-3 sentences) about the music piece titled: \"" 
                 + musicFile.getTitle() + "\". Focus on its musical style or historical context if known, otherwise give a general description suitable for a student.";
 
-        // 2. Show loading dialog
         AlertDialog loadingDialog = new AlertDialog.Builder(this)
                 .setTitle("AI is thinking...")
                 .setMessage("Generating a description for " + musicFile.getTitle() + "...")
@@ -242,7 +259,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
                 .create();
         loadingDialog.show();
 
-        // 3. Call Gemini
+        // Network Call: Delegate prompt to the GeminiManager wrapper
         GeminiManager.getInstance(this).sendMessage(prompt, new GeminiManager.GeminiCallback() {
             @Override
             public void onSuccess(String result) {
@@ -266,9 +283,9 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         });
     }
 
-
     /**
-     * Sets up the "Go Live" button's visibility and action based on the user type and lesson status.
+     * Configures the "Go Live" button. Validates that the user is a teacher 
+     * and checks if a live session is already running in the current class.
      */
     private void setupGoLiveButton() {
         User user = DataManager.getUserInstance();
@@ -278,27 +295,31 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         boolean isLive = lesson != null && lesson.isLive();
         
         if (isLive) {
+            // State: Lesson is already live. Change button to a navigation shortcut.
             btnGoLive.setVisibility(View.VISIBLE);
             btnGoLive.setText("Live");
             btnGoLive.setEnabled(true);
             btnGoLive.setOnClickListener(v -> {
                 Intent intent = new Intent(this, ClassActivity.class);
-                intent.putExtra("target_tab", 2); // Index of LiveFragment in ClassActivity
+                intent.putExtra("target_tab", 2); // Jump directly to LiveFragment
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                 startActivity(intent);
             });
         } else if (isTeacher) {
+            // State: Teacher viewing an inactive lesson. Allow them to initiate broadcast.
             btnGoLive.setVisibility(View.VISIBLE);
             btnGoLive.setText("Go Live");
             btnGoLive.setEnabled(true);
             btnGoLive.setOnClickListener(v -> goLive());
         } else {
+            // State: Student viewing an inactive lesson. Hide the button entirely.
             btnGoLive.setVisibility(View.GONE);
         }
     }
 
     /**
-     * Updates the class and lesson in Firestore to set this lesson as the current live lesson.
+     * Executes the process to set the current lesson as the active Live broadcast 
+     * across the entire class context.
      */
     private void goLive() {
         Lesson lesson = DataManager.getCurLesson();
@@ -309,6 +330,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             return;
         }
 
+        // Validation: Prevent multiple simultaneous live lessons in the same class.
         if (currentClass.isActive()) {
             displayMessage("A lesson is already active for this class. Please stop it first.");
             return;
@@ -323,11 +345,11 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             tvStatusMessage.setVisibility(View.VISIBLE);
         }
 
-        // Set this lesson as live and mark the class as active
+        // Database Sync: Update both the lesson flag and the class-wide active flag.
         firestoreManager.updateLessonLiveStatus(classId, lesson.getId(), true);
         firestoreManager.updateClassActivity(classId, true);
         
-        // Update local state to maintain consistency across the app
+        // Local Cache Sync
         currentClass.setActive(true);
         lesson.setLive(true);
     }
@@ -335,6 +357,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         User user = DataManager.getUserInstance();
+        // UI Modification: Only teachers get the pencil icon to enter LessonEditActivity.
         if (user != null && "teacher".equals(user.getUserType())) {
             MenuItem editItem = menu.add(Menu.NONE, 1001, Menu.NONE, "Edit");
             editItem.setIcon(R.drawable.ic_edit);
@@ -348,6 +371,9 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
         return super.onCreateOptionsMenu(menu);
     }
 
+    /**
+     * Handles the callback from FirestoreManager after attempting to "Go Live".
+     */
     @Override
     public void uploadResult(boolean success, FirebaseComm.DbOperation operation) {
         if (operation == FirebaseComm.DbOperation.UPDATE_LESSON_LIVE_STATUS) {

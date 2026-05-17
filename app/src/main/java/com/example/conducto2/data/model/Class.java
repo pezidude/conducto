@@ -9,21 +9,54 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+/**
+ * Class
+ * 
+ * Represents a classroom group within the application. 
+ * This model serves as the top-level container for students and teachers, 
+ * coordinating access to collective lessons. 
+ * 
+ * It manages class-wide identification, descriptive metadata, and membership 
+ * lists. Additionally, it implements a security mechanism via unique 'Join Codes' 
+ * to regulate user enrollment.
+ */
 public class Class implements Parcelable {
+    
+    /** The name of the class (e.g., "Symphony Orchestra"). */
     private String name;
+    
+    /** A short description of the class goals or schedule. */
     private String description;
+    
+    /** The display name of the primary teacher. */
     private String teacherName;
+    
+    /** The unique email of the class creator/owner. */
     private String ownerEmail;
+    
+    /** A list of email addresses for all students enrolled in the class. */
     private ArrayList<String> members;
+    
+    /** The unique Firestore document ID of this class. */
     private String id;
+    
+    /** A 6-character alphanumeric code used for student registration. */
     private String joinCode;
+    
+    /** Flag indicating if a live lesson is currently active in this class. */
     private boolean isActive;
 
+    /** 
+     * Default constructor required for Firestore deserialization. 
+     * Initializes activity state to false.
+     */
     public Class() {
-        // Default constructor required for calls to DataSnapshot.getValue(Class.class)
         this.isActive = false;
     }
 
+    /**
+     * Initializes a new class with provided metadata and generates a new Join Code.
+     */
     public Class(String name, String description, String teacherName, String ownerEmail) {
         this.name = name;
         this.description = description;
@@ -34,6 +67,7 @@ public class Class implements Parcelable {
         this.isActive = false;
     }
 
+    /** Parcelable implementation constructor. */
     protected Class(Parcel in) {
         name = in.readString();
         description = in.readString();
@@ -57,6 +91,10 @@ public class Class implements Parcelable {
         }
     };
 
+    /**
+     * Generates a random 6-character uppercase alphanumeric string for the join code.
+     * @return The newly generated join code.
+     */
     private String generateNewJoinCode() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         StringBuilder sb = new StringBuilder();
@@ -68,10 +106,8 @@ public class Class implements Parcelable {
     }
 
     /**
-     * Ensures that a join code exists for this class.
-     * This is a temporary method for migrating older classes that don't have a join code.
-     * TODO: This method can be removed in a future version after all classes have been migrated.
-     * TODO: Delete also in getJoinCode
+     * Legacy support method to ensure older class documents without codes 
+     * are correctly migrated.
      */
     public void ensureJoinCode() {
         if (joinCode == null || joinCode.isEmpty()) {
@@ -128,12 +164,12 @@ public class Class implements Parcelable {
     }
 
     public String getJoinCode() {
-        ensureJoinCode(); // delete me
+        ensureJoinCode(); 
         return joinCode;
     }
 
     public void setJoinCode(String joinCode) {
-        // Allow setting the join code only if it's not already set.
+        // Enforce immutability of the join code once it has been assigned.
         if (this.joinCode == null || this.joinCode.isEmpty()) {
             this.joinCode = joinCode;
         }

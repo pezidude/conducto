@@ -44,45 +44,122 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * acronym - SheetMusicPlayer. This activity is responsible for displaying sheet music.
- * It uses a WebView to render the sheet music and provides playback controls via a fragment overlay.
+ * SMPlayerActivity (Sheet Music Player)
+ * 
+ * This class is the central hub for sheet music interaction in the Conducto application.
+ * It manages a WebView-based rendering engine (OSMD) to display MusicXML files and provides
+ * a native Android interface for playback control, tempo adjustment, and audio mixing.
+ * 
+ * In Live Lesson mode, it coordinates real-time synchronization between a teacher's device
+ * and multiple student devices using Firebase Firestore, ensuring all participants are
+ * viewing and playing the same measure at the same tempo.
  */
 public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragment.PlaybackControlsListener {
 
-    // log tag
+    /** Identifier for logging and debugging purposes. */
     private static final String TAG = "SMPlayerActivity";
 
+    /** The WebView used to host the OpenSheetMusicDisplay (OSMD) rendering engine. */
     private WebView sheetMusicView;
+
+    /** The UI container for the PlaybackFragment overlay. */
     private View playbackFragmentContainer;
+
+    /** Button to toggle the visibility of the playback controls. */
     private ImageButton btnTogglePlayback;
+
+    /** Button to open the side drawer containing the mixer and participant list. */
     private ImageButton btnOpenMixer;
+
+    /** Button visible to teachers to terminate a live session for all students. */
     private Button btnEndLiveLesson;
+
+    /** Root layout providing the sliding drawer functionality. */
     private DrawerLayout drawerLayout;
+
+    /** List view for controlling individual instrument volumes and states (mute/solo). */
     private RecyclerView mixerRecyclerView;
+
+    /** Adapter managing the data binding for the mixer UI. */
     private MixerAdapter mixerAdapter;
+
+    /** List view displaying the current participants in the class/lesson. */
     private RecyclerView participantRecyclerView;
+
+    /** Adapter managing the data binding for the participant list UI. */
     private ParticipantAdapter participantAdapter;
+
+    /** Local cache of users participating in the current class context. */
     private List<User> participantUsers = new ArrayList<>();
+
+    /** UI text element for the visual metronome lead-in countdown. */
     private TextView tvCountdown;
+
+    /** Flag indicating whether the countdown metronome is currently running. */
     private boolean isCountdownActive = false;
+
+    /** Tracks the last received playback status (PLAYING, PAUSED, STOPPED) to detect changes. */
     private String lastStatus = null;
+
+    /** Tracks the last received measure index to detect synchronization jumps. */
     private int lastMeasure = -1;
 
+    /** Local state indicating if the audio engine is currently playing. */
     private boolean isPlaying = false;
+
+    /** Flag indicating if the OSMD engine has finished parsing and rendering the score. */
     private boolean isScoreLoaded = false;
+
+    /** Buffer for a status update received before the score was ready to be manipulated. */
     private String pendingStatus = null;
+
+    /** Buffer for a target timestamp received before the score was ready. */
     private long pendingTargetTimestamp = 0;
+
+    /** Buffer for a measure index received before the score was ready. */
     private int pendingMeasure = -1;
+
+    /** Buffer for a BPM value received before the score was ready. */
     private int pendingBpm = -1;
+
+    /** The current playback speed in Beats Per Minute. Default is 100. */
     private int currentBPM = 100;
+
+    /** Facilitates all interactions with the Firebase Firestore database. */
     private FirestoreManager firestoreManager;
+
+    /** Reference to the real-time listener for lesson status updates from Firestore. */
     private ListenerRegistration statusListener;
+
+    /** 
+     * playbackHandler
+     * 
+     * A central timing and synchronization engine for the activity. 
+     * It uses the Android {@link Handler} system linked to the Main (UI) Looper to manage:
+     * 1. Periodic Progress Polling: Scheduling recurring tasks to update the progress bar.
+     * 2. Visual Metronome: Managing nested delayed UI updates for the countdown.
+     * 3. Network Synchronization: Delaying local execution of "Play" commands to align
+     *    with the calculated server-time offset across multiple devices.
+     * 4. UI Thread Marshaling: Posting updates from background threads or JavaScript callbacks.
+     */
     private final Handler playbackHandler = new Handler(Looper.getMainLooper());
+
+    /** Flag indicating if the current session is a real-time live lesson. */
     private boolean isLive = false;
+
+    /** Permission flag determined by user role or lesson configuration. */
     private boolean canControlPlayback = true;
+
+    /** Logic flag to prevent jitter/jumps during the initial connection to a live session. */
     private boolean isFirstSync = true;
+
+    /** The measured difference between local device time and Firebase server time. */
     private long serverTimeOffset = 0;
 
+    /**
+     * Runnable that periodically polls the JavaScript engine for current playback progress.
+     * Updates the native progress bar to stay in sync with the WebView cursor.
+     */
     private final Runnable progressPollRunnable = new Runnable() {
         @Override
         public void run() {
@@ -90,8 +167,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 sheetMusicView.evaluateJavascript("getPlaybackProgress();", value -> {
                     try {
                         if (value != null && !value.equals("null")) {
-                            // value is a JSON string, e.g., "\"{\\\"currentMeasure\\\":0,\\\"totalMeasures\\\":1}\""
-                            // evaluateJavascript returns the result as a JSON-encoded string
+                            // Extract JSON string from JS evaluation result.
                             String jsonStr = value.substring(1, value.length() - 1).replace("\\\"", "\"");
                             org.json.JSONObject json = new org.json.JSONObject(jsonStr);
                             int current = json.getInt("currentMeasure");
@@ -108,6 +184,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     };
 
+    /**
+     * Updates the progress bar in the PlaybackFragment.
+     * @param current The current measure index.
+     * @param total The total number of measures in the score.
+     */
     private void updateProgressBar(int current, int total) {
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
@@ -120,9 +201,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_smplayer);
-        
-        // Lock screen orientation to portrait
-        // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         
         // Keep the screen on while this activity is in the foreground
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -137,12 +215,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         });
 
         initViews();
-
         setupWebView();
-
         setupBackNavigation();
 
-        // Log this access for the "Recent Lessons" feature
         Lesson curLesson = DataManager.getCurLesson();
         if (curLesson != null) {
             String email = firestoreManager.authUserEmail();
@@ -150,6 +225,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    /**
+     * Initializes the UI components and sets up view-specific configurations based on the user's role.
+     * It configures the participant list and, for teachers, sets up the audio mixer and live lesson controls.
+     */
     public void initViews() {
         sheetMusicView = findViewById(R.id.sheetMusicView);
         playbackFragmentContainer = findViewById(R.id.playback_fragment_container);
@@ -166,28 +245,23 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             btnOpenMixer.setVisibility(View.VISIBLE);
             btnOpenMixer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
             
-            // Set up common components
             participantAdapter = new ParticipantAdapter(participantUsers, new ArrayList<>());
             participantRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
             participantRecyclerView.setAdapter(participantAdapter);
             loadParticipantUsers();
 
             if ("teacher".equals(user.getUserType())) {
-                // Teacher specific setup
                 mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-                
                 if (isLive) {
                     btnEndLiveLesson.setVisibility(View.VISIBLE);
                     btnEndLiveLesson.setOnClickListener(v -> showEndLiveLessonConfirmation());
                 }
             } else {
-                // Student specific setup: Hide teacher-only views in the drawer
                 mixerRecyclerView.setVisibility(View.GONE);
                 findViewById(R.id.tv_mixer_header).setVisibility(View.GONE);
             }
         } else {
             btnOpenMixer.setVisibility(View.GONE);
-            // Disable drawer if no user
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         }
 
@@ -198,19 +272,18 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         btnTogglePlayback.setOnClickListener(v -> {
             if (playbackFragmentContainer.getVisibility() == View.VISIBLE) {
                 playbackFragmentContainer.setVisibility(View.GONE);
-                // Rotate arrow to point up (suggesting expansion)
                 btnTogglePlayback.animate().rotation(270).setDuration(200).start();
             } else {
                 playbackFragmentContainer.setVisibility(View.VISIBLE);
-                // Rotate arrow back to 90 degrees (pointing down towards the panel)
                 btnTogglePlayback.animate().rotation(90).setDuration(200).start();
             }
         });
-        // disable the toggle button until OSMD initializes
         btnTogglePlayback.setEnabled(false);
-
     }
 
+    /**
+     * Loads the list of users belonging to the current class from Firestore.
+     */
     private void loadParticipantUsers() {
         Class curClass = DataManager.getCurClass();
         if (curClass == null || curClass.getMembers() == null) return;
@@ -219,7 +292,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             if (users != null) {
                 participantUsers.clear();
                 for (User user : users) {
-                    // Include everyone who is a member of this class (including the teacher/owner)
                     if (curClass.getMembers().contains(user.getEmail()) || user.getEmail().equals(curClass.getOwnerEmail())) {
                         participantUsers.add(user);
                     }
@@ -231,13 +303,19 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         });
     }
 
+    /**
+     * Enables playback controls if the user has permission.
+     */
     public void enablePlayback() {
         if (canControlPlayback) {
             btnTogglePlayback.setEnabled(true);
-            btnTogglePlayback.callOnClick(); // show the playback controls
+            btnTogglePlayback.callOnClick();
         }
     }
 
+    /**
+     * Configures the back button behavior to show confirmation dialogs during live lessons.
+     */
     private void setupBackNavigation() {
         OnBackPressedCallback callback = new OnBackPressedCallback(true) {
             @Override
@@ -268,7 +346,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     private void showTeacherBackDialog() {
-        User user = DataManager.getUserInstance();
         new AlertDialog.Builder(this)
                 .setTitle("Leaving Live Lesson")
                 .setMessage("Would you like to end the live lesson for all students or just leave?")
@@ -285,6 +362,10 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 .show();
     }
 
+    /**
+     * Pauses playback and synchronizes the pause state to Firestore before executing a callback.
+     * @param onComplete Callback to run after synchronization is initiated.
+     */
     private void pauseAndSync(Runnable onComplete) {
         User user = DataManager.getUserInstance();
         if (isLive && user != null && "teacher".equals(user.getUserType())) {
@@ -313,16 +394,13 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     /**
-     * A bridge class to handle callbacks from JavaScript.
+     * Interface exposed to the WebView JavaScript engine.
      */
     private class WebAppInterface {
         @JavascriptInterface
         public void onEngineReady() {
             runOnUiThread(() -> {
-                // in case of user exiting the web view before the JS engine is ready
                 if (isFinishing() || isDestroyed() || sheetMusicView == null) return;
-                
-                // now that all JS has executed, it's safe to load the file.
                 Log.d(TAG, "OSMD Engine Ready");
                 Intent intent = getIntent();
                 if (intent.hasExtra("fileUri")) {
@@ -338,10 +416,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             runOnUiThread(() -> {
                 if (isFinishing() || isDestroyed() || sheetMusicView == null) return;
                 Toast.makeText(SMPlayerActivity.this, "File loaded.", Toast.LENGTH_SHORT).show();
-                Log.d(TAG, "File loaded.");
                 isScoreLoaded = true;
 
-                // Notify presence on join only when the page/score finished loading
                 User user = DataManager.getUserInstance();
                 Class cls = DataManager.getCurClass();
                 Lesson lesson = DataManager.getCurLesson();
@@ -353,10 +429,8 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 
                 if (isLive && user != null) {
                     if ("student".equals(user.getUserType())) {
-                        // Mute students in live sessions
                         sheetMusicView.evaluateJavascript("setGlobalMute(true);", null);
                     } else if ("teacher".equals(user.getUserType())) {
-                        // Setup mixer for teacher
                         setupMixer(instrumentNamesJson);
                     }
                 }
@@ -370,14 +444,12 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                         .findFragmentById(R.id.playback_fragment_container);
                 if (playbackFragment != null) {
-                    // Start enabled if user has control, but executePlay will disable it if it starts playing immediately
                     playbackFragment.setSpeedControlEnabled(canControlPlayback);
                 }
 
                 enablePlayback();
 
                 if (pendingStatus != null) {
-                    Log.d(TAG, "onLoadScoreFinished: Handling deferred status: " + pendingStatus);
                     handleStatusChange(pendingStatus, pendingTargetTimestamp, pendingMeasure, pendingBpm);
                     pendingStatus = null;
                     pendingTargetTimestamp = 0;
@@ -393,13 +465,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 Log.d(TAG, "onMeasureSelected: " + measureIndex);
                 User user = DataManager.getUserInstance();
                 if (isLive && user != null && "teacher".equals(user.getUserType())) {
-                    // Update Firestore with the new measure.
                     new Thread(() -> updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED, 0, measureIndex, currentBPM)).start();
                 }
             });
         }
     }
 
+    /**
+     * Initializes the audio mixer UI based on the instrument names found in the score.
+     * @param instrumentNamesJson JSON array of instrument names.
+     */
     private void setupMixer(String instrumentNamesJson) {
         try {
             JSONArray array = new JSONArray(instrumentNamesJson);
@@ -426,19 +501,18 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 .show();
     }
 
+    /**
+     * Terminates the live lesson and updates the archived state in Firestore.
+     */
     private void endLiveLesson() {
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
 
         if (cls != null && lesson != null) {
-            // 1. Set isLive to false in the lesson
             firestoreManager.updateLessonLiveStatus(cls.getId(), lesson.getId(), false);
-            // 2. Set isArchived to true in the lesson
             firestoreManager.updateLessonArchivedStatus(cls.getId(), lesson.getId(), true);
-            // 3. Set isActive to false in the class
             firestoreManager.updateClassActivity(cls.getId(), false);
             
-            // Update local state in DataManager to ensure consistency when returning to LessonDetailsActivity
             cls.setActive(false);
             lesson.setLive(false);
             lesson.setArchived(true);
@@ -449,18 +523,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     /**
-     * Configures the WebView settings and sets up a client to know when the page is loaded.
+     * Configures the WebView settings and registers the JavaScript bridge.
      */
     private void setupWebView() {
         WebSettings settings = sheetMusicView.getSettings();
         settings.setJavaScriptEnabled(true);
-        // JavaScript is required for interactive with OSMD and OSMD audio player
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
 
-        // Register the bridge interface
         sheetMusicView.addJavascriptInterface(new WebAppInterface(), "AndroidInterface");
 
         sheetMusicView.setWebViewClient(new WebViewClient() {
@@ -468,19 +540,17 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             public void onPageFinished(android.webkit.WebView view, String url) {
                 super.onPageFinished(view, url);
                 Log.d(TAG, "Page finished loading");
-
             }
         });
         sheetMusicView.loadUrl("file:///android_asset/viewer.html");
     }
 
     /**
-     * Loads the given MusicXML data into the WebView.
-     * @param xmlData The MusicXML data to load.
+     * Injects the MusicXML data into the OSMD renderer via JavaScript.
+     * @param xmlData The raw MusicXML string.
      */
     private void loadXmlInWebView(String xmlData) {
         double zoomLevel = 0.75;
-        // basic attempt of preventing XSS. TODO: improve for production.
         String escapedXml = xmlData.replace("`", "\\`").replace("$", "\\$");
         if (sheetMusicView != null ) {
             sheetMusicView.evaluateJavascript("loadScore(`" + escapedXml + "`, " + zoomLevel + ");", null);
@@ -488,29 +558,26 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     /**
-     * Loads a given sheet music file.
-     * It reads the file content in a background thread and then loads it into the WebView.
-     * @param uri The URI of the selected file.
+     * Reads a file from a URI and loads it into the WebView cursor.
+     * Performs file I/O on a background thread.
+     * @param uri The URI of the MusicXML file.
      */
     private void loadFile(Uri uri) {
         FileIO fileOps = new FileIO(this);
         String fileName = fileOps.getFileName(uri);
         Log.d(TAG, "Loading: " + fileName);
 
-        new Thread(() -> { // run in background so UI execution is not blocked
+        new Thread(() -> { 
             try {
                 String xmlContent = fileOps.readMusicXmlContent(uri);
-
                 if (xmlContent == null || xmlContent.isEmpty()) {
                     throw new Exception("Empty or invalid file content");
                 }
                 runOnUiThread(() -> {
-                    // basic file format check
                     if (xmlContent.contains("<?xml") || xmlContent.contains("<score-partwise")) {
                         loadXmlInWebView(xmlContent);
                     } else {
                         showErrorDialog("File Not Recognized", "The selected file does not appear to be a valid MusicXML file.");
-                        Log.d(TAG, "File format not recognized.");
                     }
                 });
             } catch (Exception e) {
@@ -518,7 +585,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) return;
                     showErrorDialog("Failed to Load File", "An error occurred while reading the file: " + e.getMessage());
-                    Log.d(TAG, "Failed to load file: " + e.getMessage());
                 });
             }
         }).start();
@@ -526,7 +592,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     private void showErrorDialog(String title, String message) {
         if (isFinishing() || isDestroyed()) return;
-
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
@@ -538,7 +603,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     protected void onPause() {
         super.onPause();
-        
         cancelCountdown();
         User user = DataManager.getUserInstance();
         Class cls = DataManager.getCurClass();
@@ -546,46 +610,33 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         if (isLive && user != null && cls != null && lesson != null) {
             firestoreManager.updateStudentPresence(cls.getId(), lesson.getId(), user.getEmail(), false);
         }
-
         stopStatusListener();
         playbackHandler.removeCallbacksAndMessages(null);
         if (sheetMusicView != null) {
-            sheetMusicView.pauseTimers(); // Pauses JS timers and background tasks
-            sheetMusicView.onPause();     // Pauses WebView rendering
+            sheetMusicView.pauseTimers();
+            sheetMusicView.onPause();
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        
         startStatusListener();
         if (sheetMusicView != null) {
-            sheetMusicView.onResume();     // Wakes up WebView rendering
-            sheetMusicView.resumeTimers(); // Wakes up JS timers
+            sheetMusicView.onResume();
+            sheetMusicView.resumeTimers();
         }
     }
 
     @Override
     protected void onDestroy() {
-        Log.d(TAG, "onDestroy: Cleaning up resources");
-        
-        // stop all listeners
         stopStatusListener();
-        
-        // clear any pending playback handlers
         playbackHandler.removeCallbacksAndMessages(null);
-        
         if (sheetMusicView != null) {
-            // First, remove it from the view hierarchy to prevent drawing issues during destruction
             if (sheetMusicView.getParent() instanceof android.view.ViewGroup) {
                 ((android.view.ViewGroup) sheetMusicView.getParent()).removeView(sheetMusicView);
             }
-
-            // hint the JS engine to shut down audio and clear references
             sheetMusicView.evaluateJavascript("destroyEngine();", null);
-            
-            // 4. Properly destroy the WebView
             sheetMusicView.removeJavascriptInterface("AndroidInterface");
             sheetMusicView.stopLoading();
             sheetMusicView.setWebViewClient(null);
@@ -594,45 +645,37 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             sheetMusicView.destroy();
             sheetMusicView = null;
         }
-        
         super.onDestroy();
     }
 
+    /**
+     * Subscribes to the lesson document in Firestore to receive real-time updates.
+     */
     private void startStatusListener() {
         User user = DataManager.getUserInstance();
         com.example.conducto2.data.model.Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
 
-        // Only listen for status changes in a live lesson
         if (isLive && user != null && cls != null && lesson != null) {
             statusListener = FirebaseFirestore.getInstance()
                     .collection("classes").document(cls.getId())
                     .collection("lessons").document(lesson.getId())
                     .addSnapshotListener((snapshot, e) -> {
-                        if (e != null) {
-                            Log.w(TAG, "Listen failed.", e);
-                            return;
-                        }
-
+                        if (e != null) return;
                         if (snapshot != null && snapshot.exists()) {
-                            // Check if the lesson is still live
                             Boolean live = snapshot.getBoolean("isLive");
                             if (live != null && !live && isLive) {
-                                // Lesson was live but is no longer live
                                 showLessonEndedDialog();
                                 return;
                             }
-
                             String status = snapshot.getString("status");
                             Long targetTimestamp = snapshot.getLong("targetTimestamp");
                             Long currentMeasure = snapshot.getLong("currentMeasure");
                             Long bpm = snapshot.getLong("bpm");
-                            
                             List<String> connectedStudents = (List<String>) snapshot.get("connectedStudents");
                             if (participantAdapter != null) {
                                 runOnUiThread(() -> participantAdapter.setConnectedEmails(connectedStudents));
                             }
-                            
                             handleStatusChange(status, 
                                     targetTimestamp != null ? targetTimestamp : 0,
                                     currentMeasure != null ? currentMeasure.intValue() : -1,
@@ -644,7 +687,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     private void showLessonEndedDialog() {
         if (isFinishing()) return;
-
         new AlertDialog.Builder(this)
                 .setTitle("Lesson Ended")
                 .setMessage("The teacher has ended this live lesson for everyone.")
@@ -660,25 +702,29 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    /**
+     * Resolves updates received from the network and adjusts the local state accordingly.
+     * This method handles state transitions (play, pause, stop), tempo changes, and measure jumps.
+     * 
+     * @param status The new lesson status (PLAYING, PAUSED, STOPPED).
+     * @param targetTimestamp The server time when playback should start.
+     * @param currentMeasure The measure index to jump to.
+     * @param bpm The new tempo in BPM.
+     */
     private void handleStatusChange(String status, long targetTimestamp, int currentMeasure, int bpm) {
         if (!isScoreLoaded) {
             pendingStatus = status;
             pendingTargetTimestamp = targetTimestamp;
             pendingMeasure = currentMeasure;
             pendingBpm = bpm;
-            Log.d(TAG, "handleStatusChange: Score not loaded yet, deferring status: " + status);
             return;
         }
 
-        // Only process if something meaningful changed (status, measure, or BPM)
-        // This prevents participant presence updates from resetting the countdown or playback
         boolean statusChanged = status != null && !status.equals(lastStatus);
         boolean measureChanged = currentMeasure >= 0 && currentMeasure != lastMeasure;
         boolean bpmChanged = bpm > 0 && bpm != currentBPM;
 
-        if (!statusChanged && !measureChanged && !bpmChanged) {
-            return;
-        }
+        if (!statusChanged && !measureChanged && !bpmChanged) return;
 
         lastStatus = status;
         lastMeasure = currentMeasure;
@@ -686,32 +732,25 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
 
-        // Sync BPM if provided
         if (bpmChanged) {
             currentBPM = bpm;
             sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
             if (playbackFragment != null) playbackFragment.updateBpmUI(currentBPM);
         }
 
-        // If we are already playing/counting and only the BPM changed, we've updated it above.
-        // If the status or measure changed, we need to handle it.
         if (!statusChanged && !measureChanged) return;
 
-        // Cancel any pending playback commands only if status or measure changes
         playbackHandler.removeCallbacksAndMessages(null);
         cancelCountdown();
 
         if (Lesson.STATUS_PLAYING.equals(status) && isFirstSync && isLive) {
-            Log.d(TAG, "handleStatusChange: Joined mid-play. Waiting for next pause/jump.");
             isFirstSync = false;
             if (playbackFragment != null) playbackFragment.setPlaying(false);
             return;
         }
 
-        // Sync playback measure if provided
         if (currentMeasure >= 0) {
             sheetMusicView.evaluateJavascript("jumpToMeasure(" + currentMeasure + ");", null);
-            // Update progress bar immediately on measure change
             sheetMusicView.evaluateJavascript("getPlaybackProgress();", value -> {
                 try {
                     if (value != null && !value.equals("null")) {
@@ -725,11 +764,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
         if (Lesson.STATUS_PLAYING.equals(status)) {
             isFirstSync = false;
-
             if (isLive && targetTimestamp > 0) {
                 long currentServerTime = System.currentTimeMillis() + serverTimeOffset;
                 long delay = 1000 - (currentServerTime - targetTimestamp);
-                Log.d(TAG, "handleStatusChange: Syncing playback. Delay: " + delay + "ms");
                 if (delay > 0) {
                     playbackHandler.postDelayed(this::executePlay, delay);
                 } else {
@@ -750,22 +787,26 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    /**
+     * Executes the play command in the WebView and starts progress polling.
+     */
     private void executePlay() {
         isPlaying = true;
         sheetMusicView.evaluateJavascript("setClickToSeekEnabled(false);", null);
-
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
         if (playbackFragment != null) {
             playbackFragment.setSpeedControlEnabled(false);
         }
-
         startCountdown(() -> {
             sheetMusicView.evaluateJavascript("play();", null);
             playbackHandler.post(progressPollRunnable);
         });
     }
 
+    /**
+     * Executes the pause command in the WebView.
+     */
     private void executePause() {
         isPlaying = false;
         playbackHandler.removeCallbacks(progressPollRunnable);
@@ -774,7 +815,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
         }
         sheetMusicView.evaluateJavascript("pause();", null);
-
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
         if (playbackFragment != null && canControlPlayback) {
@@ -782,6 +822,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    /**
+     * Executes the stop command in the WebView and resets UI progress.
+     */
     private void executeStop() {
         isPlaying = false;
         playbackHandler.removeCallbacks(progressPollRunnable);
@@ -790,9 +833,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             sheetMusicView.evaluateJavascript("setClickToSeekEnabled(true);", null);
         }
         sheetMusicView.evaluateJavascript("stop();", null);
-        // Reset progress bar
         updateProgressBar(0, 1);
-
         PlaybackFragment playbackFragment = (PlaybackFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.playback_fragment_container);
         if (playbackFragment != null && canControlPlayback) {
@@ -800,16 +841,16 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }
     }
 
+    /**
+     * Runs a visual metronome countdown on the UI thread.
+     * @param onFinished Callback to run when the countdown reaches zero.
+     */
     private void startCountdown(Runnable onFinished) {
         if (isCountdownActive) return;
         isCountdownActive = true;
-        
         tvCountdown.setVisibility(View.VISIBLE);
         tvCountdown.setText("4");
-
         long beatDuration = 60000 / Math.max(1, currentBPM);
-
-        // nested calls for countdown
         playbackHandler.postDelayed(() -> {
             if (!isCountdownActive) return;
             tvCountdown.setText("3");
@@ -830,76 +871,59 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         }, beatDuration);
     }
 
+    /**
+     * Cancels the active metronome countdown.
+     */
     private void cancelCountdown() {
         isCountdownActive = false;
-        if (tvCountdown != null) {
-            tvCountdown.setVisibility(View.GONE);
-        }
+        if (tvCountdown != null) tvCountdown.setVisibility(View.GONE);
     }
 
-    /**
-     * Called when the play/pause button in the PlaybackFragment is clicked.
-     */
     @Override
-    @SuppressLint("ClickableViewAccessibility") // silence android onTouch warning
+    @SuppressLint("ClickableViewAccessibility")
     public void onPlayPauseClicked() {
         isPlaying = !isPlaying;
-        
-        // Pre-warm AudioContext for teachers when they press Play
         if (isPlaying && isLive) {
             User user = DataManager.getUserInstance();
             if (user != null && "teacher".equals(user.getUserType())) {
                 sheetMusicView.evaluateJavascript("if(playbackManager && playbackManager.ac) playbackManager.ac.resume();", null);
             }
         }
-        
         handlePlayback();
     }
 
     /**
-     * Starts or stops the playback cursor in the WebView.
+     * Centralized logic to trigger playback locally and sync the state to Firestore.
      */
     private void handlePlayback() {
         String status = isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED;
         User user = DataManager.getUserInstance();
-
         if (isLive && "teacher".equals(user.getUserType())) {
             if (isPlaying) {
-                // Synchronized start for teacher and students
                 long targetTimestamp = System.currentTimeMillis() + serverTimeOffset;
                 updateFirestoreStatus(status, targetTimestamp, -1, currentBPM);
-                // Local execution will be handled by handleStatusChange when the Firestore update cycles back
             } else {
                 pauseAndSync(null);
             }
         } else {
-            // Local execution for immediate feedback
-            if (isPlaying) {
-                executePlay();
-            } else {
-                executePause();
-            }
+            if (isPlaying) executePlay();
+            else executePause();
             new Thread(() -> updateFirestoreStatus(status, 0, -1, currentBPM)).start();
         }
     }
 
+    /**
+     * Updates the lesson document in Firestore with current playback metadata.
+     */
     private void updateFirestoreStatus(String status, long targetTimestamp, int currentMeasure, int bpm) {
         User user = DataManager.getUserInstance();
         Class cls = DataManager.getCurClass();
         Lesson lesson = DataManager.getCurLesson();
-
-        Log.d(TAG, "updateFirestoreStatus: status=" + status + ", isLive=" + isLive + ", userType=" + (user != null ? user.getUserType() : "null"));
-
-        // Only push status updates in a live lesson (teacher only)
         if (isLive && user != null && "teacher".equals(user.getUserType()) && cls != null && lesson != null) {
-            Log.d(TAG, "updateFirestoreStatus: Updating Firestore. ClassID=" + cls.getId() + ", LessonID=" + lesson.getId());
             firestoreManager.updateLessonStatus(cls.getId(), lesson.getId(), status, targetTimestamp, currentMeasure, bpm);
         }
     }
 
-    /*
-     * Called when the functions in PlaybackFragment is clicked.
-     */
     @Override
     public void onResetClicked() {
         isPlaying = false;
@@ -910,15 +934,11 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     @Override
     public void onSpeedChanged(int bpmValue) {
         currentBPM = bpmValue;
-        
         User user = DataManager.getUserInstance();
         if (isLive && user != null && "teacher".equals(user.getUserType())) {
             new Thread(() -> updateFirestoreStatus(isPlaying ? Lesson.STATUS_PLAYING : Lesson.STATUS_PAUSED, 0, -1, currentBPM)).start();
         }
-
         sheetMusicView.evaluateJavascript("setBpm(" + currentBPM + ");", null);
-        if (isPlaying) {
-            handlePlayback(); // restart interval with new speed
-        }
+        if (isPlaying) handlePlayback();
     }
 }

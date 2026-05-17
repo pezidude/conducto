@@ -2,12 +2,26 @@ package com.example.conducto2.data.model;
 
 import com.example.conducto2.R;
 
+/**
+ * PopLesson
+ * 
+ * A polymorphic subclass of {@link Lesson} representing the Pop music genre.
+ * It overrides base methods to provide genre-specific UI resources such as colors and icons.
+ */
 public class PopLesson extends Lesson {
+    
+    /**
+     * Default constructor required for Firestore deserialization.
+     */
     public PopLesson() {
         super();
         setGenre("Pop");
     }
 
+    /**
+     * Copy constructor used by the {@link Lesson#fromBase(Lesson)} factory method.
+     * @param lesson The generic lesson to cast to Pop.
+     */
     public PopLesson(Lesson lesson) {
         super(lesson);
         setGenre("Pop");

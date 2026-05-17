@@ -2,25 +2,56 @@ package com.example.conducto2.data.model;
 
 import com.google.firebase.firestore.DocumentId;
 
+/**
+ * User
+ * 
+ * Represents a registered user within the Conducto application. 
+ * This model stores profile information, identity classification (teacher vs student), 
+ * and personalization data like profile pictures and descriptions.
+ * 
+ * It is used for authentication state persistence and for populating participant 
+ * lists in classes and lessons.
+ */
 public class User {
-    // This annotation tells Firestore: "Populate this field with the Document ID"
+
+    /** 
+     * The unique identifier assigned by Firestore. 
+     * Annotated with @DocumentId to automatically map the document's name to this field.
+     */
     @DocumentId
     private String userId;
 
+    /** The user's first name. */
     private String fname;
+
+    /** The user's last name. */
     private String lname;
+
+    /** The user's registered email address (used as the primary key in manual lookups). */
     private String email;
+
+    /** The role of the user, typically "teacher" or "student". */
     private String userType;
+
+    /** A Base64 encoded string representation of the user's profile picture. */
     private String profilePictureBase64;
+
+    /** A short bio or description provided by the user. */
     private String description;
 
+    /**
+     * Initializes a new user with basic name and email. Default role is "teacher".
+     */
     public User(String email, String fname, String lname) {
         this.fname = fname;
         this.lname = lname;
         this.email = email;
-        this.userType = "teacher"; // Default to teacher for existing users
+        this.userType = "teacher"; 
     }
 
+    /**
+     * Initializes a new user with specific role.
+     */
     public User(String email, String fname, String lname, String userType) {
         this.fname = fname;
         this.lname = lname;
@@ -28,6 +59,9 @@ public class User {
         this.userType = userType;
     }
 
+    /**
+     * Full initialization constructor including profile picture.
+     */
     public User(String email, String fname, String lname, String userType, String profilePictureBase64) {
         this.fname = fname;
         this.lname = lname;
@@ -36,7 +70,8 @@ public class User {
         this.profilePictureBase64 = profilePictureBase64;
     }
 
-    public User() {} // needed for firestore
+    /** Required no-argument constructor for Firestore deserialization. */
+    public User() {} 
 
     @Override
     public String toString() {

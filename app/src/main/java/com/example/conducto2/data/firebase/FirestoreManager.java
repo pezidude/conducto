@@ -26,54 +26,75 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * FirestoreManager
+ * 
+ * A specialized subclass of {@link FirebaseComm} that serves as the primary Data Access Object (DAO) 
+ * for the Firestore NoSQL database. It handles all CRUD (Create, Read, Update, Delete) operations 
+ * for Users, Classes, and Lessons.
+ * 
+ * This class implements complex business logic including:
+ * 1. Multi-device synchronization via server-time offset calculation.
+ * 2. Real-time lesson status tracking (PLAYING, PAUSED, STOPPED).
+ * 3. Class membership management using join codes.
+ * 4. Recent activity logging for personalized user dashboards.
+ */
 public class FirestoreManager extends FirebaseComm {
 
+    /** Identifier for logging database events. */
     private static final String TAG = "Firestore DB";
-    //    private FirebaseFirestore firebaseFirestore;
+    
+    /** Reference to the currently authenticated Firebase user. */
     private FirebaseUser firebaseUser;
-    //   private QueryResult postQueryResult;
 
 
+    /** Callback interface for single user retrieval. */
     public interface UserFetchListener {
         void onUserFetched(User user);
     }
 
+    /** Callback interface for bulk user retrieval. */
     public interface AllUsersFetchListener {
         void onUsersFetched(List<User> users);
     }
 
+    /** Callback interface for class list retrieval. */
     public interface ClassesFetchListener {
         void onClassesFetched(List<Class> classes);
     }
 
+    /** Callback interface for reactive live lesson monitoring. */
     public interface LiveLessonListener {
         void onLiveLessonChanged(Lesson lesson);
     }
 
+    /** Callback interface for dashboard recent history retrieval. */
     public interface RecentLessonsFetchListener {
         void onRecentLessonsFetched(List<Lesson> recentLessons);
     }
 
+    /**
+     * Assigns a listener to receive database operation results.
+     * @param dbr The listener implementation.
+     */
     public void setDbResult(DBResult dbr) {
         this.dbResult = dbr;
     }
 
-/*
-    public interface QueryResult<T> {
-        void postsReturned(ArrayList<T> arr);
-        void postsChanged(Map<String,Object> map, int oldIndex, int newIndex);
-        void postRemoved(int index);
-        void postAdded(Map<String,Object> map, int index);
-    }
-*/
 
-
+    /**
+     * Initializes the manager and secures a reference to the global Firestore singleton
+     * inherited from the base class.
+     */
     public FirestoreManager() {
         FIRESTORE = getFirestore();
     }
 
 
+    /**
+     * Creates a new user record in the 'users' collection using their email as the document ID.
+     * @param user The user object containing profile information.
+     */
     public void insertUser(User user) {
         firebaseUser = getAuth().getCurrentUser();
         DocumentReference ref = FIRESTORE.collection("users").document(user.getEmail());
@@ -90,6 +111,10 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Updates an existing user's profile information in Firestore.
+     * @param user The user object with updated fields.
+     */
     public void updateUser(User user) {
         if (user == null || user.getEmail() == null) return;
 
@@ -108,6 +133,11 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Adds a new lesson to a specific class. Generates a unique document ID automatically.
+     * @param classId The parent class ID.
+     * @param lesson The lesson object to persist.
+     */
     public void insertLesson(String classId, Lesson lesson) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document();
         lesson.setId(ref.getId());
@@ -126,6 +156,11 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Updates metadata for an existing lesson.
+     * @param classId The parent class ID.
+     * @param lesson The lesson object with updated fields.
+     */
     public void updateLesson(String classId, Lesson lesson) {
         if (lesson.getId() == null) {
             if (dbResult != null) dbResult.displayMessage("Error: Lesson ID is null");
@@ -147,6 +182,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Updates a user's profile picture using a Base64 encoded string.
+     */
     public void updateUserProfilePicture(String email, String base64Image) {
         DocumentReference ref = FIRESTORE.collection("users").document(email);
         ref.update("profilePictureBase64", base64Image)
@@ -156,6 +194,10 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 });
     }
+
+    /**
+     * Removes a lesson document from Firestore.
+     */
     public void deleteLesson(String classId, String lessonId) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
         ref.delete()
@@ -171,6 +213,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Toggles the archived state of a lesson.
+     */
     public void updateLessonArchivedStatus(String classId, String lessonId, boolean isArchived) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
         ref.update("isArchived", isArchived)
@@ -187,6 +232,9 @@ public class FirestoreManager extends FirebaseComm {
     }
 
 
+    /**
+     * Fetches a single user's profile by their email and caches it in DataManager.
+     */
     public void getUser(UserFetchListener listener) {
         String email = authUserEmail();
         FirebaseFirestore.getInstance().collection("users").document(email)
@@ -200,6 +248,10 @@ public class FirestoreManager extends FirebaseComm {
                     }
                 });
     }
+
+    /**
+     * Fetches all registered users from the system.
+     */
     public void getAllUsers(List<User> allUsers, AllUsersFetchListener listener) {
         FirebaseFirestore.getInstance().collection("users")
                 .get()
@@ -223,6 +275,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Retrieves all classes where the specified user is a member.
+     */
     public void getClassesForUser(String email, ClassesFetchListener listener) {
         FIRESTORE.collection("classes")
                 .whereArrayContains("members", email)
@@ -243,6 +298,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Creates a new class document and sets the unique ID.
+     */
     public void insertClass(Class newClass) {
         firebaseUser = getAuth().getCurrentUser();
         DocumentReference ref = FIRESTORE.collection("classes").document();
@@ -269,6 +327,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Updates an existing class document in Firestore.
+     */
     public void updateClass(Class updatedClass) {
         firebaseUser = getAuth().getCurrentUser();
         DocumentReference ref = FIRESTORE.collection("classes").document(updatedClass.getId());
@@ -294,6 +355,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Allows a student to join a class using a specific join code.
+     */
     public void joinClassWithCode(String joinCode) {
         firebaseUser = getAuth().getCurrentUser();
         if (firebaseUser == null) {
@@ -338,6 +402,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Toggles the active status of a class.
+     */
     public void updateClassActivity(String classId, boolean isActive) {
         FIRESTORE.collection("classes").document(classId)
                 .update("isActive", isActive)
@@ -353,6 +420,9 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /**
+     * Synchronizes playback state across all participants in a live session.
+     */
     public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp, int currentMeasure, int bpm) {
         Log.d(TAG, "updateLessonStatus: classId=" + classId + ", lessonId=" + lessonId + ", status=" + status + ", targetTimestamp=" + targetTimestamp + ", currentMeasure=" + currentMeasure + ", bpm=" + bpm);
         if (classId == null || lessonId == null) {
@@ -381,14 +451,19 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /** Overload of updateLessonStatus without measure and BPM. */
     public void updateLessonStatus(String classId, String lessonId, String status, long targetTimestamp) {
         updateLessonStatus(classId, lessonId, status, targetTimestamp, -1, -1);
     }
 
+    /** Overload of updateLessonStatus with only status. */
     public void updateLessonStatus(String classId, String lessonId, String status) {
         updateLessonStatus(classId, lessonId, status, 0, -1, -1);
     }
 
+    /**
+     * Updates the connected status of a student in a specific lesson.
+     */
     public void updateStudentPresence(String classId, String lessonId, String email, boolean isConnected) {
         if (classId == null || lessonId == null || email == null) return;
 
@@ -428,6 +503,9 @@ public class FirestoreManager extends FirebaseComm {
         }));
     }
 
+    /**
+     * Starts or stops the live status of a lesson.
+     */
     public void updateLessonLiveStatus(String classId, String lessonId, boolean isLive) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
         
@@ -461,6 +539,9 @@ public class FirestoreManager extends FirebaseComm {
         }
     }
 
+    /**
+     * Real-time listener for lessons currently marked as live.
+     */
     public void listenForLiveLesson(String classID, LiveLessonListener listener) {
         FIRESTORE.collection("classes").document(classID)
                 .collection("lessons")
@@ -482,6 +563,7 @@ public class FirestoreManager extends FirebaseComm {
     }
 
 
+    /** Adds a new draft role configuration to a lesson. */
     public void addDraftRole(String classId, String lessonId, Role role) {
         FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
@@ -489,6 +571,7 @@ public class FirestoreManager extends FirebaseComm {
                 .add(role);
     }
 
+    /** Updates an existing draft role's fields. */
     public void updateDraftRole(String classId, String lessonId, String roleDocId, Map<String, Object> updates) {
         FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
@@ -496,6 +579,7 @@ public class FirestoreManager extends FirebaseComm {
                 .update(updates);
     }
 
+    /** Removes a draft role from Firestore. */
     public void deleteDraftRole(String classId, String lessonId, String roleDocId) {
         FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
@@ -503,6 +587,7 @@ public class FirestoreManager extends FirebaseComm {
                 .delete();
     }
 
+    /** Returns a query for all draft roles sorted by name. */
     public Query getDraftRolesQuery(String classId, String lessonId) {
         return FIRESTORE.collection("classes").document(classId)
                 .collection("lessons").document(lessonId)
@@ -510,6 +595,7 @@ public class FirestoreManager extends FirebaseComm {
                 .orderBy("name", Query.Direction.ASCENDING);
     }
 
+    /** Logs that a user has accessed a lesson for dashboard history. */
     public void logLessonAccess(String userId, String classId, String lessonId, String title) {
         if (userId == null || lessonId == null) return;
         DocumentReference ref = FIRESTORE.collection("users").document(userId)
@@ -524,6 +610,7 @@ public class FirestoreManager extends FirebaseComm {
         ref.set(log, com.google.firebase.firestore.SetOptions.merge());
     }
 
+    /** Removes a lesson from the user's recent history. */
     public void deleteRecentLessonLog(String userId, String lessonId) {
         if (userId == null || lessonId == null) return;
         FIRESTORE.collection("users").document(userId)
@@ -531,6 +618,7 @@ public class FirestoreManager extends FirebaseComm {
                 .delete();
     }
 
+    /** Fetches the 5 most recently accessed lessons for a user. */
     public void getRecentLessons(String userId, RecentLessonsFetchListener listener) {
         if (userId == null) {
             if (listener != null) listener.onRecentLessonsFetched(new ArrayList<>());
@@ -562,6 +650,7 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /** Fetches a single lesson document. */
     public void getLesson(String classId, String lessonId, OnSuccessListener<Lesson> listener) {
         if (classId == null || lessonId == null) {
             if (listener != null) listener.onSuccess(null);
@@ -583,6 +672,7 @@ public class FirestoreManager extends FirebaseComm {
                 });
     }
 
+    /** Fetches a single class document. */
     public void getClassById(String classId, OnSuccessListener<Class> listener) {
         if (classId == null) {
             if (listener != null) listener.onSuccess(null);

@@ -15,7 +15,27 @@ import java.net.URL;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * FileHelper
+ * 
+ * A stateless utility class responsible for preemptive validation and metadata 
+ * extraction of selected files before they are processed or uploaded.
+ * 
+ * It employs stream-based inspection (checking magic numbers) to differentiate 
+ * between compressed MXL (ZIP) archives and standard MusicXML files. It also uses 
+ * the high-performance {@link XmlPullParser} to efficiently scan large files 
+ * for validation tags and work titles without loading the entire DOM into memory.
+ */
 public class FileHelper {
+    
+    /**
+     * Attempts to extract the official musical title embedded within the XML.
+     * Falls back to the raw OS filename if the XML does not contain a title tag.
+     * 
+     * @param context The application context.
+     * @param uri The resource location.
+     * @return A human-readable display title.
+     */
     public static String getTitleFromUri(Context context, Uri uri) {
         String title = getTitleFromMusicXml(context, uri);
         if (title != null) {
@@ -24,14 +44,25 @@ public class FileHelper {
         return getFileName(context, uri);
     }
 
+    /**
+     * Inspects the file stream to ensure it is a valid, parsable MusicXML document.
+     * Checks the first two bytes to determine if the stream needs ZIP decompression 
+     * before XML validation.
+     * 
+     * @param context The application context.
+     * @param uri The resource location.
+     * @return True if the file contains the required 'score-partwise' or 'score-timewise' root tags.
+     */
     public static boolean isValidMusicXml(Context context, Uri uri) {
         try (InputStream inputStream = openInputStream(context, uri)) {
+            // Use BufferedInputStream to allow stream resetting after checking the Magic Number.
             BufferedInputStream bis = new BufferedInputStream(inputStream);
             bis.mark(4);
             byte[] header = new byte[4];
             int read = bis.read(header);
-            bis.reset();
+            bis.reset(); // Rewind the stream back to the beginning for the actual parser.
 
+            // "PK" (0x50 0x4B) is the standard magic number for ZIP archives.
             if (read >= 2 && header[0] == 'P' && header[1] == 'K') {
                 return validateZippedMusicXml(bis);
             } else {
@@ -43,6 +74,10 @@ public class FileHelper {
         return false;
     }
 
+    /**
+     * Iterates through a ZIP archive looking for files with the .xml extension, 
+     * explicitly ignoring the structural container.xml file.
+     */
     private static boolean validateZippedMusicXml(InputStream is) throws Exception {
         ZipInputStream zis = new ZipInputStream(is);
         ZipEntry entry;
@@ -51,6 +86,7 @@ public class FileHelper {
             if (!entry.isDirectory() && name.toLowerCase().endsWith(".xml")
                     && !name.equalsIgnoreCase("META-INF/container.xml")
                     && !name.equalsIgnoreCase("container.xml")) {
+                // Once an XML file is found, pass it to the PullParser.
                 if (validateXmlStream(zis)) {
                     return true;
                 }
@@ -59,6 +95,11 @@ public class FileHelper {
         return false;
     }
 
+    /**
+     * Uses XmlPullParser to scan the start of the document.
+     * It immediately returns true upon finding a valid MusicXML root tag, 
+     * aborting the rest of the parse to save memory and CPU time.
+     */
     private static boolean validateXmlStream(InputStream is) throws Exception {
         XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
         XmlPullParser parser = factory.newPullParser();
@@ -75,6 +116,7 @@ public class FileHelper {
         return false;
     }
 
+    /** Resolves the appropriate InputStream for remote or local URIs. */
     private static InputStream openInputStream(Context context, Uri uri) throws Exception {
         String scheme = uri.getScheme();
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
@@ -83,6 +125,10 @@ public class FileHelper {
         return context.getContentResolver().openInputStream(uri);
     }
 
+    /**
+     * Mirrors the validation structure to extract the 'work-title' or 'movement-title' 
+     * tags from the XML document.
+     */
     private static String getTitleFromMusicXml(Context context, Uri uri) {
         try (InputStream inputStream = openInputStream(context, uri)) {
             BufferedInputStream bis = new BufferedInputStream(inputStream);
@@ -116,6 +162,10 @@ public class FileHelper {
         return null;
     }
 
+    /**
+     * Efficiently scans the XML stream for title tags. Returns immediately once 
+     * text is found within the specified tags.
+     */
     private static String parseTitleFromStream(InputStream is) throws Exception {
         XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
         XmlPullParser parser = factory.newPullParser();
@@ -138,6 +188,7 @@ public class FileHelper {
                 case XmlPullParser.TEXT:
                     if (inWorkTitle || inMovementTitle) {
                         String parsedTitle = parser.getText();
+                        // Exit loop and return immediately upon finding text.
                         if (parsedTitle != null && !parsedTitle.trim().isEmpty()) {
                             return parsedTitle.trim();
                         }
@@ -156,6 +207,7 @@ public class FileHelper {
         return null;
     }
 
+    /** Retrieves the raw OS-level filename as a fallback display title. */
     private static String getFileName(Context context, Uri uri) {
         String result = null;
         if (uri.getScheme() != null && uri.getScheme().equals("content")) {

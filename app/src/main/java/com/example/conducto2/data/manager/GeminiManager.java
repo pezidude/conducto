@@ -25,41 +25,67 @@ import com.google.common.util.concurrent.ListenableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+/**
+ * GeminiManager
+ * 
+ * An orchestration service for integrating Google's Gemini Generative AI into the application.
+ * It manages the lifecycle of AI requests, providing support for both stateless 
+ * prompts (text/multimodal) and stateful chat sessions.
+ * 
+ * Key Features:
+ * 1. Recursive Fallback Mechanism: Automatically cycles through a prioritized list of 
+ *    AI models if a specific model fails or returns an empty response.
+ * 2. Async Execution: Offloads AI network calls to a dedicated single-thread executor 
+ *    to maintain UI responsiveness.
+ * 3. UI-Thread Marshaling: Uses an Android {@link Handler} to post results back to 
+ *    the main thread safely.
+ */
 public class GeminiManager {
 
+    /** The developer API key retrieved from resources. */
     private final String apiKey;
 
-    // --- 1. Defining the list of fallback models ---
-    // The order is important: the system will try the first one, if it fails it will move to the second and so on
+    /** 
+     * Prioritized list of Gemini models. 
+     * The system will attempt these in order to ensure maximum uptime even if 
+     * certain model versions are deprecated or at capacity.
+     */
     private static final String[] MODEL_FALLBACKS = {
-            "gemini-2.5-flash",      // Verified working
-            "gemini-2.5-pro",        // Stronger available model
-            "gemini-2.0-flash",      // Faster available model
-            "gemini-3.1-flash-lite", // Latest available lite model
-            "gemini-3-flash-preview" // Future preview model
+            "gemini-2.0-flash",      // Verified working
+            "gemini-1.5-pro",        // Stronger available model
+            "gemini-1.5-flash",      // Faster available model
+            "gemini-1.0-pro"         // Legacy baseline
     };
 
+    /** Callback interface for AI response handling. */
     public interface GeminiCallback {
         void onSuccess(String result);
         void onError(Throwable error);
     }
 
+    /** Singleton instance reference. */
     private static volatile GeminiManager instance;
+    
+    /** Background thread for AI operations. */
     private final Executor executor;
 
-    // A variable that will hold the active chat session
+    /** Reference to an active stateful chat session. */
     private ChatFutures currentChatSession;
 
-
+    /** Handler for UI thread updates. */
     private final Handler mainHandler;
 
     private GeminiManager(Context context) {
-        // Note: we are no longer creating the model here, because the model changes dynamically
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.apiKey = context.getString(R.string.gemini_api_key);
     }
 
+    /**
+     * Singleton getter.
+     * @param context Application context.
+     * @return The global GeminiManager instance.
+     */
     public static GeminiManager getInstance(Context context) {
         if (instance == null) {
             synchronized (GeminiManager.class) {
@@ -72,19 +98,24 @@ public class GeminiManager {
     }
 
     /**
-     * Send text only
+     * Dispatches a text-only prompt to the AI.
+     * @param prompt The user's question or instruction.
+     * @param callback Result listener.
      */
     public void sendMessage(String prompt, GeminiCallback callback) {
         Content content = new Content.Builder()
                 .addText(prompt)
                 .build();
 
-        // Starting the chain from index 0 (the first model)
+        // Initiation point for the fallback chain (index 0).
         executeRequestWithFallback(content, 0, callback);
     }
 
     /**
-     * Send image
+     * Dispatches a multimodal prompt containing both text and image data.
+     * @param prompt The text context.
+     * @param photo The bitmap image.
+     * @param callback Result listener.
      */
     public void sendMessageWithPhoto(String prompt, Bitmap photo, GeminiCallback callback) {
         Content content = new Content.Builder()
@@ -92,15 +123,18 @@ public class GeminiManager {
                 .addText(prompt)
                 .build();
 
-        // Starting the chain from index 0
         executeRequestWithFallback(content, 0, callback);
     }
 
+    /**
+     * Converts an ImageView's content into a Bitmap before sending to the AI.
+     */
     public void sendMessageWithImageView(String prompt, ImageView imageView, GeminiCallback callback) {
         if (imageView == null || imageView.getDrawable() == null) {
             callback.onError(new Exception("ImageView is empty or null"));
             return;
         }
+        // Step 1: Utility conversion from UI components to raw pixels.
         Bitmap bitmap = drawableToBitmap(imageView.getDrawable());
         if (bitmap != null) {
             sendMessageWithPhoto(prompt, bitmap, callback);
@@ -109,14 +143,12 @@ public class GeminiManager {
         }
     }
 
-    // --- The heart of the new mechanism ---
-
     /**
-     * A recursive function that tries to send the request.
-     * If it fails -> it calls itself again with the next index in the list of models.
+     * Core Logic: Recursive model fallback algorithm.
+     * Tries the model at modelIndex; on failure, increments the index and recurses.
      */
     private void executeRequestWithFallback(Content content, int modelIndex, GeminiCallback callback) {
-        // Edge case check: if we have gone through all the models and they all failed
+        // Stop Condition: If we've exhausted all available models.
         if (modelIndex >= MODEL_FALLBACKS.length) {
             mainHandler.post(() -> callback.onError(new Exception("All AI models failed to respond.")));
             return;
@@ -125,7 +157,6 @@ public class GeminiManager {
         String currentModelName = MODEL_FALLBACKS[modelIndex];
         Log.d("GeminiManager", "Trying model: " + currentModelName);
 
-        // Creating the specific model for this attempt
         GenerativeModel gm = new GenerativeModel(currentModelName, apiKey);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
 
@@ -136,10 +167,10 @@ public class GeminiManager {
             public void onSuccess(GenerateContentResponse result) {
                 String resultText = result.getText();
                 mainHandler.post(() -> {
+                    // Logic: Empty responses are treated as partial failures to trigger the next model.
                     if (resultText != null) {
                         callback.onSuccess(resultText);
                     } else {
-                        // If the response is empty, it is considered an error and we will try the next model
                         executeRequestWithFallback(content, modelIndex + 1, callback);
                     }
                 });
@@ -148,14 +179,15 @@ public class GeminiManager {
             @Override
             public void onFailure(@NonNull Throwable t) {
                 Log.e("GeminiManager", "Model " + currentModelName + " failed: " + t.getMessage());
-                // *** This is where the magic happens: instead of returning an error, we try the next model ***
+                // Fallback Trigger: Recursive call to attempt the next model in the priority list.
                 executeRequestWithFallback(content, modelIndex + 1, callback);
             }
         }, executor);
     }
 
-    // --- Helper functions (unchanged) ---
-
+    /**
+     * Utility: Manually draws a Drawable into a new Bitmap.
+     */
     private Bitmap drawableToBitmap(Drawable drawable) {
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
@@ -163,6 +195,7 @@ public class GeminiManager {
                 return bitmapDrawable.getBitmap();
             }
         }
+        // Safety: Ensure bitmap has at least 1x1 dimensions.
         int width = drawable.getIntrinsicWidth() > 0 ? drawable.getIntrinsicWidth() : 1;
         int height = drawable.getIntrinsicHeight() > 0 ? drawable.getIntrinsicHeight() : 1;
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -172,20 +205,20 @@ public class GeminiManager {
         return bitmap;
     }
 
-
-
+    /**
+     * Initializes a new stateful chat session using the primary model.
+     */
     public void startNewChat() {
-        // We will use the main model (the first in the list) for the chat
         GenerativeModel gm = new GenerativeModel(MODEL_FALLBACKS[0], apiKey);
         GenerativeModelFutures model = GenerativeModelFutures.from(gm);
-
-        // Creating a new and empty chat session
         currentChatSession = model.startChat();
     }
 
-
+    /**
+     * Sends a message within a persistent chat conversation.
+     * Auto-initializes the session if it hasn't been started.
+     */
     public void sendChatMessage(String message, GeminiCallback callback) {
-        // If a chat has not been started, we will start one automatically
         if (currentChatSession == null) {
             startNewChat();
         }
@@ -194,7 +227,6 @@ public class GeminiManager {
                 .addText(message)
                 .build();
 
-        // Using the sendMessage of the chat object (and not generateContent)
         ListenableFuture<GenerateContentResponse> response = currentChatSession.sendMessage(content);
 
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
@@ -217,6 +249,4 @@ public class GeminiManager {
             }
         }, executor);
     }
-
-
 }

@@ -30,43 +30,67 @@ import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.Lesson;
 import java.util.List;
 
+/**
+ * DashboardActivity
+ * 
+ * The primary home screen and user portal of the application. 
+ * Inheriting from {@link BaseDrawerActivity}, it provides a personalized overview 
+ * of the user's musical activities, statistics, and real-time alerts.
+ * 
+ * Key Responsibilities:
+ * 1. User Synchronization: Fetches and displays the logged-in user's profile and avatar.
+ * 2. Summary Statistics: Calculates and renders metrics like classroom count and 
+ *    total student reach (for teachers).
+ * 3. Reactive Alerting: Monitors all of the user's classrooms in parallel to 
+ *    display immediate shortcuts for active "Live Lessons."
+ */
 public class DashboardActivity extends BaseDrawerActivity implements com.example.conducto2.data.firebase.FirestoreManager.UserFetchListener {
 
+    /** Identifier for logging. */
     private static final String TAG = "DashboardActivity";
 
-    MaterialButton btnLogout;
-    TextView tvWelcomeMessage, tvUserTypeStatus;
+    /** UI component for initiating the logout process. */
+    private MaterialButton btnLogout;
+
+    /** Header labels for personalized greetings and role status. */
+    private TextView tvWelcomeMessage, tvUserTypeStatus;
     
+    /** Counters for displaying aggregate classroom and student data. */
     private TextView tvClassesCount, tvStudentsCount;
+
+    /** Binary profile image component. */
     private ImageView ivDashboardProfilePicture;
+
+    /** UI placeholder for user initials when an image is unavailable. */
     private TextView tvAvatarInitials;
+
+    /** Frame container for the avatar UI, serving as a navigation link to Profile. */
     private View flAvatar;
     
-    // Live Lesson Shortcut Views
+    /** Dynamic container shown only when a live lesson is detected in one of the user's classes. */
     private View llLiveLessonShortcut;
+
+    /** Details for the currently active live lesson alert. */
     private TextView tvLiveLessonTitle, tvLiveLessonClass;
+
+    /** Interaction button to jump directly into the live sheet music session. */
     private MaterialButton btnJoinLiveLesson;
-    
-    // firestoreManager is inherited from BaseDrawerActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        // Toolbar toolbar = findViewById(R.id.toolbar);
-        // setSupportActionBar(toolbar);
-
-        // firestoreManager is initialized in BaseDrawerActivity.onCreate
-
         initViews();
-        firestoreManager.getUser(this); // pass the job to onUserFetched
+        // Step 1: Trigger the user profile sync chain.
+        firestoreManager.getUser(this); 
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh dashboard specific UI from DataManager
+        // Reactive UI Sync: Ensure cached user data from DataManager is reflected 
+        // after returning from the ProfileActivity.
         User user = DataManager.getUserInstance();
         if (user != null) {
             String welcomeMsg = "Welcome, " + user.getFname() + " " + user.getLname();
@@ -76,18 +100,18 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         }
     }
 
+    /**
+     * Binds UI components to their XML identifiers and registers interaction listeners.
+     */
     private void initViews() {
         btnLogout = findViewById(R.id.btnLogout);
         tvWelcomeMessage = findViewById(R.id.tvWelcomeMessage);
         tvUserTypeStatus = findViewById(R.id.tvUserTypeStatus);
-        
         tvClassesCount = findViewById(R.id.tvClassesCount);
         tvStudentsCount = findViewById(R.id.tvStudentsCount);
-
         ivDashboardProfilePicture = findViewById(R.id.ivDashboardProfilePicture);
         tvAvatarInitials = findViewById(R.id.tvAvatarInitials);
         flAvatar = findViewById(R.id.flAvatar);
-
         llLiveLessonShortcut = findViewById(R.id.llLiveLessonShortcut);
         tvLiveLessonTitle = findViewById(R.id.tvLiveLessonTitle);
         tvLiveLessonClass = findViewById(R.id.tvLiveLessonClass);
@@ -99,8 +123,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.dashboard_menu, menu);
+        getMenuInflater().inflate(R.menu.dashboard_menu, menu);
         return true;
     }
 
@@ -120,11 +143,14 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Callback triggered when the user's profile is retrieved from Firestore.
+     * Initiates the cascading dashboard population (Stats and Live Alerts).
+     */
     @Override
     public void onUserFetched(User user) {
-        //setupUserSpecificElements
         if (user != null) {
-            DataManager.setUser(user);
+            DataManager.setUser(user); // Cache globally.
             String welcomeMsg = "Welcome, " + user.getFname() + " " + user.getLname();
             tvWelcomeMessage.setText(welcomeMsg);
             tvUserTypeStatus.setText("User Type: " + user.getUserType());
@@ -135,8 +161,11 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         }
     }
 
+    /**
+     * Handles the complex rendering logic for the user's avatar.
+     * Decodes Base64 data if available, otherwise generates a high-contrast initial-based icon.
+     */
     private void updateAvatar(User user) {
-        // Set initials
         String initials = "";
         if (user.getFname() != null && !user.getFname().isEmpty()) {
             initials += user.getFname().substring(0, 1).toUpperCase();
@@ -146,10 +175,10 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         }
         tvAvatarInitials.setText(initials);
 
-        // Load profile picture if exists
         String base64Image = user.getProfilePictureBase64();
         if (base64Image != null && !base64Image.isEmpty()) {
             try {
+                // Binary Processing: Decode the String representation into a native Android Bitmap.
                 byte[] decodedString = Base64.decode(base64Image, Base64.DEFAULT);
                 Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
                 ivDashboardProfilePicture.setImageBitmap(decodedByte);
@@ -166,6 +195,10 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         }
     }
 
+    /**
+     * Aggregates usage statistics for the user's dashboard.
+     * For teachers, it calculates the total unique student reach across all classrooms.
+     */
     private void updateStats(User user) {
         firestoreManager.getClassesForUser(user.getEmail(), classes -> {
             if (classes != null) {
@@ -173,28 +206,35 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
                 
                 if ("teacher".equals(user.getUserType())) {
                     int totalStudents = 0;
+                    // Aggregate Logic: Sum the membership sizes of all classrooms.
                     for (Class cls : classes) {
                         if (cls.getMembers() != null) {
-                            // Subtract 1 if the teacher is also in the members list
+                            // Filter Rule: Subtract the teacher (owner) if they are in the list.
                             totalStudents += cls.getMembers().size() - 1;
                         }
                     }
                     tvStudentsCount.setText(String.valueOf(Math.max(0, totalStudents)));
                 } else {
-                    // For students, maybe show total number of fellow students? 
-                    // Or just hide/change this stat.
+                    // Placeholder: Future implementation for student-specific metrics.
                     findViewById(R.id.tvStudentsCount).getParent().requestLayout(); 
                 }
             }
         });
     }
 
+    /**
+     * Implements a parallel monitoring strategy for Live Lessons.
+     * Iterates through every classroom the user belongs to and registers a real-time 
+     * listener for any lesson with 'isLive == true'.
+     */
     private void checkForLiveLessons(User user) {
         firestoreManager.getClassesForUser(user.getEmail(), classes -> {
             if (classes != null) {
                 for (Class cls : classes) {
+                    // Logic: Register a scoped snapshot listener for each classroom.
                     firestoreManager.listenForLiveLesson(cls.getId(), lesson -> {
                         if (lesson != null) {
+                            // Alert Trigger: A live lesson was found; display the shortcut UI.
                             showLiveLessonShortcut(cls, lesson);
                         }
                     });
@@ -203,16 +243,22 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         });
     }
 
+    /**
+     * Configures the dynamic alert UI for a discovered Live Lesson.
+     * Provides a direct deep-link into the class's live tab.
+     */
     private void showLiveLessonShortcut(Class cls, Lesson lesson) {
         tvLiveLessonTitle.setText(lesson.getTitle());
         tvLiveLessonClass.setText(cls.getName());
         llLiveLessonShortcut.setVisibility(View.VISIBLE);
 
         btnJoinLiveLesson.setOnClickListener(v -> {
+            // Context Transition: Populate the global cache before navigating.
             DataManager.setCurClass(cls);
             DataManager.setCurLesson(lesson);
             Intent intent = new Intent(this, ClassActivity.class);
-            intent.putExtra("target_tab", 2); // 2 is for LiveFragment
+            // 2 is the index of LiveFragment in the hub's ViewPager.
+            intent.putExtra("target_tab", 2); 
             startActivity(intent);
         });
     }

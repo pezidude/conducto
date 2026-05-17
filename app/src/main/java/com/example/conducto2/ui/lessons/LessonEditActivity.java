@@ -36,6 +36,7 @@ import com.example.conducto2.data.model.User;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 
@@ -47,6 +48,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * LessonEditActivity
+ * 
+ * An administrative activity for teachers to create new lessons or edit existing ones.
+ * This class acts as the orchestration hub for the lesson configuration pipeline.
+ * 
+ * Key Responsibilities:
+ * 1. Form Validation & Data Binding: Managing Title, Info, Genre, and Date inputs.
+ * 2. Unsaved Changes Tracking: Preventing accidental data loss upon exit.
+ * 3. File Management: Interfacing with device storage to upload base MusicXML files.
+ * 4. Workflow Routing: Providing the entry point to {@link RoleGroupingActivity} and 
+ *    managing staged file deletions.
+ */
 public class LessonEditActivity extends BaseDrawerActivity implements FirebaseComm.DBResult, MusicXmlAdapter.OnAssignButtonClickListener, MusicXmlAdapter.OnDeleteButtonClickListener, MusicXmlAdapter.OnRenameListener {
 
     private EditText lessonTitleInput;
@@ -73,16 +87,25 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     private final Calendar calendar = Calendar.getInstance();
     private int pendingTasks = 0;
     private boolean shouldFinishOnTasksEnd = false;
+    
+    // Staged deletion tracking
     private final List<String> pendingDeletions = new ArrayList<>();
     private final List<String> pendingUrlDeletions = new ArrayList<>();
+    
+    // State tracking for "Unsaved Changes" logic
     private boolean originalIsArchived = false;
     private Map<String, List<String>> originalFileMapping = new HashMap<>();
 
+    /**
+     * Activity Result Launcher for basic MusicXML file uploads.
+     * Validates the file extension before passing to FileStorage.
+     */
     private final ActivityResultLauncher<Intent> musicXmlLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null && result.getData().getData() != null) {
                     Uri fileUri = result.getData().getData();
+                    // Validation: Ensure the selected file is actually an XML/MXL document.
                     if (FileHelper.isValidMusicXml(this, fileUri)) {
                         hideError();
                         String title = FileHelper.getTitleFromUri(this, fileUri);
@@ -93,6 +116,10 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                 }
             });
 
+    /**
+     * Activity Result Launcher for the Role Grouping workflow.
+     * Selects a master score, validates it, and passes it to RoleGroupingActivity.
+     */
     private final ActivityResultLauncher<Intent> groupVoicesLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -125,6 +152,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
         setupUI();
 
+        // State Determination: Are we creating a new lesson or editing an existing one?
         if (DataManager.getCurLesson() != null) {
             currentLesson = DataManager.getCurLesson();
             isEditMode = true;
@@ -141,7 +169,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             currentLesson = new Lesson();
             originalIsArchived = false;
             originalFileMapping = new HashMap<>();
-            DataManager.setCurLesson(currentLesson); // hold the reference in DataManager
+            DataManager.setCurLesson(currentLesson); 
         }
 
         if (DataManager.getCurClass() != null) {
@@ -153,6 +181,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         setupRecyclerView();
         setupListeners();
         
+        // Intercept back button to perform dirty state checking.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -160,16 +189,21 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             }
         });
 
+        // Pre-fetch users for the assignment dialog to prevent UI lag later.
         startTask(getString(R.string.status_loading));
         firestoreManager.getAllUsers(allUsers, users -> endTask());
     }
 
+    /**
+     * Intercepts exit events to warn the user if they have unsaved changes.
+     */
     private void handleExit() {
         if (hasUnsavedChanges()) {
             new AlertDialog.Builder(this)
                     .setTitle("Unsaved Changes")
                     .setMessage("You have unsaved changes. Do you want to save them before exiting?")
                     .setPositiveButton("Save", (dialog, which) -> {
+                        // Flag to ensure the activity finishes only after async DB operations complete.
                         shouldFinishOnTasksEnd = true;
                         saveLesson();
                     })
@@ -181,6 +215,11 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         }
     }
 
+    /**
+     * Comprehensive validation method that compares current UI state against
+     * the original loaded state.
+     * @return True if the form is "dirty" and requires saving.
+     */
     private boolean hasUnsavedChanges() {
         if (currentLesson == null) return false;
 
@@ -192,10 +231,12 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         String originalInfo = isEditMode && currentLesson.getInfo() != null ? currentLesson.getInfo() : "";
         String originalGenre = isEditMode && currentLesson.getGenreLabel() != null ? currentLesson.getGenreLabel() : "";
 
+        // Check text fields
         if (!currentTitle.equals(originalTitle)) return true;
         if (!currentInfo.equals(originalInfo)) return true;
         if (!currentGenre.equals(originalGenre)) return true;
 
+        // Check Date/Time
         if (isEditMode && currentLesson.getDate() != null) {
             Calendar originalCal = Calendar.getInstance();
             originalCal.setTime(currentLesson.getDate());
@@ -207,32 +248,31 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                 return true;
             }
         } else if (!isEditMode) {
+            // If new lesson, any text input means unsaved changes
             if (!currentTitle.isEmpty() || !currentInfo.isEmpty() || !currentGenre.isEmpty()) return true;
         }
 
+        // Check toggles and mapping
         if (currentLesson.isArchived() != originalIsArchived) return true;
 
         Map<String, List<String>> currentFileMapping = currentLesson.getFileMapping();
         if (currentFileMapping == null) currentFileMapping = new HashMap<>();
         if (!currentFileMapping.equals(originalFileMapping)) return true;
 
+        // Check staged actions
         return !pendingDeletions.isEmpty();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (musicXmlAdapter != null) {
-            musicXmlAdapter.startListening();
-        }
+        if (musicXmlAdapter != null) musicXmlAdapter.startListening();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (musicXmlAdapter != null) {
-            musicXmlAdapter.stopListening();
-        }
+        if (musicXmlAdapter != null) musicXmlAdapter.stopListening();
     }
 
     private void fetchClassAttendees() {
@@ -263,7 +303,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
     private void setupRecyclerView() {
         musicXmlRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        musicXmlRecyclerView.setItemAnimator(null); // fix bug in recycle view
+        musicXmlRecyclerView.setItemAnimator(null); 
 
         if (classId != null && currentLesson != null && currentLesson.getId() != null) {
             Query query = FirebaseComm.getCollectionReference("classes").document(classId)
@@ -274,6 +314,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                     .setQuery(query, MusicFile.class)
                     .build();
 
+            // Initialize adapter with administrative buttons active (showButtons = true)
             musicXmlAdapter = new MusicXmlAdapter(options, true, false);
             musicXmlAdapter.setPendingDeletions(pendingDeletions);
             musicXmlAdapter.setOnAssignButtonClickListener(this);
@@ -286,23 +327,20 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
     private void setupListeners() {
         lessonDateTimePicker.setOnClickListener(v -> showDatePickerDialog());
+        
+        // Workflow Validation: Prevent file operations on unsaved documents 
+        // since they require a valid parent Document ID.
         uploadMusicXmlButton.setOnClickListener(v -> {
-            if (isEditMode) {
-                openFilePicker(musicXmlLauncher);
-            } else {
-                showError("Please save the lesson first before uploading files.");
-            }
+            if (isEditMode) openFilePicker(musicXmlLauncher);
+            else showError("Please save the lesson first before uploading files.");
         });
         groupVoicesPickerButton.setOnClickListener(v -> {
-            if (isEditMode) {
-                openFilePicker(groupVoicesLauncher);
-            } else {
-                showError("Please save the lesson first before grouping voices.");
-            }
+            if (isEditMode) openFilePicker(groupVoicesLauncher);
+            else showError("Please save the lesson first before grouping voices.");
         });
+        
         saveLessonButton.setOnClickListener(v -> saveLesson());
 
-        // Setup genre selector
         String[] genres = {"Classical", "Jazz", "Pop", "Rock"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, genres);
         genreSelector.setAdapter(adapter);
@@ -316,16 +354,17 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     }
 
     private void hideError() {
-        if (errorTextView != null) {
-            errorTextView.setVisibility(View.GONE);
-        }
+        if (errorTextView != null) errorTextView.setVisibility(View.GONE);
     }
 
+    /**
+     * Toggles the local archive state. This change is not pushed to Firestore 
+     * until saveLesson() is called (Staged Archiving).
+     */
     private void archiveLesson() {
         if (currentLesson == null) return;
         boolean newArchiveStatus = !currentLesson.isArchived();
         
-        // Staged update: only update local object and UI
         currentLesson.setArchived(newArchiveStatus);
         invalidateOptionsMenu();
         
@@ -361,7 +400,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
     private void openFilePicker(ActivityResultLauncher<Intent> launcher) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*"); // wildcard for all file types
+        intent.setType("*/*"); 
         launcher.launch(intent);
     }
 
@@ -430,6 +469,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         if (isEditMode) {
             android.view.MenuItem archiveItem = menu.findItem(R.id.action_archive);
             if (archiveItem != null && currentLesson != null) {
+                // Toggle action bar iconography based on current local state
                 if (currentLesson.isArchived()) {
                     archiveItem.setIcon(R.drawable.unarchive_24px);
                     archiveItem.setTitle("Restore");
@@ -458,11 +498,17 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Form Validation and Database Commit logic.
+     * Ensures required fields are populated, executes any staged deletions, 
+     * and pushes the updated Lesson model to Firestore.
+     */
     private void saveLesson() {
         String title = lessonTitleInput.getText().toString().trim();
         String info = lessonInfoInput.getText().toString().trim();
         String genre = genreSelector.getText().toString().trim();
 
+        // Data Validation: Title and Genre are mandatory.
         if (title.isEmpty() || genre.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields (Title and Genre are required)", Toast.LENGTH_SHORT).show();
             return;
@@ -473,7 +519,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         currentLesson.setDate(calendar.getTime());
         currentLesson.setGenre(genre);
 
-        // Remove assignments for files pending deletion
+        // Security/Cleanup: Remove mappings for files that are about to be deleted.
         Map<String, List<String>> fileMapping = currentLesson.getFileMapping();
         if (fileMapping != null) {
             for (String url : pendingUrlDeletions) {
@@ -484,9 +530,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
         startTask(getString(R.string.status_saving));
         
+        // Execute network calls for staged file deletions.
         performPendingDeletions();
-
-        Toast.makeText(this, "DEBUG: Saving Lesson. isArchived=" + currentLesson.isArchived(), Toast.LENGTH_SHORT).show();
 
         if (isEditMode) {
             firestoreManager.updateLesson(classId, currentLesson);
@@ -501,6 +546,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         }
     }
 
+    /**
+     * Dispatches network calls to FileStorage to remove documents staged in pendingDeletions.
+     */
     private void performPendingDeletions() {
         if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
 
@@ -519,23 +567,19 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             if (operation == FirebaseComm.DbOperation.INSERT_LESSON || operation == FirebaseComm.DbOperation.UPDATE_LESSON) {
                 hideError();
 
-                // Update original state to reflect saved data
+                // Reset baseline state to prevent false-positive "Unsaved Changes" warnings
                 originalIsArchived = currentLesson.isArchived();
                 originalFileMapping = currentLesson.getFileMapping() != null ? new HashMap<>(currentLesson.getFileMapping()) : new HashMap<>();
 
                 if (!isEditMode) {
                     isEditMode = true;
                     saveLessonButton.setText(R.string.btn_save);
-                    // Also need to update the query in adapter since currentLesson.getId() is now available
                     setupRecyclerView();
                 } else {
-                    // If we were already in edit mode, we usually want to exit after saving
                     shouldFinishOnTasksEnd = true;
                 }
 
-                if (shouldFinishOnTasksEnd && pendingTasks == 0) {
-                    finish();
-                }
+                if (shouldFinishOnTasksEnd && pendingTasks == 0) finish();
             }
         }
     }
@@ -545,26 +589,26 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
     }
 
+    /**
+     * Centralized task tracking. Prevents the Activity from closing prematurely 
+     * while asynchronous operations (like file uploads/deletions) are still running.
+     * @param message Text to display on the Snackbar, or null for silent tracking.
+     */
     private void startTask(String message) {
         pendingTasks++;
-        if (loadingProgress != null) {
-            loadingProgress.setVisibility(View.VISIBLE);
-        }
+        if (loadingProgress != null) loadingProgress.setVisibility(View.VISIBLE);
         if (message != null && !message.isEmpty()) {
             Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT).show();
         }
     }
 
+    /** Decrements the active task counter and checks if the Activity should terminate. */
     private void endTask() {
         pendingTasks--;
         if (pendingTasks <= 0) {
             pendingTasks = 0;
-            if (loadingProgress != null) {
-                loadingProgress.setVisibility(View.GONE);
-            }
-            if (shouldFinishOnTasksEnd) {
-                finish();
-            }
+            if (loadingProgress != null) loadingProgress.setVisibility(View.GONE);
+            if (shouldFinishOnTasksEnd) finish();
         }
     }
 
@@ -577,13 +621,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
         final Map<String, List<String>> fileMapping = currentLesson.getFileMapping() != null ? currentLesson.getFileMapping() : new HashMap<>();
 
-        // Get students assigned for this file
         List<String> assignedStudentsForThisFile = fileMapping.get(musicFile.getUrl());
-        if (assignedStudentsForThisFile == null) {
-            assignedStudentsForThisFile = new ArrayList<>();
-        }
+        if (assignedStudentsForThisFile == null) assignedStudentsForThisFile = new ArrayList<>();
 
-        // Get all students assigned to other files
         List<String> studentsAssignedToOtherFiles = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : fileMapping.entrySet()) {
             if (!entry.getKey().equals(musicFile.getUrl())) {
@@ -591,7 +631,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             }
         }
 
-        // Filter allUsers to get only class attendees not assigned elsewhere
         List<User> availableStudentObjects = new ArrayList<>();
         for (User user : allUsers) {
             if (classAttendees.contains(user.getEmail()) && !studentsAssignedToOtherFiles.contains(user.getEmail())) {
@@ -632,9 +671,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             pendingDeletions.add(documentId);
             pendingUrlDeletions.add(musicFile.getUrl());
         }
-        if (musicXmlAdapter != null) {
-            musicXmlAdapter.setPendingDeletions(pendingDeletions);
-        }
+        if (musicXmlAdapter != null) musicXmlAdapter.setPendingDeletions(pendingDeletions);
     }
 
     @Override
@@ -650,20 +687,15 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
         builder.setPositiveButton("Rename", (dialog, which) -> {
             String newTitle = input.getText().toString().trim();
-            if (!newTitle.isEmpty()) {
-                renameFileInFirestore(documentId, newTitle);
-            } else {
-                Toast.makeText(this, "Title cannot be empty", Toast.LENGTH_SHORT).show();
-            }
+            if (!newTitle.isEmpty()) renameFileInFirestore(documentId, newTitle);
+            else Toast.makeText(this, "Title cannot be empty", Toast.LENGTH_SHORT).show();
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-
         builder.show();
     }
 
     private void renameFileInFirestore(String documentId, String newTitle) {
         if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
-
         startTask(null);
         fileStorage.renameMusicFile(classId, currentLesson.getId(), documentId, newTitle);
     }

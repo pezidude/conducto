@@ -28,12 +28,24 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 /**
- * Fragment that displays past (archived) lessons for the class.
+ * HistoryFragment
+ * 
+ * A UI module embedded within the ClassActivity hub. It displays a real-time list 
+ * of lessons that have been marked as "Archived" (i.e., past homework or completed sessions).
+ * 
+ * For users with "teacher" privileges, it implements gesture-based administrative actions,
+ * allowing them to restore a lesson back to the Scheduled list or permanently delete it 
+ * from the database.
  */
 public class HistoryFragment extends Fragment {
 
+    /** The list view component for rendering the archived lessons. */
     private RecyclerView historyRecyclerView;
+    
+    /** The real-time Firestore adapter handling the polymorphic lesson UI. */
     private LessonAdapter lessonAdapter;
+    
+    /** Helper for executing state changes (restore/delete) against the cloud database. */
     private FirestoreManager firestoreManager;
 
     @Nullable
@@ -52,6 +64,10 @@ public class HistoryFragment extends Fragment {
         return view;
     }
 
+    /**
+     * Initializes the ItemTouchHelper for swipe gestures.
+     * Enforces Role-Based Access Control (RBAC): Only teachers can perform swipe actions.
+     */
     private void setupSwipe() {
         User user = DataManager.getUserInstance();
         if (user == null || !"teacher".equals(user.getUserType())) {
@@ -61,11 +77,13 @@ public class HistoryFragment extends Fragment {
         SwipeHelper swipeHelper = new SwipeHelper(new SwipeHelper.SwipeActions() {
             @Override
             public void onSwipeLeft(int position) {
+                // Swipe Left -> Restore to active Schedule
                 showRestoreConfirmation(position);
             }
 
             @Override
             public void onSwipeRight(int position) {
+                // Swipe Right -> Permanent Deletion
                 showDeleteConfirmation(position);
             }
         });
@@ -77,8 +95,12 @@ public class HistoryFragment extends Fragment {
         itemTouchHelper.attachToRecyclerView(historyRecyclerView);
     }
 
+    /**
+     * Confirms the intent to move a lesson from History back to Scheduled.
+     * Updates the `isArchived` flag in Firestore to `false`.
+     */
     private void showRestoreConfirmation(int position) {
-        lessonAdapter.notifyDataSetChanged();
+        lessonAdapter.notifyDataSetChanged(); // Resets the swipe UI visually
         new AlertDialog.Builder(getContext())
                 .setTitle("Restore Lesson")
                 .setMessage("Are you sure you want to restore this lesson to scheduled?")
@@ -92,6 +114,9 @@ public class HistoryFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Confirms the intent to permanently destroy a lesson document.
+     */
     private void showDeleteConfirmation(int position) {
         lessonAdapter.notifyDataSetChanged();
         new AlertDialog.Builder(getContext())
@@ -110,9 +135,13 @@ public class HistoryFragment extends Fragment {
     private void initViews(View view) {
         historyRecyclerView = view.findViewById(R.id.history_recycler_view);
         historyRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        historyRecyclerView.setItemAnimator(null);
+        historyRecyclerView.setItemAnimator(null); // Prevent flickering on data sync
     }
 
+    /**
+     * Configures the Firestore query to retrieve only lessons belonging to the current
+     * class that have the `isArchived` flag explicitly set to true.
+     */
     private void setupRecyclerView() {
         Query query = FirebaseFirestore.getInstance().collection("classes")
                 .document(DataManager.getCurClass().getId()).collection("lessons")
@@ -127,10 +156,14 @@ public class HistoryFragment extends Fragment {
     }
 
     private void setupUI() {
+        // Placeholder for future UI adjustments based on user roles (e.g., hiding empty states)
         User user = DataManager.getUserInstance();
-        // Setup UI based on user type if needed
     }
 
+    /**
+     * Defines the navigation behavior when an archived lesson is clicked.
+     * Updates the global DataManager cache and launches the LessonDetailsActivity.
+     */
     private void setupItemClickListener() {
         lessonAdapter.setOnItemClickListener(snapshot -> {
             Lesson lesson = snapshot.toObject(Lesson.class);
@@ -141,6 +174,10 @@ public class HistoryFragment extends Fragment {
         });
     }
 
+    /**
+     * Fragment Lifecycle Management: Optimizes network usage by only listening to 
+     * Firestore changes when the fragment is actually visible to the user.
+     */
     @Override
     public void setMenuVisibility(boolean isVisibleToUser) {
         super.setMenuVisibility(isVisibleToUser);
