@@ -191,6 +191,7 @@
 
                 <!-- Classes stat -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardClassesCount"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/stat_card_height"
                     android:layout_weight="1"
@@ -228,6 +229,7 @@
 
                 <!-- Students stat -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardStudentsCount"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/stat_card_height"
                     android:layout_weight="1"

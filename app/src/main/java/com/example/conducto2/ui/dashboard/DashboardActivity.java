@@ -11,6 +11,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -57,6 +58,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
     
     /** Counters for displaying aggregate classroom and student data. */
     private TextView tvClassesCount, tvStudentsCount;
+    private View cardClassesCount, cardStudentsCount;
 
     /** Binary profile image component. */
     private ImageView ivDashboardProfilePicture;
@@ -109,6 +111,8 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         tvUserTypeStatus = findViewById(R.id.tvUserTypeStatus);
         tvClassesCount = findViewById(R.id.tvClassesCount);
         tvStudentsCount = findViewById(R.id.tvStudentsCount);
+        cardClassesCount = findViewById(R.id.cardClassesCount);
+        cardStudentsCount = findViewById(R.id.cardStudentsCount);
         ivDashboardProfilePicture = findViewById(R.id.ivDashboardProfilePicture);
         tvAvatarInitials = findViewById(R.id.tvAvatarInitials);
         flAvatar = findViewById(R.id.flAvatar);
@@ -195,16 +199,19 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
         }
     }
 
-    /**
-     * Aggregates usage statistics for the user's dashboard.
-     * For teachers, it calculates the total unique student reach across all classrooms.
-     */
     private void updateStats(User user) {
         firestoreManager.getClassesForUser(user.getEmail(), classes -> {
             if (classes != null) {
                 tvClassesCount.setText(String.valueOf(classes.size()));
                 
                 if ("teacher".equals(user.getUserType())) {
+                    cardStudentsCount.setVisibility(View.VISIBLE);
+                    // Reset classes card weight if it was changed
+                    LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) cardClassesCount.getLayoutParams();
+                    params.weight = 1;
+                    params.marginEnd = getResources().getDimensionPixelSize(R.dimen.spacing_xs);
+                    cardClassesCount.setLayoutParams(params);
+
                     int totalStudents = 0;
                     // Aggregate Logic: Sum the membership sizes of all classrooms.
                     for (Class cls : classes) {
@@ -215,8 +222,12 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
                     }
                     tvStudentsCount.setText(String.valueOf(Math.max(0, totalStudents)));
                 } else {
-                    // Placeholder: Future implementation for student-specific metrics.
-                    findViewById(R.id.tvStudentsCount).getParent().requestLayout(); 
+                    cardStudentsCount.setVisibility(View.GONE);
+                    // Make classes card full width for students
+                    LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) cardClassesCount.getLayoutParams();
+                    params.weight = 2; // Take full weightSum
+                    params.marginEnd = 0;
+                    cardClassesCount.setLayoutParams(params);
                 }
             }
         });
