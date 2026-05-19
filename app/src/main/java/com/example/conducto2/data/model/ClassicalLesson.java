@@ -19,8 +19,8 @@ public class ClassicalLesson extends Lesson {
     }
 
     /**
-     * Copy constructor used by the {@link Lesson#fromBase(Lesson)} factory method.
-     * @param lesson The generic lesson to cast to Classical.
+     * Copy constructor used for polymorphic instantiation.
+     * @param lesson The generic lesson to copy.
      */
     public ClassicalLesson(Lesson lesson) {
         super(lesson);
@@ -45,5 +45,10 @@ public class ClassicalLesson extends Lesson {
     @Override
     public int getRecentLessonTintResId() {
         return R.color.info;
+    }
+
+    @Override
+    public Lesson copy() {
+        return new ClassicalLesson(this);
     }
 }

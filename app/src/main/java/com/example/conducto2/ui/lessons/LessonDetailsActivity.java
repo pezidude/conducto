@@ -124,7 +124,7 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
 
         // History Feature: Log this access for the personalized dashboard
         String email = firestoreManager.authUserEmail();
-        firestoreManager.logLessonAccess(email, lesson.getClassId(), lesson.getId(), lesson.getTitle());
+        firestoreManager.logLessonAccess(email, lesson.getClassId(), lesson.getId(), lesson.getTitle(), lesson.getGenre());
 
         lessonTitle.setText(lesson.getTitle());
         if (lesson.getDate() != null) {

@@ -130,12 +130,11 @@ public class MusicXmlAdapter extends FirestoreRecyclerAdapter<MusicFile, MusicXm
         // Theme Sync: Style the music file icon based on the current lesson's genre.
         com.example.conducto2.data.model.Lesson currentLesson = com.example.conducto2.data.manager.DataManager.getCurLesson();
         if (currentLesson != null) {
-            com.example.conducto2.data.model.Lesson polyLesson = com.example.conducto2.data.model.Lesson.fromBase(currentLesson);
-            int color = androidx.core.content.ContextCompat.getColor(holder.itemView.getContext(), polyLesson.getGenreColorResId());
+            int color = androidx.core.content.ContextCompat.getColor(holder.itemView.getContext(), currentLesson.getGenreColorResId());
             if (holder.iconTile.getBackground() != null) {
                 holder.iconTile.getBackground().mutate().setTint(color);
             }
-            holder.iconView.setImageResource(polyLesson.getGenreIconResId());
+            holder.iconView.setImageResource(currentLesson.getGenreIconResId());
         }
 
         // Conditional Visibility: Control based on the flags provided in the constructor.

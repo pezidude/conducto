@@ -160,10 +160,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             isEditMode = false;
             // Mode: creating. means we're creating a new lesson.
             saveLessonButton.setText(R.string.btn_create_save_lesson);
-            currentLesson = new Lesson();
+            currentLesson = null;
             originalIsArchived = false;
             originalFileMapping = new HashMap<>();
-            DataManager.setCurLesson(currentLesson); 
         }
 
         if (DataManager.getCurClass() != null) {
@@ -215,11 +214,14 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
      * @return True if the form is "dirty" and requires saving.
      */
     private boolean hasUnsavedChanges() {
-        if (currentLesson == null) return false;
-
         String currentTitle = lessonTitleInput.getText().toString().trim();
         String currentInfo = lessonInfoInput.getText().toString().trim();
         String currentGenre = genreSelector.getText().toString().trim();
+
+        if (currentLesson == null) {
+            // If new lesson, any text input means unsaved changes
+            return !currentTitle.isEmpty() || !currentInfo.isEmpty() || !currentGenre.isEmpty();
+        }
 
         String originalTitle = isEditMode && currentLesson.getTitle() != null ? currentLesson.getTitle() : "";
         String originalInfo = isEditMode && currentLesson.getInfo() != null ? currentLesson.getInfo() : "";
@@ -241,9 +243,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                 originalCal.get(Calendar.MINUTE) != calendar.get(Calendar.MINUTE)) {
                 return true;
             }
-        } else if (!isEditMode) {
-            // If new lesson, any text input means unsaved changes
-            if (!currentTitle.isEmpty() || !currentInfo.isEmpty() || !currentGenre.isEmpty()) return true;
         }
 
         // Check toggles and mapping
@@ -507,6 +506,25 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             return;
         }
 
+        // Polymorphic Instantiation: Create the correct subclass on first save or genre change.
+        if (currentLesson == null || !genre.equals(currentLesson.getGenre())) {
+            Lesson newLesson = Lesson.createByGenre(genre);
+            if (newLesson == null) {
+                showError("Invalid genre selected");
+                return;
+            }
+            if (currentLesson != null) {
+                // If editing and genre changed, preserve existing data
+                newLesson.setId(currentLesson.getId());
+                newLesson.setClassId(currentLesson.getClassId());
+                newLesson.setFileMapping(currentLesson.getFileMapping());
+                newLesson.setArchived(currentLesson.isArchived());
+                newLesson.setMusicXMLFiles(currentLesson.getMusicXMLFiles());
+                newLesson.setLive(currentLesson.isLive());
+            }
+            currentLesson = newLesson;
+        }
+
         currentLesson.setTitle(title);
         currentLesson.setInfo(info);
         currentLesson.setDate(calendar.getTime());
@@ -559,6 +577,9 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                 originalIsArchived = currentLesson.isArchived();
                 originalFileMapping = currentLesson.getFileMapping() != null ? new HashMap<>(currentLesson.getFileMapping()) : new HashMap<>();
 
+                // Sync with global state for subsequent activities
+                DataManager.setCurLesson(currentLesson);
+
                 if (!isEditMode) {
                     isEditMode = true;
                     saveLessonButton.setText(R.string.btn_save);
@@ -606,6 +627,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             Toast.makeText(this, "There are no students in this class.", Toast.LENGTH_SHORT).show();
             return;
         }
+        
+        if (currentLesson == null) return;
 
         final Map<String, List<String>> fileMapping = currentLesson.getFileMapping() != null ? currentLesson.getFileMapping() : new HashMap<>();
 

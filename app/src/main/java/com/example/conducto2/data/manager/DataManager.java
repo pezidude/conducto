@@ -67,8 +67,8 @@ public class DataManager {
             curLesson = null;
             return;
         }
-        // Logic: Use copy constructor to isolate the global state from UI-thread mutations.
-        curLesson = new Lesson(lesson);
+        // Logic: Use polymorphic copy to isolate the global state from UI-thread mutations.
+        curLesson = lesson.copy();
     }
 
     /**

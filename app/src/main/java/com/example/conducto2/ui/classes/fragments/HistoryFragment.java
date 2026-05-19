@@ -148,7 +148,7 @@ public class HistoryFragment extends Fragment {
                 .whereEqualTo("isArchived", true);
 
         FirestoreRecyclerOptions<Lesson> options = new FirestoreRecyclerOptions.Builder<Lesson>()
-                .setQuery(query, Lesson.class)
+                .setQuery(query, snapshot -> Lesson.fromSnapshot(snapshot))
                 .build();
 
         lessonAdapter = new LessonAdapter(options);
@@ -166,7 +166,7 @@ public class HistoryFragment extends Fragment {
      */
     private void setupItemClickListener() {
         lessonAdapter.setOnItemClickListener(snapshot -> {
-            Lesson lesson = snapshot.toObject(Lesson.class);
+            Lesson lesson = Lesson.fromSnapshot(snapshot);
             DataManager.setCurLesson(lesson);
 
             Intent intent = new Intent(getContext(), LessonDetailsActivity.class);

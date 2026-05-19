@@ -48,9 +48,8 @@ public class LessonAdapter extends FirestoreRecyclerAdapter<Lesson, LessonAdapte
      */
     @Override
     protected void onBindViewHolder(@NonNull LessonViewHolder holder, int position, @NonNull Lesson model) {
-        // Transform the generic model into a specific genre subclass for themed rendering.
-        Lesson polymorphicLesson = Lesson.fromBase(model);
-        holder.bind(polymorphicLesson);
+        // The model is already the correct polymorphic subclass thanks to the SnapshotParser in the RecyclerOptions.
+        holder.bind(model);
     }
 
     @NonNull

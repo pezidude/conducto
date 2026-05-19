@@ -1,6 +1,7 @@
 package com.example.conducto2.data.model;
 
-import com.google.firebase.firestore.DocumentId;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ import java.util.Map;
  * Lesson
  * 
  * The core data model representing a teaching session within a Class. 
- * This class serves as the base for a polymorphic inheritance structure where 
+ * This class is abstract to enforce a polymorphic inheritance structure where 
  * specific genres (Classical, Jazz, etc.) extend this class to provide custom UI rendering metadata.
  * 
  * It manages:
@@ -21,7 +22,7 @@ import java.util.Map;
  * - Live synchronization state (status, targetTimestamp, currentMeasure, bpm).
  * - File distribution (musicXMLFiles list, fileMapping map).
  */
-public class Lesson {
+public abstract class Lesson {
 
     /** list of all currently supported lesson genres **/
     final public static String[] GENRES = {"Classical", "Jazz", "Pop", "Rock"};
@@ -79,7 +80,7 @@ public class Lesson {
      * Copy constructor used primarily during the polymorphic factory instantiation.
      * @param event The base Lesson object to copy fields from.
      */
-    public Lesson(Lesson event) {
+    protected Lesson(Lesson event) {
         this.title = event.title;
         this.info = event.info;
         this.date = event.date;
@@ -114,35 +115,37 @@ public class Lesson {
 
     /**
      * Polymorphic method to get the theme color for this lesson type.
-     * Designed to be overridden by subclasses (e.g., ClassicalLesson).
+     * Must be implemented by subclasses.
      */
-    public int getGenreColorResId() {
-        return com.example.conducto2.R.color.brand_accent;
-    }
+    @Exclude
+    public abstract int getGenreColorResId();
 
     /**
      * Polymorphic method to get the icon for this lesson type.
-     * Designed to be overridden by subclasses.
+     * Must be implemented by subclasses.
      */
-    public int getGenreIconResId() {
-        return com.example.conducto2.R.drawable.ic_music_note;
-    }
+    @Exclude
+    public abstract int getGenreIconResId();
 
     /**
      * Polymorphic method to get the display label for this lesson type.
-     * Designed to be overridden by subclasses.
+     * Must be implemented by subclasses.
      */
-    public String getGenreLabel() {
-        return genre != null ? genre : "";
-    }
+    @Exclude
+    public abstract String getGenreLabel();
 
     /**
      * Polymorphic method to get the tint color for recent lesson menu items.
-     * Designed to be overridden by subclasses.
+     * Must be implemented by subclasses.
      */
-    public int getRecentLessonTintResId() {
-        return getGenreColorResId();
-    }
+    @Exclude
+    public abstract int getRecentLessonTintResId();
+
+    /**
+     * Abstract method to create a deep copy of the lesson, preserving its concrete type.
+     * @return A new instance of the same subclass with copied data.
+     */
+    public abstract Lesson copy();
 
     @Override
     public String toString() {
@@ -261,7 +264,7 @@ public class Lesson {
         this.bpm = bpm;
     }
 
-    public Lesson(String title, String info, Date date, String classId) {
+    protected Lesson(String title, String info, Date date, String classId) {
         this.title = title;
         this.info = info;
         this.date = date;
@@ -277,7 +280,11 @@ public class Lesson {
         this.fileMapping = new HashMap<>();
         this.connectedStudents = new ArrayList<>();
     }
-    public Lesson() {
+
+    /**
+     * Default constructor required for Firestore deserialization in subclasses.
+     */
+    protected Lesson() {
         this("", "", new Date(), "");
     }
 
@@ -286,23 +293,38 @@ public class Lesson {
      * Evaluates the generic 'base' Lesson fetched from Firestore and returns
      * an instance of the specific subclass required for proper UI rendering.
      * 
-     * @param base The plain Lesson object deserialized by Firestore.
-     * @return A subclassed Lesson (e.g., JazzLesson), or the base lesson if genre is unknown.
+     * @param snapshot The DocumentSnapshot fetched from Firestore.
+     * @return A subclassed Lesson (e.g., JazzLesson), or null if genre is unknown.
      */
-    public static Lesson fromBase(Lesson base) {
-        if (base == null || base.getGenre() == null) return base;
-        
-        switch (base.getGenre()) {
-            case "Classical":
-                return new ClassicalLesson(base);
-            case "Jazz":
-                return new JazzLesson(base);
-            case "Pop":
-                return new PopLesson(base);
-            case "Rock":
-                return new RockLesson(base);
-            default:
-                return base;
+    public static Lesson fromSnapshot(DocumentSnapshot snapshot) {
+        if (snapshot == null || !snapshot.exists()) return null;
+        String genre = snapshot.getString("genre");
+        Lesson lesson;
+        if ("Classical".equals(genre)) lesson = snapshot.toObject(ClassicalLesson.class);
+        else if ("Jazz".equals(genre)) lesson = snapshot.toObject(JazzLesson.class);
+        else if ("Pop".equals(genre)) lesson = snapshot.toObject(PopLesson.class);
+        else if ("Rock".equals(genre)) lesson = snapshot.toObject(RockLesson.class);
+        else return null;
+
+        if (lesson != null) {
+            lesson.setId(snapshot.getId());
+        }
+        return lesson;
+    }
+
+    /**
+     * Creates a new instance of a specific Lesson subclass based on the provided genre.
+     * @param genre The genre string (e.g., "Classical").
+     * @return A concrete Lesson instance.
+     */
+    public static Lesson createByGenre(String genre) {
+        if (genre == null) return null;
+        switch (genre) {
+            case "Classical": return new ClassicalLesson();
+            case "Jazz": return new JazzLesson();
+            case "Pop": return new PopLesson();
+            case "Rock": return new RockLesson();
+            default: return null;
         }
     }
 

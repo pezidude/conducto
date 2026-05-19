@@ -19,8 +19,8 @@ public class RockLesson extends Lesson {
     }
 
     /**
-     * Copy constructor used by the {@link Lesson#fromBase(Lesson)} factory method.
-     * @param lesson The generic lesson to cast to Rock.
+     * Copy constructor used for polymorphic instantiation.
+     * @param lesson The generic lesson to copy.
      */
     public RockLesson(Lesson lesson) {
         super(lesson);
@@ -45,5 +45,10 @@ public class RockLesson extends Lesson {
     @Override
     public int getRecentLessonTintResId() {
         return R.color.error;
+    }
+
+    @Override
+    public Lesson copy() {
+        return new RockLesson(this);
     }
 }

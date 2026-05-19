@@ -600,7 +600,7 @@ public class FirestoreManager extends FirebaseComm {
 
                     if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
                         // should never be more than one playing/paused
-                        Lesson lesson = snapshot.getDocuments().get(0).toObject(Lesson.class);
+                        Lesson lesson = Lesson.fromSnapshot(snapshot.getDocuments().get(0));
                         listener.onLiveLessonChanged(lesson);
                     } else {
                         listener.onLiveLessonChanged(null);
@@ -642,7 +642,7 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     /** Logs that a user has accessed a lesson for dashboard history. */
-    public void logLessonAccess(String userId, String classId, String lessonId, String title) {
+    public void logLessonAccess(String userId, String classId, String lessonId, String title, String genre) {
         if (userId == null || lessonId == null) return;
         DocumentReference ref = FIRESTORE.collection("users").document(userId)
                 .collection("recent_lessons").document(lessonId);
@@ -650,7 +650,7 @@ public class FirestoreManager extends FirebaseComm {
         Map<String, Object> log = new HashMap<>();
         log.put("classId", classId);
         log.put("lessonId", lessonId);
-        log.put("title", title);
+        log.put("genre", genre);
         log.put("accessedAt", FieldValue.serverTimestamp());
 
         ref.set(log, com.google.firebase.firestore.SetOptions.merge());
@@ -678,11 +678,13 @@ public class FirestoreManager extends FirebaseComm {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Lesson> recentLessons = new ArrayList<>();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Lesson lesson = new Lesson();
-                        lesson.setId(document.getString("lessonId"));
-                        lesson.setClassId(document.getString("classId"));
-                        lesson.setTitle(document.getString("title"));
-                        recentLessons.add(lesson);
+                        String genre = document.getString("genre");
+                        Lesson lesson = Lesson.createByGenre(genre != null ? genre : "Classical");
+                        if (lesson != null) {
+                            lesson.setId(document.getString("lessonId"));
+                            lesson.setClassId(document.getString("classId"));
+                            recentLessons.add(lesson);
+                        }
                     }
                     if (listener != null) {
                         listener.onRecentLessonsFetched(recentLessons);
@@ -707,7 +709,7 @@ public class FirestoreManager extends FirebaseComm {
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
-                        listener.onSuccess(documentSnapshot.toObject(Lesson.class));
+                        listener.onSuccess(Lesson.fromSnapshot(documentSnapshot));
                     } else {
                         listener.onSuccess(null);
                     }

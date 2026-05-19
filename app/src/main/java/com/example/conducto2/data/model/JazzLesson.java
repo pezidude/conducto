@@ -19,8 +19,8 @@ public class JazzLesson extends Lesson {
     }
 
     /**
-     * Copy constructor used by the {@link Lesson#fromBase(Lesson)} factory method.
-     * @param lesson The generic lesson to cast to Jazz.
+     * Copy constructor used for polymorphic instantiation.
+     * @param lesson The generic lesson to copy.
      */
     public JazzLesson(Lesson lesson) {
         super(lesson);
@@ -45,5 +45,10 @@ public class JazzLesson extends Lesson {
     @Override
     public int getRecentLessonTintResId() {
         return R.color.brand_accent;
+    }
+
+    @Override
+    public Lesson copy() {
+        return new JazzLesson(this);
     }
 }

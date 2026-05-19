@@ -19,8 +19,8 @@ public class PopLesson extends Lesson {
     }
 
     /**
-     * Copy constructor used by the {@link Lesson#fromBase(Lesson)} factory method.
-     * @param lesson The generic lesson to cast to Pop.
+     * Copy constructor used for polymorphic instantiation.
+     * @param lesson The generic lesson to copy.
      */
     public PopLesson(Lesson lesson) {
         super(lesson);
@@ -45,5 +45,10 @@ public class PopLesson extends Lesson {
     @Override
     public int getRecentLessonTintResId() {
         return R.color.success;
+    }
+
+    @Override
+    public Lesson copy() {
+        return new PopLesson(this);
     }
 }

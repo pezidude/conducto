@@ -121,7 +121,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         super.onResume();
         // Reactive Updates: Ensure user data and menu lists are fresh when the screen returns.
         setupDrawerHeader();
-        setupDrawerMenu();
+        setupUserClassesMenu();
     }
 
     /**
@@ -195,7 +195,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
     /**
      * Synchronizes the navigation menu with the user's current classroom list from Firestore.
      */
-    private void setupDrawerMenu() {
+    private void setupUserClassesMenu() {
         if (!FirebaseComm.isUserSignedIn()) return;
         String email = FirebaseComm.authUserEmail();
 
@@ -251,7 +251,7 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                 firestoreManager.getLesson(lessonLog.getClassId(), lessonLog.getId(), actualLesson -> {
                     if (actualLesson != null) {
                         synchronized (validLessons) {
-                            validLessons.add(Lesson.fromBase(actualLesson));
+                            validLessons.add(actualLesson);
                         }
                     } else {
                         // Integrity Fix: Entry exists in history but lesson document is gone.

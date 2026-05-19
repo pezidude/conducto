@@ -208,7 +208,7 @@ public class FileStorage extends FirebaseComm {
                 .collection("lessons").document(lessonId);
 
         FIRESTORE.runTransaction(transaction -> {
-            Lesson lesson = transaction.get(lessonRef).toObject(Lesson.class);
+            Lesson lesson = Lesson.fromSnapshot(transaction.get(lessonRef));
             if (lesson != null) {
                 Map<String, List<String>> mapping = lesson.getFileMapping();
                 if (mapping == null) mapping = new HashMap<>();

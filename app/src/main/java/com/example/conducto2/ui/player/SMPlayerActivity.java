@@ -222,7 +222,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
         Lesson curLesson = DataManager.getCurLesson();
         if (curLesson != null) {
             String email = firestoreManager.authUserEmail();
-            firestoreManager.logLessonAccess(email, curLesson.getClassId(), curLesson.getId(), curLesson.getTitle());
+            firestoreManager.logLessonAccess(email, curLesson.getClassId(), curLesson.getId(), curLesson.getTitle(), curLesson.getGenre());
         }
     }
 
