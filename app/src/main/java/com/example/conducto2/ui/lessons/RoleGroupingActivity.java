@@ -237,7 +237,8 @@ public class RoleGroupingActivity extends AppCompatActivity {
         if (intent.hasExtra("fileUri")) {
             sourceFileUri = Uri.parse(intent.getStringExtra("fileUri"));
         }
-        originalTitle = intent.getStringExtra("title");
+        FileIO fileOps = new FileIO(this);
+        originalTitle = fileOps.getFileName(sourceFileUri);
 
         if (tvSourceFile != null) {
             tvSourceFile.setText("Source File: " + (originalTitle != null ? originalTitle : "Unknown"));

@@ -22,6 +22,9 @@ import java.util.Map;
  * - File distribution (musicXMLFiles list, fileMapping map).
  */
 public class Lesson {
+
+    /** list of all currently supported lesson genres **/
+    final public static String[] GENRES = {"Classical", "Jazz", "Pop", "Rock"};
     
     /** The title of the lesson. */
     private String title;

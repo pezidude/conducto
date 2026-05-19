@@ -92,8 +92,9 @@ public class ClassAdapter extends FirestoreRecyclerAdapter<Class, ClassAdapter.C
                 if (user != null) {
                     String fullName = user.getFname() + " " + user.getLname();
                     // Only update if the holder is still representing the same class (prevent async race conditions).
-                    if (getAdapterPosition() != RecyclerView.NO_POSITION) {
-                        Class currentItem = getItem(getAdapterPosition());
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION && position < getItemCount()) {
+                        Class currentItem = getItem(position);
                         if (currentItem != null && ownerEmail.equals(currentItem.getOwnerEmail())) {
                             classTeacher.setText(fullName);
                         }

@@ -264,7 +264,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
                     // Critical Operation: Permanent removal of the classroom document.
                     FirebaseComm.getCollectionReference("classes").document(aClass.getId()).delete();
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Cancel", (dialog, which) -> classAdapter.notifyDataSetChanged())
+                .setOnCancelListener(dialog -> classAdapter.notifyDataSetChanged())
                 .show();
     }
 

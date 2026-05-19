@@ -123,12 +123,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                     Uri fileUri = result.getData().getData();
                     if (FileHelper.isValidMusicXml(this, fileUri)) {
                         hideError();
-                        String title = FileHelper.getTitleFromUri(this, fileUri);
                         Intent intent = new Intent(this, RoleGroupingActivity.class);
                         intent.putExtra("fileUri", fileUri.toString());
-                        intent.putExtra("classId", classId);
-                        intent.putExtra("lessonId", currentLesson.getId());
-                        intent.putExtra("title", title);
                         startActivity(intent);
                     } else {
                         showError("Invalid MusicXML or MXL file");
@@ -152,6 +148,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         if (DataManager.getCurLesson() != null) {
             currentLesson = DataManager.getCurLesson();
             isEditMode = true;
+            // Mode: edit. means we're editing an existing lesson
             originalIsArchived = currentLesson.isArchived();
             originalFileMapping = currentLesson.getFileMapping() != null ? new HashMap<>(currentLesson.getFileMapping()) : new HashMap<>();
             if (currentLesson.getDate() != null) {
@@ -161,6 +158,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             saveLessonButton.setText(R.string.btn_save);
         } else {
             isEditMode = false;
+            // Mode: creating. means we're creating a new lesson.
             saveLessonButton.setText(R.string.btn_create_save_lesson);
             currentLesson = new Lesson();
             originalIsArchived = false;
@@ -337,8 +335,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         
         saveLessonButton.setOnClickListener(v -> saveLesson());
 
-        String[] genres = {"Classical", "Jazz", "Pop", "Rock"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, genres);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, Lesson.GENRES);
         genreSelector.setAdapter(adapter);
     }
 
@@ -402,7 +399,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
     private void uploadFileToStorage(Uri fileUri, String title) {
         if (classId == null || currentLesson.getId() == null) {
-            Toast.makeText(this, "Lesson must be saved before uploading files.", Toast.LENGTH_SHORT).show();
+            showError("Lesson must be saved before uploading files.");
             return;
         }
 
@@ -506,7 +503,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
         // Data Validation: Title and Genre are mandatory.
         if (title.isEmpty() || genre.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields (Title and Genre are required)", Toast.LENGTH_SHORT).show();
+            showError("Please fill in all fields (Title and Genre are required)");
             return;
         }
 
@@ -515,7 +512,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         currentLesson.setDate(calendar.getTime());
         currentLesson.setGenre(genre);
 
-        // Security/Cleanup: Remove mappings for files that are about to be deleted.
+        // Cleanup: Remove mappings for files that are about to be deleted.
         Map<String, List<String>> fileMapping = currentLesson.getFileMapping();
         if (fileMapping != null) {
             for (String url : pendingUrlDeletions) {
@@ -532,11 +529,6 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         if (isEditMode) {
             firestoreManager.updateLesson(classId, currentLesson);
         } else {
-            if (!FirebaseComm.isUserSignedIn()) {
-                endTask();
-                Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show();
-                return;
-            }
             currentLesson.setClassId(classId);
             firestoreManager.insertLesson(classId, currentLesson);
         }
@@ -638,6 +630,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             Toast.makeText(this, "No available students to assign.", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // all data processed. now create the dialog
 
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_student_assignment, null);
         RecyclerView rvStudents = dialogView.findViewById(R.id.rv_students);

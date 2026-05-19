@@ -255,5 +255,7 @@
     <string name="notification_channel_homework">Homework Alerts</string>
     <string name="notification_lesson_reminder">You have a lesson in 15 minutes: %1$s</string>
     <string name="notification_homework_due">Homework due tomorrow: %1$s</string>
+    <string name="lesson_title">Title</string>
+    <string name="lesson_notes">Notes</string>
 
 </resources>

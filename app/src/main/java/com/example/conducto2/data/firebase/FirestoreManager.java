@@ -532,7 +532,7 @@ public class FirestoreManager extends FirebaseComm {
      * This is used for synchronizing playback across multiple devices.
      */
     public void calculateServerTimeOffset(OnSuccessListener<Long> listener) {
-        DocumentReference ref = FIRESTORE.collection("server_time").document("sync_temp");
+        DocumentReference ref = FIRESTORE.collection("server_time").document(DataManager.getUserInstance().getEmail());
         Map<String, Object> data = new HashMap<>();
         data.put("timestamp", FieldValue.serverTimestamp());
 
