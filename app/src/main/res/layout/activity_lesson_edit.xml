@@ -230,7 +230,7 @@
                 style="@style/Widget.Conducto.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/button_height"
-                android:text="@string/btn_save_lesson"
+                android:text="@string/btn_create_save_lesson"
                 android:layout_marginTop="@dimen/spacing_lg"/>
 
         </LinearLayout>

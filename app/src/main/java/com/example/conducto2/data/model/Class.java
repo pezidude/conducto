@@ -1,8 +1,5 @@
 package com.example.conducto2.data.model;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.google.firebase.firestore.DocumentId;
 
 import java.util.ArrayList;
@@ -20,7 +17,7 @@ import java.util.UUID;
  * lists. Additionally, it implements a security mechanism via unique 'Join Codes' 
  * to regulate user enrollment.
  */
-public class Class implements Parcelable {
+public class Class {
     
     /** The name of the class (e.g., "Symphony Orchestra"). */
     private String name;
@@ -67,35 +64,27 @@ public class Class implements Parcelable {
         this.isActive = false;
     }
 
-    /** Parcelable implementation constructor. */
-    protected Class(Parcel in) {
-        name = in.readString();
-        description = in.readString();
-        teacherName = in.readString();
-        ownerEmail = in.readString();
-        members = in.createStringArrayList();
-        id = in.readString();
-        joinCode = in.readString();
-        isActive = in.readByte() != 0;
+    /**
+     * Copy constructor used to create a deep copy of a Class instance.
+     * @param other The Class object to copy.
+     */
+    public Class(Class other) {
+        this.name = other.name;
+        this.description = other.description;
+        this.teacherName = other.teacherName;
+        this.ownerEmail = other.ownerEmail;
+        this.members = other.members != null ? new ArrayList<>(other.members) : new ArrayList<>();
+        this.id = other.id;
+        this.joinCode = other.joinCode;
+        this.isActive = other.isActive;
     }
-
-    public static final Creator<Class> CREATOR = new Creator<Class>() {
-        @Override
-        public Class createFromParcel(Parcel in) {
-            return new Class(in);
-        }
-
-        @Override
-        public Class[] newArray(int size) {
-            return new Class[size];
-        }
-    };
 
     /**
      * Generates a random 6-character uppercase alphanumeric string for the join code.
      * @return The newly generated join code.
      */
     private String generateNewJoinCode() {
+        // TODO
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         StringBuilder sb = new StringBuilder();
         Random random = new Random();
@@ -181,22 +170,5 @@ public class Class implements Parcelable {
 
     public void setActive(boolean active) {
         isActive = active;
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(name);
-        dest.writeString(description);
-        dest.writeString(teacherName);
-        dest.writeString(ownerEmail);
-        dest.writeStringList(members);
-        dest.writeString(id);
-        dest.writeString(joinCode);
-        dest.writeByte((byte) (isActive ? 1 : 0));
     }
 }

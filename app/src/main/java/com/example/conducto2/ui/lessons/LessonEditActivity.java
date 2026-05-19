@@ -24,7 +24,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.conducto2.R;
 import com.example.conducto2.data.file.FileIO;
 import com.example.conducto2.data.manager.DataManager;
-import com.example.conducto2.data.model.Class;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.FileHelper;
 import com.example.conducto2.data.firebase.FileStorage;
@@ -36,8 +35,6 @@ import com.example.conducto2.data.model.User;
 import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
 
 import java.text.DateFormat;
@@ -46,7 +43,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * LessonEditActivity
@@ -165,7 +161,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
             saveLessonButton.setText(R.string.btn_save);
         } else {
             isEditMode = false;
-            saveLessonButton.setText(R.string.btn_save_lesson);
+            saveLessonButton.setText(R.string.btn_create_save_lesson);
             currentLesson = new Lesson();
             originalIsArchived = false;
             originalFileMapping = new HashMap<>();

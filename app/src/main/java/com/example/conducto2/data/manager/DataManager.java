@@ -83,7 +83,11 @@ public class DataManager {
      * Sets the active classroom context.
      * @param cls The Class object to cache.
      */
-    public static void setCurClass(Class cls){
-        curClass = cls;
+    public static void setCurClass(@Nullable Class cls){
+        if (cls == null) {
+            curClass = null;
+            return;
+        }
+        curClass = new Class(cls);
     }
 }

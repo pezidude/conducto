@@ -263,8 +263,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
      * Navigates to the ClassEditActivity with the selected classroom data.
      */
     private void editClass(int position) {
+        DataManager.setCurClass(classAdapter.getItem(position));
         Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
-        intent.putExtra("class_obj", classAdapter.getItem(position));
         startActivity(intent);
     }
 

@@ -70,15 +70,16 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
         joinCodeTextView = findViewById(R.id.join_code_text_view);
         saveClassButton = findViewById(R.id.save_class_button);
 
-        // State Initialization: Determine if we are editing based on Intent extras.
-        if (getIntent().hasExtra("class_obj")) {
-            currentClass = getIntent().getParcelableExtra("class_obj");
+        // State Initialization: Determine if we are editing based on DataManager state.
+        if (DataManager.getCurClass() != null) {
+            currentClass = DataManager.getCurClass();
             isEditMode = true;
             populateClassData();
             saveClassButton.setText("Save Changes");
         } else {
             isEditMode = false;
             saveClassButton.setText("Add Class");
+            currentClass = new Class();
         }
 
         saveClassButton.setOnClickListener(v -> saveClass());

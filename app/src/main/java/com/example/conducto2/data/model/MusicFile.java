@@ -1,8 +1,6 @@
 package com.example.conducto2.data.model;
 
 import android.net.Uri;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 import com.google.firebase.firestore.Exclude;
 
@@ -12,11 +10,8 @@ import com.google.firebase.firestore.Exclude;
  * Represents a single sheet music resource associated with a lesson. 
  * This model bridges the gap between Android's {@link Uri} objects (used for local processing)
  * and Firestore's String requirements for URLs.
- * 
- * It implements {@link Parcelable} to facilitate the transmission of file metadata 
- * between the Lesson list and the Sheet Music Player activity.
  */
-public class MusicFile implements Parcelable {
+public class MusicFile {
     
     /** The display name of the music file. */
     private String title;
@@ -38,24 +33,6 @@ public class MusicFile implements Parcelable {
         this.title = title;
         this.uri = uri;
     }
-
-    /** Parcelable implementation constructor. */
-    protected MusicFile(Parcel in) {
-        title = in.readString();
-        uri = in.readParcelable(Uri.class.getClassLoader());
-    }
-
-    public static final Creator<MusicFile> CREATOR = new Creator<MusicFile>() {
-        @Override
-        public MusicFile createFromParcel(Parcel in) {
-            return new MusicFile(in);
-        }
-
-        @Override
-        public MusicFile[] newArray(int size) {
-            return new MusicFile[size];
-        }
-    };
 
     public String getTitle() {
         return title;
@@ -91,16 +68,5 @@ public class MusicFile implements Parcelable {
         if (url != null) {
             this.uri = Uri.parse(url);
         }
-    }
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(title);
-        dest.writeParcelable(uri, flags);
     }
 }

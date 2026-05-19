@@ -124,7 +124,7 @@
     <string name="label_lesson_no_notes">Empty Notes</string>
     <string name="hint_lesson_title">e.g. Scales &amp; Arpeggios</string>
     <string name="hint_lesson_notes">Add notes for this lesson…</string>
-    <string name="btn_save_lesson">Save Lesson</string>
+    <string name="btn_create_save_lesson">Create Lesson</string>
     <string name="lesson_recorded">Recorded %1$s</string>
     <string name="lesson_duration">%1$s min</string>
     <string name="lesson_no_recording">No recording available</string>

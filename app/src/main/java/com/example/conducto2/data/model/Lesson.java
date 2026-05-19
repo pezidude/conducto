@@ -1,8 +1,5 @@
 package com.example.conducto2.data.model;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.google.firebase.firestore.DocumentId;
 import com.google.firebase.firestore.PropertyName;
 
@@ -23,10 +20,8 @@ import java.util.Map;
  * - Basic metadata (title, info, date).
  * - Live synchronization state (status, targetTimestamp, currentMeasure, bpm).
  * - File distribution (musicXMLFiles list, fileMapping map).
- * 
- * It implements Parcelable to allow efficient passing between Android Activities.
  */
-public class Lesson implements Parcelable {
+public class Lesson {
     
     /** The title of the lesson. */
     private String title;
@@ -283,26 +278,6 @@ public class Lesson implements Parcelable {
         this("", "", new Date(), "");
     }
 
-    protected Lesson(Parcel in) {
-        title = in.readString();
-        info = in.readString();
-        long tmpDate = in.readLong();
-        date = tmpDate == -1 ? null : new Date(tmpDate);
-        id = in.readString();
-        classId = in.readString();
-        status = in.readString();
-        isLive = in.readByte() != 0;
-        isArchived = in.readByte() != 0;
-        targetTimestamp = in.readLong();
-        currentMeasure = in.readInt();
-        bpm = in.readInt();
-        genre = in.readString();
-        musicXMLFiles = in.createTypedArrayList(MusicFile.CREATOR);
-        fileMapping = new HashMap<>();
-        in.readMap(fileMapping, List.class.getClassLoader());
-        connectedStudents = in.createStringArrayList();
-    }
-
     /**
      * Factory method implementing the Polymorphic creation pattern.
      * Evaluates the generic 'base' Lesson fetched from Firestore and returns
@@ -324,28 +299,12 @@ public class Lesson implements Parcelable {
             case "Rock":
                 return new RockLesson(base);
             default:
-                return base;        }
+                return base;
+        }
     }
-
-    public static final Creator<Lesson> CREATOR = new Creator<Lesson>() {
-        @Override
-        public Lesson createFromParcel(Parcel in) {
-            return new Lesson(in);
-        }
-
-        @Override
-        public Lesson[] newArray(int size) {
-            return new Lesson[size];
-        }
-    };
 
     public void setId(String id){ this.id = id;}
     public String getId(){return id;}
-
-    @Override
-    public int describeContents() {
-        return 0;
-    }
 
     public String getInfo() {
         return info;
@@ -353,24 +312,5 @@ public class Lesson implements Parcelable {
 
     public String getTitle() {
         return title;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(title);
-        dest.writeString(info);
-        dest.writeLong(date != null ? date.getTime() : -1);
-        dest.writeString(id);
-        dest.writeString(classId);
-        dest.writeString(status);
-        dest.writeByte((byte) (isLive ? 1 : 0));
-        dest.writeByte((byte) (isArchived ? 1 : 0));
-        dest.writeLong(targetTimestamp);
-        dest.writeInt(currentMeasure);
-        dest.writeInt(bpm);
-        dest.writeString(genre);
-        dest.writeTypedList(musicXMLFiles);
-        dest.writeMap(fileMapping);
-        dest.writeStringList(connectedStudents);
     }
 }

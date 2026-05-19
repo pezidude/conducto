@@ -239,7 +239,6 @@ public class ClassActivity extends BaseDrawerActivity implements FirestoreManage
             editItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
             editItem.setOnMenuItemClickListener(v -> {
                 Intent intent = new Intent(this, ClassEditActivity.class);
-                intent.putExtra("class_obj", DataManager.getCurClass());
                 startActivity(intent);
                 return true;
             });
