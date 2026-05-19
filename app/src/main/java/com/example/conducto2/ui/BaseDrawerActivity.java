@@ -124,6 +124,23 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
         setupUserClassesMenu();
     }
 
+
+    /**
+     * Handles selection of static top-level navigation items.
+     */
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.nav_dashboard) {
+            startActivity(new Intent(this, DashboardActivity.class));
+        } else if (id == R.id.nav_my_classes) {
+            startActivity(new Intent(this, ClassListActivity.class));
+        }
+
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
     /**
      * Populates the top section of the drawer with the authenticated user's profile.
      * Handles async data fetching if the local user instance is currently null.
@@ -323,19 +340,5 @@ public class BaseDrawerActivity extends AppCompatActivity implements NavigationV
                 });
     }
 
-    /**
-     * Handles selection of static top-level navigation items.
-     */
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.nav_dashboard) {
-            startActivity(new Intent(this, DashboardActivity.class));
-        } else if (id == R.id.nav_my_classes) {
-            startActivity(new Intent(this, ClassListActivity.class));
-        }
 
-        drawerLayout.closeDrawer(GravityCompat.START);
-        return true;
-    }
 }
