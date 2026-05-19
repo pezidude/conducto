@@ -95,13 +95,10 @@ public class Class {
     }
 
     /**
-     * Legacy support method to ensure older class documents without codes 
-     * are correctly migrated.
+     * Regenerates the join code for this class.
      */
-    public void ensureJoinCode() {
-        if (joinCode == null || joinCode.isEmpty()) {
-            joinCode = generateNewJoinCode();
-        }
+    public void regenerateJoinCode() {
+        this.joinCode = generateNewJoinCode();
     }
 
     public String getName() {
@@ -153,16 +150,9 @@ public class Class {
     }
 
     public String getJoinCode() {
-        ensureJoinCode(); 
         return joinCode;
     }
 
-    public void setJoinCode(String joinCode) {
-        // Enforce immutability of the join code once it has been assigned.
-        if (this.joinCode == null || this.joinCode.isEmpty()) {
-            this.joinCode = joinCode;
-        }
-    }
 
     public boolean isActive() {
         return isActive;

@@ -144,7 +144,7 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
             // Auto-enroll the creator as the first member.
             members.add(ownerEmail);
             newClass.setMembers(members);
-            firestoreManager.insertClass(newClass);
+            firestoreManager.insertClassWithUniqueCode(newClass);
         }
     }
 

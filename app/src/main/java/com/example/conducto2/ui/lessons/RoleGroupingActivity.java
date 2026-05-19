@@ -75,12 +75,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
     /** The location of the original MusicXML score in local storage. */
     private Uri sourceFileUri;
 
-    /** The Firestore ID of the class owning the lesson. */
-    private String classId;
-
-    /** The Firestore ID of the lesson being configured. */
-    private String lessonId;
-
     /** The original display title of the master score. */
     private String originalTitle;
 
@@ -118,6 +112,8 @@ public class RoleGroupingActivity extends AppCompatActivity {
      * containing all available instrumental parts.
      */
     private void checkAndAddDefaultRoles() {
+        String classId = DataManager.getCurClass().getId();
+        String lessonId = DataManager.getCurLesson().getId();
         firestoreManager.getDraftRolesQuery(classId, lessonId).get().addOnSuccessListener(queryDocumentSnapshots -> {
             if (queryDocumentSnapshots.isEmpty()) {
                 Role partitura = new Role("Partitura");
@@ -149,11 +145,14 @@ public class RoleGroupingActivity extends AppCompatActivity {
      * draft roles as they are modified by the teacher.
      */
     private void initFirestoreComponents() {
-        if (classId == null || lessonId == null) {
+        if (DataManager.getCurClass() == null || DataManager.getCurLesson() == null) {
             Toast.makeText(this, "Error: Missing lesson context", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+
+        String classId = DataManager.getCurClass().getId();
+        String lessonId = DataManager.getCurLesson().getId();
 
         // Create a query for the "draftRoles" subcollection of the current lesson.
         Query query = firestoreManager.getDraftRolesQuery(classId, lessonId);
@@ -182,7 +181,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
                 .setTitle("Delete Role")
                 .setMessage("Are you sure you want to delete this role?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    firestoreManager.deleteDraftRole(classId, lessonId, docId);
+                    firestoreManager.deleteDraftRole(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), docId);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -215,7 +214,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
     private void updateRoleName(String docId, String newName) {
         Map<String, Object> updates = new HashMap<>();
         updates.put("name", newName);
-        firestoreManager.updateDraftRole(classId, lessonId, docId, updates);
+        firestoreManager.updateDraftRole(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), docId, updates);
     }
 
     @Override
@@ -238,8 +237,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
         if (intent.hasExtra("fileUri")) {
             sourceFileUri = Uri.parse(intent.getStringExtra("fileUri"));
         }
-        classId = intent.getStringExtra("classId");
-        lessonId = intent.getStringExtra("lessonId");
         originalTitle = intent.getStringExtra("title");
 
         if (tvSourceFile != null) {
@@ -328,7 +325,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
             // Update Firestore with the new selection to ensure persistence.
             Map<String, Object> updates = new HashMap<>();
             updates.put("selectedPartIds", newSelection);
-            firestoreManager.updateDraftRole(classId, lessonId, docId, updates);
+            firestoreManager.updateDraftRole(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), docId, updates);
         });
         builder.setNegativeButton("Cancel", null);
         builder.show();
@@ -368,7 +365,7 @@ public class RoleGroupingActivity extends AppCompatActivity {
                 // Step 4: Clean up draft roles after successful processing and upload start.
                 for (int i = 0; i < roleAdapter.getItemCount(); i++) {
                     String docId = roleAdapter.getSnapshots().getSnapshot(i).getId();
-                    firestoreManager.deleteDraftRole(classId, lessonId, docId);
+                    firestoreManager.deleteDraftRole(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), docId);
                 }
 
                 runOnUiThread(() -> {
@@ -392,6 +389,6 @@ public class RoleGroupingActivity extends AppCompatActivity {
      * @param content The filtered MusicXML content.
      */
     private void uploadRoleFile(String roleName, String content) {
-        fileStorage.uploadRoleMusicFile(classId, lessonId, originalTitle, roleName, content, DataManager.getUserInstance().getEmail());
+        fileStorage.uploadRoleMusicFile(DataManager.getCurClass().getId(), DataManager.getCurLesson().getId(), originalTitle, roleName, content, DataManager.getUserInstance().getEmail());
     }
 }

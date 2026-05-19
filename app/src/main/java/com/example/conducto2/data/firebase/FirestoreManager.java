@@ -299,9 +299,37 @@ public class FirestoreManager extends FirebaseComm {
     }
 
     /**
-     * Creates a new class document and sets the unique ID.
+     * Creates a new class document after ensuring the join code is unique.
+     * This method recursively regenerates the join code if a collision is detected.
      */
-    public void insertClass(Class newClass) {
+    public void insertClassWithUniqueCode(Class newClass) {
+        FIRESTORE.collection("classes")
+                .whereEqualTo("joinCode", newClass.getJoinCode())
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && !task.getResult().isEmpty()) {
+                        // Collision found! Generate a new code and try again.
+                        Log.d(TAG, "Join code collision detected, regenerating code...");
+                        newClass.regenerateJoinCode();
+                        insertClassWithUniqueCode(newClass);
+                    } else if (task.isSuccessful()) {
+                        // No collision, safe to insert.
+                        insertClass(newClass);
+                    } else {
+                        // Query failed.
+                        if (dbResult != null) {
+                            dbResult.displayMessage("Error checking join code uniqueness: " + task.getException().getMessage());
+                            dbResult.uploadResult(false, DbOperation.INSERT_CLASS);
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Creates a new class document and sets the unique ID.
+     * this method is private and used by insertClassWithUniqueCode.
+     */
+    private void insertClass(Class newClass) {
         firebaseUser = getAuth().getCurrentUser();
         DocumentReference ref = FIRESTORE.collection("classes").document();
         newClass.setId(ref.getId());
