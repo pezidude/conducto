@@ -209,7 +209,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
                     // Reset classes card weight if it was changed
                     LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) cardClassesCount.getLayoutParams();
                     params.weight = 1;
-                    params.marginEnd = getResources().getDimensionPixelSize(R.dimen.spacing_xs);
+                    params.rightMargin = getResources().getDimensionPixelSize(R.dimen.spacing_xs);
                     cardClassesCount.setLayoutParams(params);
 
                     int totalStudents = 0;
@@ -226,7 +226,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
                     // Make classes card full width for students
                     LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) cardClassesCount.getLayoutParams();
                     params.weight = 2; // Take full weightSum
-                    params.marginEnd = 0;
+                    params.rightMargin = 0;
                     cardClassesCount.setLayoutParams(params);
                 }
             }

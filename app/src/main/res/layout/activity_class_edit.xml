@@ -91,31 +91,6 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Teacher name -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Teacher's name"
-                style="@style/TextAppearance.Conducto.Label"
-                android:layout_marginTop="@dimen/spacing_base"
-                android:layout_marginBottom="@dimen/spacing_xs"/>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                style="@style/Widget.Conducto.TextInput"
-                android:hint="Teacher's name">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/teacher_name_edit_text"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/input_height"
-                    android:inputType="textCapWords"
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/text_primary"/>
-
-            </com.google.android.material.textfield.TextInputLayout>
-
             <!-- Join code (shown for existing classes) -->
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.Conducto.Card.Flat"

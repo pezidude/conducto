@@ -43,6 +43,10 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.conducto2.data.firebase.FirebaseComm;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+import com.google.firebase.firestore.Query;
+
 /**
  * SMPlayerActivity (Sheet Music Player)
  * 
@@ -88,9 +92,6 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
 
     /** Adapter managing the data binding for the participant list UI. */
     private ParticipantAdapter participantAdapter;
-
-    /** Local cache of users participating in the current class context. */
-    private List<User> participantUsers = new ArrayList<>();
 
     /** UI text element for the visual metronome lead-in countdown. */
     private TextView tvCountdown;
@@ -245,10 +246,7 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             btnOpenMixer.setVisibility(View.VISIBLE);
             btnOpenMixer.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
             
-            participantAdapter = new ParticipantAdapter(participantUsers, new ArrayList<>());
-            participantRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-            participantRecyclerView.setAdapter(participantAdapter);
-            loadParticipantUsers();
+            setupParticipantRecyclerView();
 
             if ("teacher".equals(user.getUserType())) {
                 mixerRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -282,25 +280,30 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     }
 
     /**
-     * Loads the list of users belonging to the current class from Firestore.
+     * Configures the Participant RecyclerView with a real-time FirestoreRecyclerAdapter.
      */
-    private void loadParticipantUsers() {
+    private void setupParticipantRecyclerView() {
         Class curClass = DataManager.getCurClass();
         if (curClass == null || curClass.getMembers() == null) return;
 
-        firestoreManager.getAllUsers(new ArrayList<>(), users -> {
-            if (users != null) {
-                participantUsers.clear();
-                for (User user : users) {
-                    if (curClass.getMembers().contains(user.getEmail()) || user.getEmail().equals(curClass.getOwnerEmail())) {
-                        participantUsers.add(user);
-                    }
-                }
-                if (participantAdapter != null) {
-                    participantAdapter.notifyDataSetChanged();
-                }
-            }
-        });
+        List<String> allEmails = new ArrayList<>(curClass.getMembers());
+        if (curClass.getOwnerEmail() != null && !allEmails.contains(curClass.getOwnerEmail())) {
+            allEmails.add(curClass.getOwnerEmail());
+        }
+
+        if (allEmails.isEmpty()) return;
+
+        Query query = FirebaseComm.getCollectionReference("users")
+                .whereIn("email", allEmails)
+                .orderBy("fname", Query.Direction.ASCENDING);
+
+        FirestoreRecyclerOptions<User> options = new FirestoreRecyclerOptions.Builder<User>()
+                .setQuery(query, User.class)
+                .build();
+
+        participantAdapter = new ParticipantAdapter(options, new ArrayList<>());
+        participantRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        participantRecyclerView.setAdapter(participantAdapter);
     }
 
     /**
@@ -611,6 +614,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
             firestoreManager.updateStudentPresence(cls.getId(), lesson.getId(), user.getEmail(), false);
         }
         stopStatusListener();
+        if (participantAdapter != null) {
+            participantAdapter.stopListening();
+        }
         playbackHandler.removeCallbacksAndMessages(null);
         if (sheetMusicView != null) {
             sheetMusicView.pauseTimers();
@@ -622,6 +628,9 @@ public class SMPlayerActivity extends AppCompatActivity implements PlaybackFragm
     protected void onResume() {
         super.onResume();
         startStatusListener();
+        if (participantAdapter != null) {
+            participantAdapter.startListening();
+        }
         if (sheetMusicView != null) {
             sheetMusicView.onResume();
             sheetMusicView.resumeTimers();

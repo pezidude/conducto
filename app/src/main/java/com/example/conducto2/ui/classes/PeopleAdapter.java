@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.conducto2.R;
 import com.example.conducto2.data.model.User;
+import com.firebase.ui.firestore.FirestoreRecyclerAdapter;
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
 import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
@@ -25,34 +27,25 @@ import java.util.List;
  * PeopleAdapter
  * 
  * a specialized RecyclerView adapter for rendering the participants of a classroom.
- * This class handles the complex visual representation of users, including:
+ * This class leverages {@link FirestoreRecyclerAdapter} for real-time synchronization
+ * and handles the complex visual representation of users, including:
  * 1. Base64 decoding of profile pictures into Android Bitmaps.
  * 2. Generating dynamic initial-based avatars for users without profile images.
  * 3. Role-based styling to visually distinguish the teacher from students.
  */
-public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonViewHolder> {
-
-    /** The current list of users to display in the roster. */
-    private List<User> users = new ArrayList<>();
+public class PeopleAdapter extends FirestoreRecyclerAdapter<User, PeopleAdapter.PersonViewHolder> {
 
     /** The unique email of the classroom's instructor, used for visual highlighting. */
     private String teacherEmail;
 
     /**
      * Constructs a new PeopleAdapter.
+     * @param options Configuration for the Firestore query and model mapping.
      * @param teacherEmail The email address of the class teacher.
      */
-    public PeopleAdapter(String teacherEmail) {
+    public PeopleAdapter(@NonNull FirestoreRecyclerOptions<User> options, String teacherEmail) {
+        super(options);
         this.teacherEmail = teacherEmail;
-    }
-
-    /**
-     * Updates the dataset of the adapter.
-     * @param users The new list of users.
-     */
-    public void setUsers(List<User> users) {
-        this.users = users;
-        notifyDataSetChanged();
     }
 
     @NonNull
@@ -66,15 +59,9 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.PersonView
      * Binds a user model to a ViewHolder and determines if they should receive teacher styling.
      */
     @Override
-    public void onBindViewHolder(@NonNull PersonViewHolder holder, int position) {
-        User user = users.get(position);
+    protected void onBindViewHolder(@NonNull PersonViewHolder holder, int position, @NonNull User model) {
         // Logical check: Identify if the current user is the classroom teacher.
-        holder.bind(user, user.getEmail().equals(teacherEmail));
-    }
-
-    @Override
-    public int getItemCount() {
-        return users.size();
+        holder.bind(model, model.getEmail().equals(teacherEmail));
     }
 
     /**
