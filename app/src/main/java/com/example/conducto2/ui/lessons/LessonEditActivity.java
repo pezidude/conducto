@@ -59,16 +59,16 @@ import java.util.Map;
  */
 public class LessonEditActivity extends BaseDrawerActivity implements FirebaseComm.DBResult, MusicXmlAdapter.OnAssignButtonClickListener, MusicXmlAdapter.OnDeleteButtonClickListener, MusicXmlAdapter.OnRenameListener {
 
-    private EditText lessonTitleInput;
-    private EditText lessonInfoInput;
+    private EditText etLessonTitle;
+    private EditText etLessonInfo;
     private AutoCompleteTextView genreSelector;
     private android.widget.ImageButton lessonDateTimePicker;
-    private TextView dateTextView;
-    private TextView timeTextView;
-    private Button saveLessonButton;
-    private Button uploadMusicXmlButton;
-    private Button groupVoicesPickerButton;
-    private TextView errorTextView;
+    private TextView tvDate;
+    private TextView tvTime;
+    private Button btnSaveLesson;
+    private Button btnUploadMusicXml;
+    private Button btnGroupVoicesPicker;
+    private TextView tvError;
     private RecyclerView musicXmlRecyclerView;
     private MusicXmlAdapter musicXmlAdapter;
     private LinearProgressIndicator loadingProgress;
@@ -155,11 +155,11 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
                 calendar.setTime(currentLesson.getDate());
             }
             populateLessonData();
-            saveLessonButton.setText(R.string.btn_save);
+            btnSaveLesson.setText(R.string.btn_save);
         } else {
             isEditMode = false;
             // Mode: creating. means we're creating a new lesson.
-            saveLessonButton.setText(R.string.btn_create_save_lesson);
+            btnSaveLesson.setText(R.string.btn_create_save_lesson);
             currentLesson = null;
             originalIsArchived = false;
             originalFileMapping = new HashMap<>();
@@ -214,8 +214,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
      * @return True if the form is "dirty" and requires saving.
      */
     private boolean hasUnsavedChanges() {
-        String currentTitle = lessonTitleInput.getText().toString().trim();
-        String currentInfo = lessonInfoInput.getText().toString().trim();
+        String currentTitle = etLessonTitle.getText().toString().trim();
+        String currentInfo = etLessonInfo.getText().toString().trim();
         String currentGenre = genreSelector.getText().toString().trim();
 
         if (currentLesson == null) {
@@ -280,16 +280,16 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     }
 
     private void setupUI() {
-        lessonTitleInput = findViewById(R.id.lesson_title_input);
-        lessonInfoInput = findViewById(R.id.lesson_info_input);
+        etLessonTitle = findViewById(R.id.lesson_title_input);
+        etLessonInfo = findViewById(R.id.lesson_info_input);
         genreSelector = findViewById(R.id.genre_autocomplete);
         lessonDateTimePicker = findViewById(R.id.lesson_date_time_picker);
-        dateTextView = findViewById(R.id.date_text_view);
-        timeTextView = findViewById(R.id.time_text_view);
-        saveLessonButton = findViewById(R.id.save_lesson_button);
-        uploadMusicXmlButton = findViewById(R.id.upload_music_xml_button);
-        groupVoicesPickerButton = findViewById(R.id.btn_group_voices_picker);
-        errorTextView = findViewById(R.id.error_text_view);
+        tvDate = findViewById(R.id.date_text_view);
+        tvTime = findViewById(R.id.time_text_view);
+        btnSaveLesson = findViewById(R.id.save_lesson_button);
+        btnUploadMusicXml = findViewById(R.id.upload_music_xml_button);
+        btnGroupVoicesPicker = findViewById(R.id.btn_group_voices_picker);
+        tvError = findViewById(R.id.error_text_view);
         musicXmlRecyclerView = findViewById(R.id.music_xml_recycler_view);
         loadingProgress = findViewById(R.id.loading_progress);
     }
@@ -323,30 +323,30 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
         
         // Workflow Validation: Prevent file operations on unsaved documents 
         // since they require a valid parent Document ID.
-        uploadMusicXmlButton.setOnClickListener(v -> {
+        btnUploadMusicXml.setOnClickListener(v -> {
             if (isEditMode) openFilePicker(musicXmlLauncher);
             else showError("Please save the lesson first before uploading files.");
         });
-        groupVoicesPickerButton.setOnClickListener(v -> {
+        btnGroupVoicesPicker.setOnClickListener(v -> {
             if (isEditMode) openFilePicker(groupVoicesLauncher);
             else showError("Please save the lesson first before grouping voices.");
         });
         
-        saveLessonButton.setOnClickListener(v -> saveLesson());
+        btnSaveLesson.setOnClickListener(v -> saveLesson());
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_dropdown, Lesson.GENRES);
         genreSelector.setAdapter(adapter);
     }
 
     private void showError(String message) {
-        if (errorTextView != null) {
-            errorTextView.setText(message);
-            errorTextView.setVisibility(View.VISIBLE);
+        if (tvError != null) {
+            tvError.setText(message);
+            tvError.setVisibility(View.VISIBLE);
         }
     }
 
     private void hideError() {
-        if (errorTextView != null) errorTextView.setVisibility(View.GONE);
+        if (tvError != null) tvError.setVisibility(View.GONE);
     }
 
     /**
@@ -437,13 +437,13 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     }
 
     private void updateDateAndTimeViews() {
-        dateTextView.setText(DateFormat.getDateInstance().format(calendar.getTime()));
-        timeTextView.setText(DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
+        tvDate.setText(DateFormat.getDateInstance().format(calendar.getTime()));
+        tvTime.setText(DateFormat.getTimeInstance(DateFormat.SHORT).format(calendar.getTime()));
     }
 
     private void populateLessonData() {
-        lessonTitleInput.setText(currentLesson.getTitle());
-        lessonInfoInput.setText(currentLesson.getInfo());
+        etLessonTitle.setText(currentLesson.getTitle());
+        etLessonInfo.setText(currentLesson.getInfo());
         genreSelector.setText(currentLesson.getGenreLabel(), false);
         invalidateOptionsMenu();
     }
@@ -496,8 +496,8 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
      * and pushes the updated Lesson model to Firestore.
      */
     private void saveLesson() {
-        String title = lessonTitleInput.getText().toString().trim();
-        String info = lessonInfoInput.getText().toString().trim();
+        String title = etLessonTitle.getText().toString().trim();
+        String info = etLessonInfo.getText().toString().trim();
         String genre = genreSelector.getText().toString().trim();
 
         // Data Validation: Title and Genre are mandatory.
@@ -582,7 +582,7 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
 
                 if (!isEditMode) {
                     isEditMode = true;
-                    saveLessonButton.setText(R.string.btn_save);
+                    btnSaveLesson.setText(R.string.btn_save);
                     setupRecyclerView();
                 } else {
                     shouldFinishOnTasksEnd = true;

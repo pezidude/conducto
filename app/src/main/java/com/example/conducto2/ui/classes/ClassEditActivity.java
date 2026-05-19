@@ -114,6 +114,13 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
             return;
         }
 
+        // Validation Measure: Strict character set for name and description.
+        String regex = "^[a-zA-Z0-9\\s.,!?'\\-]+$";
+        if (!name.matches(regex) || !description.matches(regex)) {
+            Toast.makeText(this, "Fields contain invalid special characters", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (isEditMode) {
             currentClass.setName(name);
             currentClass.setDescription(description);

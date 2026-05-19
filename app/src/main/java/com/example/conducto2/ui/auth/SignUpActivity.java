@@ -47,7 +47,7 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
 
     /** Primary input fields for identity and profile data. */
     private EditText etEmail, etPassword, etConfirmPassword;
-    private EditText etFname, etLname, etUname;
+    private EditText etFname, etLname;
 
     /** Material UI component for selecting the account's system role. */
     private MaterialButtonToggleGroup rgUserType;    
@@ -68,7 +68,6 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
         etFname = findViewById(R.id.etFname);
         etLname = findViewById(R.id.etLname);
-        etUname = findViewById(R.id.etUname);
         rgUserType = findViewById(R.id.rgUserType);
 
         btnSignUp = findViewById(R.id.btnSignUp);
@@ -102,7 +101,6 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
     public void register() {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString(); 
-        String uname = etUname.getText().toString().trim();
         String fname = etFname.getText().toString().trim();
         String lname = etLname.getText().toString().trim();
         String confirmPass = etConfirmPassword.getText().toString();
@@ -110,10 +108,14 @@ public class SignUpActivity extends AppCompatActivity implements View.OnClickLis
         tvError.setVisibility(View.VISIBLE);
 
         // Validation Rule 1: All metadata fields must be non-empty.
-        if (email.isEmpty() || password.isEmpty() || uname.isEmpty() || fname.isEmpty() || lname.isEmpty()) {
+        if (email.isEmpty() || password.isEmpty() || fname.isEmpty() || lname.isEmpty()) {
             tvError.setText("Please enter all required fields.");
         } 
-        // Validation Rule 2: Password confirmation must match.
+        // Validation Rule 2: Name validation (only letters and spaces).
+        else if (!fname.matches("^[a-zA-Z\\s]+$") || !lname.matches("^[a-zA-Z\\s]+$")) {
+            tvError.setText("Names can only contain letters and spaces.");
+        }
+        // Validation Rule 3: Password confirmation must match.
         else if (!password.equals(confirmPass)) {
             tvError.setText("Passwords don't match.");
         } 

@@ -154,24 +154,6 @@
 
             </LinearLayout>
 
-            <!-- Username -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_md"
-                style="@style/Widget.Conducto.TextInput"
-                android:hint="@string/hint_username">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etUname"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/input_height"
-                    android:inputType="textNoSuggestions"
-                    android:textSize="@dimen/text_body"
-                    android:textColor="@color/text_primary"/>
-
-            </com.google.android.material.textfield.TextInputLayout>
-
             <!-- Email -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
