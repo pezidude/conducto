@@ -51,8 +51,8 @@ public class GeminiManager {
      * certain model versions are deprecated or at capacity.
      */
     private static final String[] MODEL_FALLBACKS = {
-            "gemini-2.0-flash",      // Verified working
-            "gemini-1.5-pro",        // Stronger available model
+            "gemini-3.5-flash",      // Verified working
+            "gemini-2.5-pro",        // Stronger available model
             "gemini-1.5-flash",      // Faster available model
             "gemini-1.0-pro"         // Legacy baseline
     };
