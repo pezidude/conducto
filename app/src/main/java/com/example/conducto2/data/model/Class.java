@@ -25,9 +25,6 @@ public class Class {
     /** A short description of the class goals or schedule. */
     private String description;
     
-    /** The display name of the primary teacher. */
-    private String teacherName;
-    
     /** The unique email of the class creator/owner. */
     private String ownerEmail;
     
@@ -54,10 +51,9 @@ public class Class {
     /**
      * Initializes a new class with provided metadata and generates a new Join Code.
      */
-    public Class(String name, String description, String teacherName, String ownerEmail) {
+    public Class(String name, String description, String ownerEmail) {
         this.name = name;
         this.description = description;
-        this.teacherName = teacherName;
         this.ownerEmail = ownerEmail;
         this.members = new ArrayList<>();
         this.joinCode = generateNewJoinCode();
@@ -71,7 +67,6 @@ public class Class {
     public Class(Class other) {
         this.name = other.name;
         this.description = other.description;
-        this.teacherName = other.teacherName;
         this.ownerEmail = other.ownerEmail;
         this.members = other.members != null ? new ArrayList<>(other.members) : new ArrayList<>();
         this.id = other.id;
@@ -115,14 +110,6 @@ public class Class {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public String getTeacherName() {
-        return teacherName;
-    }
-
-    public void setTeacherName(String teacherName) {
-        this.teacherName = teacherName;
     }
 
     public String getOwnerEmail() {

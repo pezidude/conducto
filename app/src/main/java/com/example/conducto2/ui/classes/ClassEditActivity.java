@@ -35,9 +35,6 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
     /** Input field for the class description or schedule info. */
     private EditText classDescriptionEditText;
 
-    /** Input field for the instructor's display name. */
-    private EditText teacherNameEditText;
-
     /** Display field for the unique 6-character Join Code (Edit mode only). */
     private TextView joinCodeTextView;
 
@@ -66,7 +63,6 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
 
         classNameEditText = findViewById(R.id.class_name_edit_text);
         classDescriptionEditText = findViewById(R.id.class_description_edit_text);
-        teacherNameEditText = findViewById(R.id.teacher_name_edit_text);
         joinCodeTextView = findViewById(R.id.join_code_text_view);
         saveClassButton = findViewById(R.id.save_class_button);
 
@@ -92,7 +88,6 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
     private void populateClassData() {
         classNameEditText.setText(currentClass.getName());
         classDescriptionEditText.setText(currentClass.getDescription());
-        teacherNameEditText.setText(currentClass.getTeacherName());
         if (currentClass.getJoinCode() != null) {
             joinCodeTextView.setText("Join Code: " + currentClass.getJoinCode());
             joinCodeTextView.setVisibility(View.VISIBLE);
@@ -112,10 +107,9 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
     private void saveClass() {
         String name = classNameEditText.getText().toString().trim();
         String description = classDescriptionEditText.getText().toString().trim();
-        String teacherName = teacherNameEditText.getText().toString().trim();
 
         // Validation Measure: Prevent empty documents from being created.
-        if (name.isEmpty() || description.isEmpty() || teacherName.isEmpty()) {
+        if (name.isEmpty() || description.isEmpty()) {
             Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -123,9 +117,7 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
         if (isEditMode) {
             currentClass.setName(name);
             currentClass.setDescription(description);
-            currentClass.setTeacherName(teacherName);
             // Ensure data integrity by generating a code if the legacy document lacks one.
-            currentClass.ensureJoinCode(); 
             firestoreManager.updateClass(currentClass);
             
             // Sync local singleton to ensure the 'ClassActivity' view updates immediately upon return.
@@ -139,7 +131,7 @@ public class ClassEditActivity extends AppCompatActivity implements FirebaseComm
                 return;
             }
             String ownerEmail = FirebaseComm.authUserEmail();
-            Class newClass = new Class(name, description, teacherName, ownerEmail);
+            Class newClass = new Class(name, description, ownerEmail);
             ArrayList<String> members = new ArrayList<>();
             // Auto-enroll the creator as the first member.
             members.add(ownerEmail);

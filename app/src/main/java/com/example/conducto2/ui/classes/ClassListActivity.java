@@ -10,7 +10,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -28,12 +27,13 @@ import com.example.conducto2.data.model.User;
 import com.example.conducto2.ui.BaseDrawerActivity;
 import com.example.conducto2.utils.SwipeHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.firebase.ui.firestore.FirestoreRecyclerOptions;
+
 
 /**
  * ClassListActivity
@@ -42,11 +42,11 @@ import java.util.List;
  * with the logged-in user. It serves as a dynamic, searchable, and sortable list.
  * 
  * Features:
- * 1. Real-time Synchronization: Listens to Firestore for updates to classrooms where the user is a member.
+ * 1. Real-time Synchronization: Leverages FirestoreRecyclerAdapter for automatic UI updates.
  * 2. Role-Based Actions: 
  *    - Teachers: Can create classrooms via FAB and manage (Edit/Delete) via swipe gestures.
  *    - Students: Can join existing classrooms via Join Codes through the same FAB.
- * 3. Search & Sort: Local in-memory filtering and alphabetical sorting for responsive UX.
+ * 3. Search & Sort: Dynamic Firestore queries for alphabetical sorting and prefix-based search.
  * 4. Context Management: Transitions users into the specific ClassActivity hub.
  */
 public class ClassListActivity extends BaseDrawerActivity implements FirebaseComm.DBResult {
@@ -54,7 +54,7 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     /** The primary list view for classrooms. */
     private RecyclerView classesRecyclerView;
 
-    /** Manual adapter implementing local filtering and sorting logic. */
+    /** Adapter implementing real-time Firestore synchronization. */
     private ClassAdapter classAdapter;
 
     /** UI component for real-time text-based search. */
@@ -71,9 +71,6 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
 
     /** Internal state for the current sort configuration. */
     private boolean isSortedByName = false;
-
-    /** Persistence reference for the Firestore snapshot listener to prevent leaks. */
-    private ListenerRegistration classesListener;
 
     final String TAG = "ClassListActivity";
 
@@ -94,7 +91,10 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
         User user = DataManager.getUserInstance();
         if (user != null && "teacher".equals(user.getUserType())) {
             // Teacher Path: Enable creation and management features.
-            addClassFab.setOnClickListener(v -> startActivity(new Intent(ClassListActivity.this, ClassEditActivity.class)));
+            addClassFab.setOnClickListener(v -> {
+                DataManager.setCurClass(null);
+                startActivity(new Intent(ClassListActivity.this, ClassEditActivity.class));
+            });
             setupSwipe();
         } else {
             // Student Path: Enable classroom enrollment feature.
@@ -183,50 +183,33 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     }
 
     private void setupRecyclerView() {
-        classAdapter = new ClassAdapter();
+        Query query = getBaseQuery();
+        FirestoreRecyclerOptions<Class> options = new FirestoreRecyclerOptions.Builder<Class>()
+                .setQuery(query, Class.class)
+                .build();
+        
+        classAdapter = new ClassAdapter(options);
         classesRecyclerView.setAdapter(classAdapter);
     }
 
     /**
-     * Establishes a real-time Firestore listener for classrooms where the current user
+     * Constructs the base Firestore query for classrooms where the current user
      * is listed in the 'members' array.
      */
-    private void startListening() {
-        if (classesListener != null) return;
-
-        // Security: Filter query to only return classrooms the user is authorized to see.
+    private Query getBaseQuery() {
         Query query = FirebaseComm.getCollectionReference("classes")
                 .whereArrayContains("members", FirebaseComm.authUserEmail());
 
-        classesListener = query.addSnapshotListener((value, error) -> {
-            if (error != null) {
-                Log.e(TAG, "Listen failed.", error);
-                return;
-            }
-
-            if (value == null) return;
-
-            // Sequential Logic: Transform snapshot documents into Java objects.
-            List<Class> classes = new ArrayList<>();
-            for (QueryDocumentSnapshot doc : value) {
-                Class aClass = doc.toObject(Class.class);
-                aClass.setId(doc.getId());
-                classes.add(aClass);
-            }
-            // Update the master dataset and re-apply current filters.
-            classAdapter.updateData(classes);
-            updateQuery(); 
-        });
-    }
-
-    /**
-     * Removes the Firestore listener to conserve system resources.
-     */
-    private void stopListening() {
-        if (classesListener != null) {
-            classesListener.remove();
-            classesListener = null;
+        if (isSortedByName || !searchQuery.isEmpty()) {
+            query = query.orderBy("name");
         }
+
+        if (!searchQuery.isEmpty()) {
+            query = query.whereGreaterThanOrEqualTo("name", searchQuery)
+                    .whereLessThanOrEqualTo("name", searchQuery + "\uf8ff");
+        }
+        
+        return query;
     }
 
     /**
@@ -263,7 +246,8 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
      * Navigates to the ClassEditActivity with the selected classroom data.
      */
     private void editClass(int position) {
-        DataManager.setCurClass(classAdapter.getItem(position));
+        Class selectedClass = classAdapter.getItem(position);
+        DataManager.setCurClass(selectedClass);
         Intent intent = new Intent(ClassListActivity.this, ClassEditActivity.class);
         startActivity(intent);
     }
@@ -285,23 +269,33 @@ public class ClassListActivity extends BaseDrawerActivity implements FirebaseCom
     }
 
     /**
-     * Central UI refresh method that reapplies filtering and sorting logic.
+     * Central UI refresh method that updates the adapter's query based on search and sort states.
      */
     private void updateQuery() {
         updateButtonStates();
-        classAdapter.filter(searchQuery, isSortedByName);
+        
+        Query newQuery = getBaseQuery();
+        FirestoreRecyclerOptions<Class> newOptions = new FirestoreRecyclerOptions.Builder<Class>()
+                .setQuery(newQuery, Class.class)
+                .build();
+        
+        classAdapter.updateOptions(newOptions);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        stopListening();
+        if (classAdapter != null) {
+            classAdapter.stopListening();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        startListening();
+        if (classAdapter != null) {
+            classAdapter.startListening();
+        }
     }
 
 

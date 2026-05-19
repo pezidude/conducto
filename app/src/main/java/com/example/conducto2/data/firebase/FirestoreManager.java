@@ -236,16 +236,34 @@ public class FirestoreManager extends FirebaseComm {
      * Fetches a single user's profile by their email and caches it in DataManager.
      */
     public void getUser(UserFetchListener listener) {
-        String email = authUserEmail();
-        FirebaseFirestore.getInstance().collection("users").document(email)
+        getUserByEmail(authUserEmail(), listener);
+    }
+
+    /**
+     * Fetches a single user's profile by their email.
+     */
+    public void getUserByEmail(String email, UserFetchListener listener) {
+        if (email == null) {
+            if (listener != null) listener.onUserFetched(null);
+            return;
+        }
+        FIRESTORE.collection("users").document(email)
                 .get().addOnSuccessListener(document -> {
                     if (document.exists()) {
                         User user = document.toObject(User.class);
-                        DataManager.setUser(user);
+                        if (email.equals(authUserEmail())) {
+                            DataManager.setUser(user);
+                        }
                         if (listener != null) {
                             listener.onUserFetched(user);
                         }
+                    } else {
+                        if (listener != null) listener.onUserFetched(null);
                     }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error fetching user by email", e);
+                    if (listener != null) listener.onUserFetched(null);
                 });
     }
 
