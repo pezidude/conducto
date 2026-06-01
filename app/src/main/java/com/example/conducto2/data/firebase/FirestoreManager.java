@@ -17,6 +17,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -554,7 +555,7 @@ public class FirestoreManager extends FirebaseComm {
      */
     public void updateLessonLiveStatus(String classId, String lessonId, boolean isLive) {
         DocumentReference ref = FIRESTORE.collection("classes").document(classId).collection("lessons").document(lessonId);
-        
+
         if (isLive) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("isLive", true);
@@ -588,8 +589,8 @@ public class FirestoreManager extends FirebaseComm {
     /**
      * Real-time listener for lessons currently marked as live.
      */
-    public void listenForLiveLesson(String classID, LiveLessonListener listener) {
-        FIRESTORE.collection("classes").document(classID)
+    public ListenerRegistration listenForLiveLesson(String classID, LiveLessonListener listener) {
+        return FIRESTORE.collection("classes").document(classID)
                 .collection("lessons")
                 .whereEqualTo("isLive", true)
                 .addSnapshotListener((snapshot, e) -> {

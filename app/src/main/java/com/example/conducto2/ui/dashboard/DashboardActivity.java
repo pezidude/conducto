@@ -29,6 +29,9 @@ import com.google.android.material.button.MaterialButton;
 
 import com.example.conducto2.data.model.Class;
 import com.example.conducto2.data.model.Lesson;
+import com.google.firebase.firestore.ListenerRegistration;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -78,6 +81,16 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
     /** Interaction button to jump directly into the live sheet music session. */
     private MaterialButton btnJoinLiveLesson;
 
+    /** Real-time listeners for live lesson status across all user classes. */
+    private final List<ListenerRegistration> liveLessonListeners = new ArrayList<>();
+    
+    /** Tracking variables for a single active live lesson and its class. */
+    private Lesson activeLiveLesson = null;
+    private Class activeLiveClass = null;
+    
+    /** Flag to prevent registering new listeners when the activity is not active. */
+    private boolean isPaused = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +104,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
     @Override
     protected void onResume() {
         super.onResume();
+        isPaused = false;
         // Reactive UI Sync: Ensure cached user data from DataManager is reflected 
         // after returning from the ProfileActivity.
         User user = DataManager.getUserInstance();
@@ -99,7 +113,15 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
             tvWelcomeMessage.setText(welcomeMsg);
             tvUserTypeStatus.setText("User Type: " + user.getUserType());
             updateAvatar(user);
+            startListeningForLiveLessons(user);
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isPaused = true;
+        stopListeningForLiveLessons();
     }
 
     /**
@@ -161,7 +183,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
             
             updateAvatar(user);
             updateStats(user);
-            checkForLiveLessons(user);
+            startListeningForLiveLessons(user);
         }
     }
 
@@ -201,6 +223,7 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
 
     private void updateStats(User user) {
         firestoreManager.getClassesForUser(user.getEmail(), classes -> {
+            if (isPaused) return;
             if (classes != null) {
                 tvClassesCount.setText(String.valueOf(classes.size()));
                 
@@ -238,20 +261,54 @@ public class DashboardActivity extends BaseDrawerActivity implements com.example
      * Iterates through every classroom the user belongs to and registers a real-time 
      * listener for any lesson with 'isLive == true'.
      */
-    private void checkForLiveLessons(User user) {
+    private void startListeningForLiveLessons(User user) {
+        stopListeningForLiveLessons(); // Clean up existing listeners if any
+        
         firestoreManager.getClassesForUser(user.getEmail(), classes -> {
+            if (isPaused) return;
             if (classes != null) {
                 for (Class cls : classes) {
                     // Logic: Register a scoped snapshot listener for each classroom.
-                    firestoreManager.listenForLiveLesson(cls.getId(), lesson -> {
+                    ListenerRegistration registration = firestoreManager.listenForLiveLesson(cls.getId(), lesson -> {
+                        if (isPaused) return;
                         if (lesson != null) {
-                            // Alert Trigger: A live lesson was found; display the shortcut UI.
-                            showLiveLessonShortcut(cls, lesson);
+                            activeLiveLesson = lesson;
+                            activeLiveClass = cls;
+                        } else if (activeLiveClass != null && activeLiveClass.getId().equals(cls.getId())) {
+                            // The current active lesson has ended.
+                            activeLiveLesson = null;
+                            activeLiveClass = null;
                         }
+                        updateLiveLessonUI();
                     });
+                    liveLessonListeners.add(registration);
                 }
             }
         });
+    }
+
+    /**
+     * Terminates all active Firestore snapshot listeners and clears the tracked lesson data.
+     */
+    private void stopListeningForLiveLessons() {
+        for (ListenerRegistration registration : liveLessonListeners) {
+            registration.remove();
+        }
+        liveLessonListeners.clear();
+        activeLiveLesson = null;
+        activeLiveClass = null;
+        updateLiveLessonUI();
+    }
+
+    /**
+     * Synchronizes the Live Lesson shortcut UI with the current state of active lessons.
+     */
+    private void updateLiveLessonUI() {
+        if (activeLiveLesson == null || activeLiveClass == null) {
+            llLiveLessonShortcut.setVisibility(View.GONE);
+        } else {
+            showLiveLessonShortcut(activeLiveClass, activeLiveLesson);
+        }
     }
 
     /**

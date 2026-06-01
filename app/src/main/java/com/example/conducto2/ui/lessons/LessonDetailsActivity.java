@@ -2,6 +2,7 @@ package com.example.conducto2.ui.lessons;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.UserManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -320,6 +321,9 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
     /**
      * Executes the process to set the current lesson as the active Live broadcast 
      * across the entire class context.
+     * 
+     * Refactor: Now includes a pre-validation query to Firestore to prevent 
+     * race conditions where multiple lessons go live simultaneously.
      */
     private void goLive() {
         Lesson lesson = DataManager.getCurLesson();
@@ -330,19 +334,47 @@ public class LessonDetailsActivity extends BaseDrawerActivity implements Firebas
             return;
         }
 
-        // Validation: Prevent multiple simultaneous live lessons in the same class.
-        if (currentClass.isActive()) {
-            displayMessage("A lesson is already active for this class. Please stop it first.");
-            return;
-        }
-
         String classId = currentClass.getId();
 
+        // 1. UI Feedback: Prevent multiple clicks and show checking state.
         btnGoLive.setEnabled(false);
         if (tvStatusMessage != null) {
-            tvStatusMessage.setText("Going live...");
+            tvStatusMessage.setText("Checking class status...");
             tvStatusMessage.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
             tvStatusMessage.setVisibility(View.VISIBLE);
+        }
+
+        // 2. Database Validation: Query Firestore for ANY lesson with isLive=true in this class.
+        // This is a "Single Source of Truth" check that ignores potentially stale local flags.
+        FirebaseFirestore.getInstance().collection("classes").document(classId)
+                .collection("lessons")
+                .whereEqualTo("isLive", true)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        if (!task.getResult().isEmpty()) {
+                            // Another lesson is live!
+                            displayMessage("A lesson is already active for this class. Please stop it first.");
+                            btnGoLive.setEnabled(true);
+                            // We don't hide tvStatusMessage here because displayMessage might use it
+                        } else {
+                            // Clear to proceed.
+                            proceedToGoLive(classId, lesson, currentClass);
+                        }
+                    } else {
+                        // Query failed.
+                        displayMessage("Failed to verify class status. Please try again.");
+                        btnGoLive.setEnabled(true);
+                    }
+                });
+    }
+
+    /**
+     * Performs the actual Firestore updates to set a lesson as live.
+     */
+    private void proceedToGoLive(String classId, Lesson lesson, com.example.conducto2.data.model.Class currentClass) {
+        if (tvStatusMessage != null) {
+            tvStatusMessage.setText("Going live...");
         }
 
         // Database Sync: Update both the lesson flag and the class-wide active flag.

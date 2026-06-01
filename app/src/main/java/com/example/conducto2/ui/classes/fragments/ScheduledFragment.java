@@ -109,7 +109,17 @@ public class ScheduledFragment extends Fragment {
                 .setMessage("Are you sure you want to archive this lesson?")
                 .setPositiveButton("Archive", (dialog, which) -> {
                     Lesson lesson = lessonAdapter.getItem(position);
-                    new FirestoreManager().updateLessonArchivedStatus(DataManager.getCurClass().getId(), lesson.getId(), true);
+                    FirestoreManager fm = new FirestoreManager();
+                    String classId = DataManager.getCurClass().getId();
+                    
+                    // Integrity Check: If the lesson being archived is currently live, 
+                    // we must terminate the broadcast and reset class activity first.
+                    if (lesson.isLive()) {
+                        fm.updateLessonLiveStatus(classId, lesson.getId(), false);
+                        fm.updateClassActivity(classId, false);
+                    }
+                    
+                    fm.updateLessonArchivedStatus(classId, lesson.getId(), true);
                     lessonAdapter.notifyDataSetChanged();
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> lessonAdapter.notifyDataSetChanged())

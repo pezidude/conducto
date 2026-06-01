@@ -376,6 +376,13 @@ public class LessonEditActivity extends BaseDrawerActivity implements FirebaseCo
     private void deleteLesson() {
         if (classId == null || currentLesson == null || currentLesson.getId() == null) return;
         startTask(getString(R.string.status_deleting));
+
+        // Integrity Check: If we delete a lesson that is currently live, 
+        // we must reset the class activity flag to prevent blocking future lessons.
+        if (currentLesson.isLive()) {
+            firestoreManager.updateClassActivity(classId, false);
+        }
+
         FirebaseComm.getCollectionReference("classes")
                 .document(classId).collection("lessons")
                 .document(currentLesson.getId()).delete()
